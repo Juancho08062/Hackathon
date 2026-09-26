@@ -2010,7 +2010,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   // Real proportions in meters (x forward, y up, origin at ground under the middle), then placed with a matrix.
   // Kinds: pickup, flatbed (with a cable reel), bucket truck, all-terrain crane, excavator.
   // When vehicles3d.js is loaded, its richer models replace these for the kinds it has; they are added to `g`.
-  const V3D = { pickup: "pickup", bucket: "bucket", flatbed: "flatbed", crane: "truckCrane" };
+  const V3D = { pickup: "pickup", bucket: "bucket", flatbed: "flatbed", crane: "truckCrane", excavator: "excavator" };
   let vehLevel = "detailed";
   function vehicle(T, B, kind, x, y, z, rot, k, g) {
     if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put, g)) return;
