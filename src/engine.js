@@ -326,6 +326,49 @@
     return { opened, closed };
   }
 
-  const api = { driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
+  // ---------- joint schedule optimizer ----------
+  // Which few date moves raise the pairs' total expected savings the most? Greedy: each round tries moving every
+  // project that has not started yet (and is not likely built or a power plant) by each step up to maxShift months either way, never
+  // starting before today, and keeps the single move worth the most; it stops when no move is worth minGain or after
+  // maxMoves. Each project moves at most once. Chances use the same seeded draws, so comparisons are fair.
+  // opts: { today, bufferMonths, maxShift = 6, step = 3, maxMoves = 8, minGain = 25000, draws = 600 }
+  function optimizeSchedule(pairs, slips, opts = {}) {
+    const o = Object.assign({ bufferMonths: 0, maxShift: 6, step: 3, maxMoves: 8, minGain: 25000, draws: 600 }, opts);
+    const now = o.today ? monthIndex(o.today) : -Infinity;
+    const shifted = new Map();                       // project id -> moved copy
+    const cur = p => shifted.get(p.id) || p;
+    const rows = pairs.map(x => { const e = expectedSavings(x, 0); return { x, fixed: e.fixed, windowed: e.windowed }; });
+    const chanceOf = (r, p, q) => r.windowed ? overlapChance({ p, q }, slips, { bufferMonths: o.bufferMonths, today: o.today, draws: o.draws }).p : 0;
+    rows.forEach(r => { r.c = chanceOf(r, r.x.p, r.x.q); });
+    const total = () => rows.reduce((s, r) => s + r.fixed + r.c * r.windowed, 0);
+    const byProject = new Map();
+    rows.forEach(r => [r.x.p, r.x.q].forEach(p => { if (!byProject.has(p.id)) byProject.set(p.id, { p, rows: [] }); byProject.get(p.id).rows.push(r); }));
+    // Power plants are left where they are: their dates follow resource planning, not transmission crews.
+    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && p.type !== "generation" && monthIndex(p.start) > now);
+    const before = total(), moves = [];
+    while (moves.length < o.maxMoves) {
+      let best = null;
+      for (const { p, rows: rs } of movable) {
+        if (shifted.has(p.id)) continue;
+        for (let m = -o.maxShift; m <= o.maxShift; m += o.step) {
+          if (!m) continue;
+          const n = Object.assign({}, p, { start: shiftISO(p.start, m), in_service: shiftISO(p.in_service, m) });
+          if (monthIndex(n.start) < now) continue;
+          let gain = 0;
+          const after = rs.map(r => { const c = chanceOf(r, r.x.p === p ? n : cur(r.x.p), r.x.q === p ? n : cur(r.x.q)); gain += (c - r.c) * r.windowed; return c; });
+          if (gain >= o.minGain && (!best || gain > best.gain + 1e-6)) best = { p, n, m, gain, rs, after };
+        }
+      }
+      if (!best) break;
+      shifted.set(best.p.id, best.n);
+      const affected = best.rs.map((r, i) => ({ x: r.x, before: r.c, after: best.after[i] })).filter(a => Math.abs(a.after - a.before) > 1e-9);
+      best.rs.forEach((r, i) => { r.c = best.after[i]; });
+      moves.push({ id: best.p.id, project: best.p, months: best.m, gain: best.gain,
+        from: { start: best.p.start, in_service: best.p.in_service }, to: { start: best.n.start, in_service: best.n.in_service }, pairs: affected });
+    }
+    return { moves, before, after: total() };
+  }
+
+  const api = { optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);

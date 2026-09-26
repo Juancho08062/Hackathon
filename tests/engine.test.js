@@ -233,5 +233,38 @@ t("plan drift: the latest plan updates opened and closed shared windows", () => 
   const j = projects.find(p => p.id === "DESC-12");
   assert.deepStrictEqual([j.drift.from_in_service, j.drift.to_in_service, j.drift.months], ["2025-12-31", "2026-12-01", 11]);
 });
+t("schedule optimizer: moves the one project that opens a shared window, and nothing else", () => {
+  const still = { A: { months: [0] }, B: { months: [0] } };
+  const a = P("a", "A", [[33, -82]], "2027-01-01", "2028-01-01"), b = P("b", "B", [[33, -81.99]], "2028-04-01", "2029-04-01");
+  const far = P("z", "B", [[35, -79]], "2027-01-01", "2028-01-01");
+  const { pairs } = E.findOverlaps([a, b, far], { utilA: "A", utilB: "B", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const r = E.optimizeSchedule(pairs, still, { today: "2026-09-26" });
+  assert.strictEqual(r.moves.length, 1, JSON.stringify(r.moves.map(m => [m.id, m.months])));
+  const m = r.moves[0];
+  assert(["a", "b"].includes(m.id) && Math.abs(m.months) <= 6 && m.months % 3 === 0);
+  assert(r.after > r.before && m.gain > 0);
+});
+t("schedule optimizer: never moves a project already under way or likely built, nor starts one before today", () => {
+  const still = { A: { months: [0] }, B: { months: [0] } };
+  const started = P("s", "A", [[33, -82]], "2026-01-01", "2027-06-01");
+  const built = P("k", "A", [[33, -82.01]], "2023-01-01", "2024-12-31", { likely_built: true });
+  const soon = P("n", "B", [[33, -81.99]], "2026-11-01", "2027-02-01");
+  const later = P("l", "B", [[33, -81.98]], "2028-01-01", "2028-09-01");
+  const { pairs } = E.findOverlaps([started, built, soon, later], { utilA: "A", utilB: "B", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const r = E.optimizeSchedule(pairs, still, { today: "2026-09-26" });
+  for (const m of r.moves) {
+    assert(!["s", "k"].includes(m.id), m.id);
+    assert(m.to.start >= "2026-09-01", JSON.stringify(m));
+  }
+});
+t("schedule optimizer: on the built-in plans a few moves raise expected savings", () => {
+  const m = require("../data/model.json");
+  const { pairs } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const r = E.optimizeSchedule(pairs, m.slips, { today: m.as_of, maxMoves: 6 });
+  assert(r.moves.length > 0 && r.moves.length <= 6);
+  assert(r.after - r.before >= r.moves.length * 25000);
+  const again = E.optimizeSchedule(pairs, m.slips, { today: m.as_of, maxMoves: 6 });
+  assert.deepStrictEqual(again.moves.map(x => [x.id, x.months]), r.moves.map(x => [x.id, x.months]));
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);

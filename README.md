@@ -185,6 +185,8 @@ What it shows on the built-in data:
 - 13 pairs that do not share a window on paper have a 50% or better chance of sharing one, because DESC's dates usually move later. Example: Jasper - Okatie #2 and the McIntosh Unit 12 combined cycle, 4.3 km apart, 68%.
 - `Engine.driftChanges` replays each pair with the dates the previous plan listed. The latest updates opened 9 shared windows and closed 3. Reference overlap OVL_3 shares a window only because Jasper - Okatie #2 moved 11 months later.
 
+`Engine.optimizeSchedule` then asks which few date moves would raise the pairs' total expected savings the most. Each round it tries moving every project that has not started (and is not likely built or a power plant) by 3 or 6 months either way, never starting before today, keeps the single most valuable move, and stops when no move is worth $25K. On the built-in data, 8 moves of at most 6 months raise expected savings from about $14.9M to $17.4M and improve 42 pairs. Most of them bring a Georgia project earlier, toward where DESC's usually late dates are likely to land.
+
 The model assumes each project moves once more, by an amount like the moves already seen, and that the two utilities' moves are independent. It is a planning aid, not a forecast.
 
 ## Validation report
