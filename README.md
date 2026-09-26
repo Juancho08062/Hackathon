@@ -12,7 +12,7 @@ The built-in example is **Dominion Energy South Carolina** against **Georgia** (
 2. **It knows plans move.** Comparing two editions of each utility's plan shows 23 of 30 DESC projects slipped (median 12 months). Seamline turns that into a **chance** that each pair is really in the field together, from today on, and ranks pairs by **expected savings**. Of the 41 pairs that overlap on paper, 23 are less than 50% likely to still overlap; 13 pairs that don't overlap on paper are 50% or more likely to. The last plan updates opened 9 shared windows and closed 3.
 3. **It says what to do.** A schedule optimizer finds the 8 date moves (at most 6 months, projects not yet started) that raise expected savings from $13.6M to $16.1M, and prints a joint proposal for both utilities.
 4. **It shows the real place.** The map tilts into 3D over real terrain and satellite imagery, with towers along each planned line, across the river that separates the two states.
-5. **You can ask it.** An assistant answers plain-language questions from the same data and flies the map to what it's talking about.
+5. **You can ask it.** An assistant answers plain-language questions, in English or Spanish, from the same data, flies the map to what it's talking about and opens the printable briefs. The common questions work with no API key.
 
 ![A pair on satellite imagery in 3D, with its chance and expected savings](docs/screenshots/pair.jpg)
 
@@ -24,7 +24,7 @@ Open `index.html` in a browser, or serve the folder:
 npm start            # python3 -m http.server 8000, then open http://localhost:8000
 ```
 
-The Plain map and everything except the imagery, the 3D terrain and the assistant work offline. The existing-grid layer is a separate file the page fetches, so it shows when the folder is served (`npm start`, GitHub Pages), not when `index.html` is opened straight from disk. Those three need an internet connection; the assistant also needs an Anthropic API key (see Ask below).
+The Plain map and everything except the imagery, the 3D terrain and open-ended assistant questions work offline. The existing-grid layer is a separate file the page fetches, so it shows when the folder is served (`npm start`, GitHub Pages), not when `index.html` is opened straight from disk. The imagery and the terrain need an internet connection; open-ended questions to the assistant also need an Anthropic API key (see Ask below). The common questions are answered without one.
 
 ## The screen
 
@@ -37,16 +37,20 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 - **Changes**: how far each utility's dates moved between its last two plans, and which shared windows the latest updates opened or closed, and why.
 - **Optimize**: the date moves that most raise expected savings, with limits you set, shown on the map and printable as a joint schedule proposal.
 - **Checks**: the pipeline's validation report, each check with the records it caught, downloadable as JSON.
-- **Ask**: an assistant for questions like "which overlaps near Augusta are most likely to happen?" or "what changed in DESC's plan?". It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with eight tools that read Seamline's own data and one that selects things on the map (`src/agent.js` runs the loop; the tools are in `src/app.js`). The site has no server, so each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API.
+- **Ask** (the rail, or the Ask button on the map): an assistant for questions like "which overlaps near Augusta are most likely to happen?", "why isn't DESC-11 paired with IRP-20277?" or "¿qué cambió en el plan de DESC?". It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with fourteen tools over Seamline's own data: search and rank projects, list and explain overlaps, compare two projects, say why a pair is *not* flagged, plan changes, the schedule optimizer and the data checks, plus four that act on the page (show something on the map, open a pair's coordination brief, the joint schedule proposal or a report over the whole comparison). `src/agent.js` runs the loop; the tools are in `src/app.js`. The site has no server, so each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API. **Without a key**, or when the API can't be reached, `src/agent-offline.js` routes the common questions (every capability the panel lists) straight to the same tools by pattern and says so in the answer; anything it can't place with confidence asks for a key instead of guessing. Pairs just past the distance screen are listed under the ranking, kept out of every total, so the 40 km line reads as a chosen threshold rather than a cliff.
 - **Share** copies a link to exactly what's on screen: utilities, filters, tab, selected pair, basemap, 3D and camera. Planners can paste it into an email and the other side opens the same view.
 - **Play** steps the map month by month: projects light up while under construction and pairs building at the same time spark. **Unit costs** edits every number behind the savings; **Import plans** loads another utility.
 - **3D illustration** (from the pair panel, or the walker): Its ground is a cut-out terrain block with earthen sides, shaped from the same elevation tiles; heights are stretched so the flat river country reads, and the footer gives the real range in meters and the factor. Offline it falls back to an illustrative ground. Plants are modeled on a combined-cycle station (inlet filter houses, gas turbines, HRSGs with exhaust stacks, a steam turbine hall, a row of fan-cell cooling towers venting plumes, tanks, a pipe rack and the plant's own switchyard). Substations have lattice gantries, transformers with radiators, conservators and bushings, breakers, disconnect switches and a control house. Yards and crews carry real-proportion equipment: pickups, a flatbed with a cable reel, bucket trucks, an all-terrain crane and an excavator. **Quality** has two looks: *Detailed* (default, stylized and fast) and *Ultra-realistic* (texture maps on siding, concrete and gravel, galvanized steel and bare aluminum wires, loblolly pines, denser ground cover, finer terrain and stronger ambient occlusion).
 
 ![3D over satellite imagery: towers along the Jasper - Okatie 230 kV line](docs/screenshots/3d.jpg)
 
+![The 3D pair illustration: Plant McIntosh's combined-cycle unit, the shared laydown yard and the new line's towers](docs/screenshots/illustration.jpg)
+
 ![The Changes tab: how each utility's dates moved, and the shared windows the latest plans opened](docs/screenshots/changes.jpg)
 
 ![The Optimize tab: date moves that raise expected savings](docs/screenshots/optimize.jpg)
+
+![Ask with no API key: why a pair is not flagged, and one pair explained](docs/screenshots/ask.jpg)
 
 ## How overlap is defined
 
@@ -138,8 +142,10 @@ src/
   formats.js            file readers: Excel, KML/KMZ/GPX, shapefiles, zips
   libs.js               loads third-party libraries on first use from vendor/, with a CDN fallback
   scene3d.js            the 3D pair illustration (three.js)
+  vehicles3d.js         procedural work vehicles for the illustration (pickups, bucket trucks, cranes, excavator)
   map.js                the MapLibre map: basemaps, layers, 3D terrain and towers
   agent.js              the assistant's Claude tool-use loop (Anthropic SDK, loaded in the browser)
+  agent-offline.js      answers the common questions without the model, by pattern, over the same tools
   app.js                the UI: overlaps, pair panel, plan changes, optimizer, data checks, timeline, import
 data/
   projects.json         built-in DESC and Georgia projects (generated by scripts/build_projects.py)
@@ -153,7 +159,7 @@ scripts/
   locate_official.py    places official projects from OpenStreetMap substations, with hand-checked overrides
   fetch_grid.py         downloads and simplifies today's transmission lines from OpenStreetMap into data/grid.json
 samples/                sample plans in every supported format
-tests/                  engine, importer and sample-file tests
+tests/                  engine, assistant (with a fake API client), importer, sample-file and vehicle tests
 vendor/                 pinned copies of d3, MapLibre GL, three.js, SheetJS, togeojson, JSZip and shpjs (see vendor/README.md)
 docs/screenshots/       images used in this README
 ```
@@ -180,7 +186,7 @@ Seamline is a static site: `index.html` plus the `vendor/` folder. Any static ho
 - **GitHub Pages:** in the repository's Settings, open Pages, set Source to "Deploy from a branch", pick `main` and `/ (root)`, and save. The site appears at `https://<user>.github.io/<repo>/`. On a free GitHub plan the repository has to be public for Pages to work.
 - **Netlify, Vercel, Cloudflare Pages or S3:** publish the repository root.
 
-Satellite and Topo (Esri) tiles, the Relief map and 3D terrain (AWS Terrarium elevation tiles) and the assistant (Anthropic API) need an internet connection. The Plain map, the three.js pair illustration and every importer work offline.
+Satellite and Topo (Esri) tiles, the Relief map and 3D terrain (AWS Terrarium elevation tiles) and open-ended assistant questions (Anthropic API) need an internet connection. The Plain map, the three.js pair illustration, every importer and the assistant's pattern-matched answers work offline.
 
 ## Official challenge data
 
