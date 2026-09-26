@@ -88,6 +88,12 @@ function compute() {
     RESULT.pairs.forEach(x => { x.risk = risk(x); });
     // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance filter says
     CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
+    // The map opens on the closest distance band that has any pairs, so it starts uncluttered; each band chip
+    // pressed after that adds its routes.
+    if (!state.tiersSet && RESULT.pairs.length) {
+      const k = [0, 1, 2, 3].find(i => RESULT.pairs.some(x => x.tier === i));
+      state.tiers = new Set(k == null ? [0, 1, 2, 3, 4] : [k]); state.tiersSet = true;
+    }
   }
   VIEW = RESULT.pairs.filter(x => state.tiers.has(Math.min(x.tier, 4)) &&
     (state.past || (!isPast(x.p) && !isPast(x.q))) && inHorizon(x.p) && inHorizon(x.q) &&
@@ -153,13 +159,16 @@ const phase = (p, t) => t == null ? "all" : t < mon(p.start) ? "planned" : t <= 
 const live = (x, t) => phase(x.p, t) === "building" && phase(x.q, t) === "building";
 function renderMap() {
   if (!mapReady) return;
-  const shown = VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
+  // With a distance band chosen, the Overlaps map draws only the routes in the chosen bands (all of their pairs, not
+  // just the page of the list), and leaves every other planned route off.
+  const banded = !solo() && state.view === "focus" && state.tiers.size < 5;
+  const shown = banded ? VIEW : VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
   const moved = state.showMoves && optimize() ? new Set(optimize().moves.map(m => m.id)) : null;
   const raster = state.basemap === "satellite" || state.basemap === "topo";
   const casing = state.basemap === "satellite" ? "rgba(255,255,255,.85)" : raster ? "rgba(20,24,28,.55)" : css("--panel");
   const phaseOp = { all: 1, building: 1, done: .45, planned: .15 };
-  const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
+  const projects = PROJECTS.filter(p => shownUtil(p.utility) && (!banded || flagged.has(p.id) || inSel(focus, p))).map(p => {
     const hi = inSel(focus, p) || (moved && moved.has(p.id));
     let op = (solo() || flagged.has(p.id) ? 1 : .28) * phaseOp[phase(p, t)];
     // A passed date is encoded by the dash pattern below, not by fading the line out of sight: at .45 of an
@@ -319,6 +328,7 @@ function renderTabs() {
   document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
   $("#askFab").hidden = state.tab === "ask";
+  $("#geoHi").hidden = state.tab === "ask" || store.get("askSeen", false);
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -349,7 +359,8 @@ function renderKpis() {
   const exp = VIEW.reduce((t, x) => t + x.risk.expected, 0), plan = VIEW.reduce((t, x) => t + x.sav.total, 0), o = optimize();
   const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
   const gain = o && o.moves.length ? o.after - o.before : 0;
-  el.innerHTML = `<div class="kpi"><b>${RESULT.pairs.length}</b><span>overlaps</span><small>of ${RESULT.checked.toLocaleString()} pairs checked</small></div>
+  const part = VIEW.length !== RESULT.pairs.length;
+  el.innerHTML = `<div class="kpi"><b>${VIEW.length}</b><span>${part ? "overlaps shown" : "overlaps"}</span><small>${part ? `of ${RESULT.pairs.length} flagged · ${RESULT.checked.toLocaleString()} checked` : `of ${RESULT.checked.toLocaleString()} pairs checked`}</small></div>
     <div class="kpi"><b>${money(exp)}</b><span>expected savings</span><small>${money(plan)} if every date held</small></div>
     <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " suggested date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
     <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks to review</small></button>`;
@@ -713,7 +724,7 @@ function renderChecks(P) {
 // ---------- panel: assistant ----------
 // Claude answers questions using tools that read the same data the page shows (agent.js runs the loop).
 const CHAT = { messages: [], log: [], busy: false };
-const SYSTEM = `You are the assistant inside Seamline, a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
+const SYSTEM = `You are Geo, the assistant inside Seamline. If asked your name, you are Geo. a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
 
 How Seamline measures things:
 - Distance is between the closest points of two projects. Tiers: touching (0 km), under 1.6 km (can share right-of-way, access roads, permits), under 8 km (laydown yards, deliveries), under 40 km (crews, cranes, contractors).
@@ -1036,21 +1047,21 @@ function renderAsk(P) {
       ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
         <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
-        <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
+        <span class="note">Geo runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
     <div class="ask-bar">
-      <span class="muted">${esc(C.hero)}</span><span class="grow"></span>
+      <span class="muted">${esc(C.bar)}</span><span class="grow"></span>
       ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
     </div>
-    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
       : askWelcome()}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
     <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
-  const log = $("#askLog"); log.scrollTop = log.scrollHeight;
+  const log = $("#askLog"); log.scrollTop = CHAT.log.length ? log.scrollHeight : 0; // the greeting reads from the top
   cycleHint();
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
@@ -1108,7 +1119,9 @@ function renderAsk(P) {
 const ASK_COPY = {
   en: {
     flag: "🇺🇸", code: "EN", label: "Answer in English",
-    hero: "Ask about the plans",
+    hero: "Hey, I'm Geo",
+    bar: "Geo · answers from the plans on this page",
+    sub: "Ask me which overlaps matter, what the two utilities could share, or why a pair is not on the list.",
     scopePair: (n, who, pairs) => `I answer from the data on this page — ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
     scopeSolo: (n, who) => `I answer from the data on this page — ${n} planned projects from ${who}. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
     head: "What I can do for you",
@@ -1128,7 +1141,9 @@ const ASK_COPY = {
   },
   es: {
     flag: "🇪🇸", code: "ES", label: "Responder en español",
-    hero: "Preguntá sobre los planes",
+    hero: "Hola, soy Geo",
+    bar: "Geo · responde con los planes de esta página",
+    sub: "Preguntame qué solapes importan, qué podrían compartir las dos utilities, o por qué un par no está en la lista.",
     scopePair: (n, who, pairs) => `Respondo con los datos de esta página — ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
     scopeSolo: (n, who) => `Respondo con los datos de esta página — ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
     head: "Qué puedo hacer por vos",
@@ -1157,6 +1172,7 @@ function askWelcome() {
   const who = solo() ? esc(lblLong(state.utilA)) : `${esc(lblLong(state.utilA))} ${askLang() === "es" ? "y" : "and"} ${esc(lblLong(state.utilB))}`;
   return `<div class="msg hint welcome">
     <p class="ask-hero">${SPARK}${esc(C.hero)}</p>
+    <p class="ask-sub">${esc(C.sub)}</p>
     <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
     <p class="wl-head">${esc(C.head)}</p>
     <ul class="wl">${C.items.map(([b, rest]) => `<li><b>${b}</b> ${esc(rest)}</li>`).join("")}</ul>
@@ -1165,7 +1181,7 @@ function askWelcome() {
 }
 
 // The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
-const SPARK = `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>`;
+const SPARK = `<svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
   open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal",
@@ -1429,7 +1445,7 @@ function openScheduleBrief(o, narrative) {
     <p class="b-foot">${esc(D.footSchedule)}</p>`;
   showBrief();
 }
-const briefNote = text => text ? `<p class="b-note"><span>Assistant summary</span>${esc(String(text).slice(0, 1200))}</p>` : "";
+const briefNote = text => text ? `<p class="b-note"><span>Summary by Geo</span>${esc(String(text).slice(0, 1200))}</p>` : "";
 let returnFocus = null;
 function lockApp(on) { document.body.classList.toggle("modal-open", on); }
 function showBrief() { returnFocus = document.activeElement; $("#brief").hidden = false; lockApp(true); $("#briefClose").focus(); }
@@ -1712,7 +1728,7 @@ $("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refr
 for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => { state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh(); };
 document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { state.horizon = +b.dataset.h; document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", o === b)); refresh(); });
 $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
-for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
+for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); renderMap(); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
@@ -1722,6 +1738,9 @@ $("#share").onclick = () => {
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
 };
 $("#askFab").onclick = () => { toggleTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
+$("#geoHiX").onclick = () => { store.set("askSeen", true); $("#geoHi").hidden = true; renderTabs(); };
+// Geo's button and greeting sit just above the legend, whatever height the legend has.
+new ResizeObserver(() => { const lg = $("#legend"); $(".mapwrap").style.setProperty("--legend-h", (lg && lg.offsetParent ? lg.offsetHeight + 10 : 0) + "px"); }).observe($("#legend"));
 document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
 $("#railTl").onclick = () => {

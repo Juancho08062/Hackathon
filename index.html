@@ -142,10 +142,22 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 /* ---------- the assistant's standing invitation ---------- */
 /* Top-left of the map. The walker sits at right:10px top:52px and this pill used to be at the same coordinates, so one
    covered the other; the legend owns the bottom-left and the map tools are right-aligned along the top. */
-.askfab{position:absolute;left:10px;top:10px;z-index:3;display:inline-flex;align-items:center;gap:6px;
+.askfab{position:absolute;left:10px;bottom:calc(var(--legend-h,0px) + 10px);z-index:3;display:inline-flex;align-items:center;gap:6px;
   font:600 12.5px var(--body);color:#fff;background:#12181F;border:0;border-radius:999px;padding:8px 14px 8px 11px;
   cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.24)}
 .askfab .spark{width:15px;height:15px;color:#7EB3FF}
+.geo-ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.geo-ico circle{fill:currentColor;stroke:none}
+.rail .ask-tab .spark.geo-ico{fill:none;stroke:currentColor}
+/* Geo's first-visit greeting, a speech bubble above its button; static, and gone once Geo has been opened */
+.geo-hi{position:absolute;left:10px;bottom:calc(var(--legend-h,0px) + 54px);z-index:3;max-width:250px;padding:9px 30px 9px 12px;
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;font-size:12.5px;line-height:1.4;box-shadow:0 2px 10px rgba(0,0,0,.16)}
+.geo-hi::after{content:"";position:absolute;left:22px;bottom:-6px;width:10px;height:10px;background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+.geo-hi[hidden]{display:none}
+.geo-hi b{display:block}
+.geo-x{position:absolute;right:4px;top:4px;width:22px;height:22px;border:0;background:none;color:var(--ink2);font-size:16px;line-height:1;cursor:pointer;border-radius:6px}
+.geo-x:hover{background:var(--line)}
+.ask-sub{margin:-2px 0 8px;color:var(--ink2)}
 .askfab[hidden]{display:none}
 /* The halo: a rotating conic gradient behind the pill. A gradient's own angle cannot be animated without @property,
    so the element carrying it turns instead. */
@@ -480,6 +492,8 @@ body.modal-open .app{visibility:hidden}
 .msg.hint{max-width:100%;color:var(--ink2)}
 /* The welcome list: dense enough to scan in a few seconds, since it is the first thing a new reader sees. */
 .welcome{font-size:12.5px}
+.ask-hero{display:flex;align-items:center;gap:8px;margin:2px 0 4px;font:700 16px var(--body);color:var(--ink)}
+.ask-hero .spark{width:24px;height:24px;flex:none;color:var(--blue)}
 .wl-head{margin:10px 0 4px;font-weight:600;color:var(--ink);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .wl{margin:0;padding:0;list-style:none;display:grid;gap:5px}
 .wl li{padding-left:13px;position:relative;line-height:1.45}
@@ -570,7 +584,7 @@ body.modal-open .app{visibility:hidden}
       <button type="button" role="tab" id="tab-optimize" aria-selected="false" data-tab="optimize"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9"/></svg>Plan<span class="n" id="n-optimize"></span></button>
       <button type="button" id="railTl" aria-pressed="false" title="Show the build-windows chart under the map"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Windows</button>
       <button type="button" role="tab" id="tab-checks" aria-selected="false" data-tab="checks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Checks<span class="n" id="n-checks"></span><span class="badge" id="b-checks" hidden></span></button>
-      <button type="button" role="tab" id="tab-ask" aria-selected="false" data-tab="ask" class="ask-tab" title="Ask the assistant — press again to close it"><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>Ask</button>
+      <button type="button" role="tab" id="tab-ask" aria-selected="false" data-tab="ask" class="ask-tab" title="Chat with Geo, the assistant — press again to close it"><svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>Geo</button>
       <span class="grow"></span>
       <button type="button" id="openImport" aria-expanded="false" aria-controls="import"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Import</button>
       <button type="button" id="openAssume"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v10c0 1.7 3 3 7 3s7-1.3 7-3V7"/></svg>Costs</button>
@@ -587,9 +601,10 @@ body.modal-open .app{visibility:hidden}
           <button type="button" class="btn tog" id="bgrid" aria-pressed="true" title="Today's transmission lines from OpenStreetMap">Grid</button>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
-        <button type="button" class="askfab" id="askFab" aria-label="Ask the assistant about these plans">
-          <svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>
-          <span>Ask</span></button>
+        <button type="button" class="askfab" id="askFab" aria-label="Chat with Geo about these plans">
+          <svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>
+          <span>Ask Geo</span></button>
+        <div class="geo-hi" id="geoHi" hidden><b>Hey, I'm Geo.</b> Ask me which overlaps matter and what the two utilities could share.<button type="button" class="geo-x" id="geoHiX" aria-label="Dismiss">×</button></div>
         <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
           <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
         </button>
@@ -2603,6 +2618,15 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
+    // Height of the drawn ground (its triangles, not the raw elevation between vertices), so a walker's feet stay on
+    // the surface that is on screen instead of sinking into or floating over it.
+    const GN = Q.seg, GC = 2 * H / GN, gy = pos.array;
+    const groundAt = (x, z) => {
+      const X = Math.max(0, Math.min(GN - 1e-4, (x + H) / GC)), Z = Math.max(0, Math.min(GN - 1e-4, (z + H) / GC));
+      const ix = Math.floor(X), iz = Math.floor(Z), fx = X - ix, fz = Z - iz, Y = (i, j) => gy[((j) * (GN + 1) + i) * 3 + 1];
+      const a = Y(ix, iz), b = Y(ix, iz + 1), c = Y(ix + 1, iz + 1), d = Y(ix + 1, iz);
+      return fx + fz <= 1 ? a + (d - a) * fx + (b - a) * fz : c + (b - c) * (1 - fx) + (d - c) * (1 - fz);
+    };
     // speckled grass texture, multiplied over the vertex colors
     const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
@@ -2658,7 +2682,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
 
     // ---------- the two projects ----------
-    const obstacles = [], steam = [];
+    const obstacles = [], steam = [], solids = []; // solids: what a walker bumps into, [x, z, radius]
     const towerCache = {};
     const place = (p, color) => {
       const kvH = (p.kv >= 500 ? 4.4 : p.kv >= 230 ? 3.4 : 2.6) * TS;
@@ -2771,6 +2795,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
     // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
     // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    obstacles.forEach(([x, z, r]) => solids.push([x, z, r * 0.7]));
     let walkStart = null;
     if (opts.walkAt) {
       const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
@@ -2797,7 +2822,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       if (Math.hypot(x, z) > RG - 10 || !clear(x, z, r + 1)) continue;
       const pond = new T.Mesh(new T.CircleGeometry(r, 14), water); pond.scale.set(1, 0.6 + rnd() * 0.4, 1);
       pond.rotation.x = -Math.PI / 2; pond.rotation.z = rnd() * 3; pond.position.set(x, heightAt(x, z) + 0.12, z); pond.receiveShadow = true; scene.add(pond);
-      obstacles.push([x, z, r]); made++;
+      obstacles.push([x, z, r]); solids.push([x, z, r]); made++;
     }
 
     // instanced pines
@@ -2817,7 +2842,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       if (Math.hypot(x, z) > edge(Math.atan2(z, x)) - 2.5 || !clear(x, z, 1.8)) continue;
       const k = 0.7 + rnd() * 0.9;
       mtx.compose(pv.set(x, heightAt(x, z) - 0.05, z), q.setFromAxisAngle(sv.set(0, 1, 0), rnd() * 6), sv.clone().set(k, k * (0.9 + rnd() * 0.4), k));
-      pinesF.setMatrixAt(np, mtx); pinesT.setMatrixAt(np, mtx);
+      pinesF.setMatrixAt(np, mtx); pinesT.setMatrixAt(np, mtx); solids.push([x, z, 0.14 * k]);
       pinesF.setColorAt(np, tmp.setHex(REAL ? 0x33502f : PAL.pine).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08)); np++;
     }
     pinesF.count = pinesT.count = np; pinesF.castShadow = pinesT.castShadow = true;
@@ -2878,7 +2903,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene, REAL ? 0.55 : 0.35);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, groundAt, toV, TS, R, obstacles, solids, water: !!dem, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -2968,14 +2993,15 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
       // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
       // terrain and inside the plateau.
-      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null, vx: 0, vz: 0, look: null };
+      const gAt = built.groundAt || built.heightAt, BODY = 0.3 * Math.min(1.6, built.TS);
       const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
       const setWalk = on => {
         const was = walk.on;
         walk.on = on; walk.keys.clear(); controls.enabled = !on && !(INTRO && !was); controls.autoRotate = false;
         if (on) {
-          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
-          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z); walk.vx = walk.vz = 0; walk.look = null;
+          cam.position.y = gAt(cam.position.x, cam.position.z) + eye;
         } else if (was) { // leaving walk: orbit around the spot ahead; opening straight into orbit keeps the overview target
           const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
           controls.target.copy(ahead); cam.position.y += 8;
@@ -2990,31 +3016,69 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const onKeyUp = e => walk.keys.delete(e.code);
       const onBlur = () => walk.keys.clear(); // a key released while the window is in the background never sends keyup
       const cv = renderer.domElement;
-      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      // dragging sets where the view should point; the camera eases toward it each frame, so look-around is smooth
+      // even when pointer events arrive in bursts
+      const onDown = e => { if (walk.on && e.button === 0) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
       const onMove = e => {
         if (!walk.on || !walk.drag) return;
-        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        const L = walk.look || (walk.look = [walk.yaw, walk.pitch]);
+        L[0] -= (e.clientX - walk.drag[0]) * 0.005; L[1] = Math.max(-1.1, Math.min(0.9, L[1] - (e.clientY - walk.drag[1]) * 0.004));
         walk.drag = [e.clientX, e.clientY];
       };
-      const onUp = () => { walk.drag = null; };
+      const onUp = e => { walk.drag = null; if (cv.hasPointerCapture && cv.hasPointerCapture(e.pointerId)) cv.releasePointerCapture(e.pointerId); };
       addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp); addEventListener("blur", onBlur);
-      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp); cv.addEventListener("pointercancel", onUp);
       if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
       walkCtl = { on: () => walk.on, off: () => setWalk(false) };
+      // Walking: speed eases up and down instead of jumping, the walker slides around structures, tree trunks and
+      // ponds rather than passing through them, stays out of the river, and the eye follows the ground smoothly.
+      const solids = built.solids || [];
+      const wet = (x, z) => built.water && gAt(x, z) < 0.05;
+      const pushOut = (x, z) => {
+        for (let pass = 0; pass < 2; pass++) for (const [ox, oz, r] of solids) {
+          const dx = x - ox, dz = z - oz, d = Math.hypot(dx, dz), min = r + BODY;
+          if (d < min && d > 1e-6) { x = ox + dx / d * min; z = oz + dz / d * min; }
+        }
+        return [x, z];
+      };
       const stepWalk = dt => {
         let fw = 0, sd = 0;
         walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
-        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const n = Math.hypot(fw, sd) || 1; fw /= n; sd /= n; // diagonal is no faster
+        if (walk.look) {
+          const e = 1 - Math.exp(-18 * dt);
+          walk.yaw += (walk.look[0] - walk.yaw) * e; walk.pitch += (walk.look[1] - walk.pitch) * e;
+          if (!walk.drag && Math.abs(walk.look[0] - walk.yaw) + Math.abs(walk.look[1] - walk.pitch) < 1e-4) walk.look = null;
+        }
+        const top = walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5, p = cam.position;
         const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
-        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const e = 1 - Math.exp(-(fw || sd ? 9 : 12) * dt);
+        walk.vx += ((fx * fw + fz * sd) * top - walk.vx) * e; walk.vz += ((fz * fw - fx * sd) * top - walk.vz) * e;
+        let nx = p.x + walk.vx * dt, nz = p.z + walk.vz * dt;
         const r = Math.hypot(nx, nz), lim = built.R * 1.25;
         if (r > lim) { nx *= lim / r; nz *= lim / r; }
-        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        [nx, nz] = pushOut(nx, nz);
+        // the river and ground too steep to climb (the relief is stretched, so some bluffs are near-vertical) act as
+        // walls: keep whichever axis is still passable, like sliding along a wall
+        const h0 = gAt(p.x, p.z), stop = (x, z) => {
+          const d = Math.hypot(x - p.x, z - p.z);
+          return (wet(x, z) && !wet(p.x, p.z)) || (d > 1e-6 && (gAt(x, z) - h0) / d > 1.3);
+        };
+        if (stop(nx, nz)) {
+          if (!stop(nx, p.z)) nz = p.z; else if (!stop(p.x, nz)) nx = p.x; else { nx = p.x; nz = p.z; }
+          walk.vx *= 0.5; walk.vz *= 0.5;
+        }
+        // the eye rides the ground averaged over a stride around the feet, so the exaggerated relief reads as a
+        // slope rather than as steps; it catches up faster when the ground rises close to it, and never goes under
+        const g0 = gAt(nx, nz), sr = eye * 0.8;
+        let ga = g0 * 2; for (let k = 0; k < 6; k++) ga += gAt(nx + Math.cos(k * 1.047) * sr, nz + Math.sin(k * 1.047) * sr);
+        const g = Math.max(ga / 8, g0 - eye * 0.3) + eye, rate = p.y < g0 + eye * 0.6 ? 26 : 9;
+        p.set(nx, Math.max(g0 + eye * 0.3, p.y + (g - p.y) * (1 - Math.exp(-rate * dt))), nz);
         cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
       };
       if (built.walkStart) {
         const w0 = built.walkStart;
-        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        cam.position.set(w0.x, gAt(w0.x, w0.z) + eye, w0.z);
         setWalk(true);
       } else setWalk(false);
 
@@ -4372,6 +4436,12 @@ function compute() {
     RESULT.pairs.forEach(x => { x.risk = risk(x); });
     // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance filter says
     CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
+    // The map opens on the closest distance band that has any pairs, so it starts uncluttered; each band chip
+    // pressed after that adds its routes.
+    if (!state.tiersSet && RESULT.pairs.length) {
+      const k = [0, 1, 2, 3].find(i => RESULT.pairs.some(x => x.tier === i));
+      state.tiers = new Set(k == null ? [0, 1, 2, 3, 4] : [k]); state.tiersSet = true;
+    }
   }
   VIEW = RESULT.pairs.filter(x => state.tiers.has(Math.min(x.tier, 4)) &&
     (state.past || (!isPast(x.p) && !isPast(x.q))) && inHorizon(x.p) && inHorizon(x.q) &&
@@ -4437,13 +4507,16 @@ const phase = (p, t) => t == null ? "all" : t < mon(p.start) ? "planned" : t <= 
 const live = (x, t) => phase(x.p, t) === "building" && phase(x.q, t) === "building";
 function renderMap() {
   if (!mapReady) return;
-  const shown = VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
+  // With a distance band chosen, the Overlaps map draws only the routes in the chosen bands (all of their pairs, not
+  // just the page of the list), and leaves every other planned route off.
+  const banded = !solo() && state.view === "focus" && state.tiers.size < 5;
+  const shown = banded ? VIEW : VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
   const moved = state.showMoves && optimize() ? new Set(optimize().moves.map(m => m.id)) : null;
   const raster = state.basemap === "satellite" || state.basemap === "topo";
   const casing = state.basemap === "satellite" ? "rgba(255,255,255,.85)" : raster ? "rgba(20,24,28,.55)" : css("--panel");
   const phaseOp = { all: 1, building: 1, done: .45, planned: .15 };
-  const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
+  const projects = PROJECTS.filter(p => shownUtil(p.utility) && (!banded || flagged.has(p.id) || inSel(focus, p))).map(p => {
     const hi = inSel(focus, p) || (moved && moved.has(p.id));
     let op = (solo() || flagged.has(p.id) ? 1 : .28) * phaseOp[phase(p, t)];
     // A passed date is encoded by the dash pattern below, not by fading the line out of sight: at .45 of an
@@ -4603,6 +4676,7 @@ function renderTabs() {
   document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
   $("#askFab").hidden = state.tab === "ask";
+  $("#geoHi").hidden = state.tab === "ask" || store.get("askSeen", false);
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -4633,7 +4707,8 @@ function renderKpis() {
   const exp = VIEW.reduce((t, x) => t + x.risk.expected, 0), plan = VIEW.reduce((t, x) => t + x.sav.total, 0), o = optimize();
   const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
   const gain = o && o.moves.length ? o.after - o.before : 0;
-  el.innerHTML = `<div class="kpi"><b>${RESULT.pairs.length}</b><span>overlaps</span><small>of ${RESULT.checked.toLocaleString()} pairs checked</small></div>
+  const part = VIEW.length !== RESULT.pairs.length;
+  el.innerHTML = `<div class="kpi"><b>${VIEW.length}</b><span>${part ? "overlaps shown" : "overlaps"}</span><small>${part ? `of ${RESULT.pairs.length} flagged · ${RESULT.checked.toLocaleString()} checked` : `of ${RESULT.checked.toLocaleString()} pairs checked`}</small></div>
     <div class="kpi"><b>${money(exp)}</b><span>expected savings</span><small>${money(plan)} if every date held</small></div>
     <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " suggested date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
     <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks to review</small></button>`;
@@ -4997,7 +5072,7 @@ function renderChecks(P) {
 // ---------- panel: assistant ----------
 // Claude answers questions using tools that read the same data the page shows (agent.js runs the loop).
 const CHAT = { messages: [], log: [], busy: false };
-const SYSTEM = `You are the assistant inside Seamline, a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
+const SYSTEM = `You are Geo, the assistant inside Seamline. If asked your name, you are Geo. a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
 
 How Seamline measures things:
 - Distance is between the closest points of two projects. Tiers: touching (0 km), under 1.6 km (can share right-of-way, access roads, permits), under 8 km (laydown yards, deliveries), under 40 km (crews, cranes, contractors).
@@ -5320,21 +5395,21 @@ function renderAsk(P) {
       ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
         <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
-        <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
+        <span class="note">Geo runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
     <div class="ask-bar">
-      <span class="muted">${esc(C.hero)}</span><span class="grow"></span>
+      <span class="muted">${esc(C.bar)}</span><span class="grow"></span>
       ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
     </div>
-    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
       : askWelcome()}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
     <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
-  const log = $("#askLog"); log.scrollTop = log.scrollHeight;
+  const log = $("#askLog"); log.scrollTop = CHAT.log.length ? log.scrollHeight : 0; // the greeting reads from the top
   cycleHint();
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
@@ -5392,7 +5467,9 @@ function renderAsk(P) {
 const ASK_COPY = {
   en: {
     flag: "🇺🇸", code: "EN", label: "Answer in English",
-    hero: "Ask about the plans",
+    hero: "Hey, I'm Geo",
+    bar: "Geo · answers from the plans on this page",
+    sub: "Ask me which overlaps matter, what the two utilities could share, or why a pair is not on the list.",
     scopePair: (n, who, pairs) => `I answer from the data on this page — ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
     scopeSolo: (n, who) => `I answer from the data on this page — ${n} planned projects from ${who}. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
     head: "What I can do for you",
@@ -5412,7 +5489,9 @@ const ASK_COPY = {
   },
   es: {
     flag: "🇪🇸", code: "ES", label: "Responder en español",
-    hero: "Preguntá sobre los planes",
+    hero: "Hola, soy Geo",
+    bar: "Geo · responde con los planes de esta página",
+    sub: "Preguntame qué solapes importan, qué podrían compartir las dos utilities, o por qué un par no está en la lista.",
     scopePair: (n, who, pairs) => `Respondo con los datos de esta página — ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
     scopeSolo: (n, who) => `Respondo con los datos de esta página — ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
     head: "Qué puedo hacer por vos",
@@ -5441,6 +5520,7 @@ function askWelcome() {
   const who = solo() ? esc(lblLong(state.utilA)) : `${esc(lblLong(state.utilA))} ${askLang() === "es" ? "y" : "and"} ${esc(lblLong(state.utilB))}`;
   return `<div class="msg hint welcome">
     <p class="ask-hero">${SPARK}${esc(C.hero)}</p>
+    <p class="ask-sub">${esc(C.sub)}</p>
     <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
     <p class="wl-head">${esc(C.head)}</p>
     <ul class="wl">${C.items.map(([b, rest]) => `<li><b>${b}</b> ${esc(rest)}</li>`).join("")}</ul>
@@ -5449,7 +5529,7 @@ function askWelcome() {
 }
 
 // The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
-const SPARK = `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>`;
+const SPARK = `<svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
   open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal",
@@ -5713,7 +5793,7 @@ function openScheduleBrief(o, narrative) {
     <p class="b-foot">${esc(D.footSchedule)}</p>`;
   showBrief();
 }
-const briefNote = text => text ? `<p class="b-note"><span>Assistant summary</span>${esc(String(text).slice(0, 1200))}</p>` : "";
+const briefNote = text => text ? `<p class="b-note"><span>Summary by Geo</span>${esc(String(text).slice(0, 1200))}</p>` : "";
 let returnFocus = null;
 function lockApp(on) { document.body.classList.toggle("modal-open", on); }
 function showBrief() { returnFocus = document.activeElement; $("#brief").hidden = false; lockApp(true); $("#briefClose").focus(); }
@@ -5996,7 +6076,7 @@ $("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refr
 for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => { state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh(); };
 document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { state.horizon = +b.dataset.h; document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", o === b)); refresh(); });
 $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
-for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
+for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); renderMap(); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
@@ -6006,6 +6086,9 @@ $("#share").onclick = () => {
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
 };
 $("#askFab").onclick = () => { toggleTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
+$("#geoHiX").onclick = () => { store.set("askSeen", true); $("#geoHi").hidden = true; renderTabs(); };
+// Geo's button and greeting sit just above the legend, whatever height the legend has.
+new ResizeObserver(() => { const lg = $("#legend"); $(".mapwrap").style.setProperty("--legend-h", (lg && lg.offsetParent ? lg.offsetHeight + 10 : 0) + "px"); }).observe($("#legend"));
 document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
 $("#railTl").onclick = () => {
