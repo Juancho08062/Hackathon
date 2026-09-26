@@ -380,6 +380,8 @@ svg text{font-family:var(--body)}
 .m3d-tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;color:#fff;background:rgba(8,18,24,.8);border:1px solid rgba(255,255,255,.14);border-left:4px solid var(--c);padding:3px 8px;border-radius:4px}
 .m3d-tag.big{font-size:13px}
 .m3d-tag.small{font-size:11px;font-weight:500}
+.m3d-tag-x{pointer-events:auto;margin:-2px -4px -2px 6px;padding:0 4px;border:0;border-radius:3px;background:none;color:rgba(255,255,255,.6);font:inherit;line-height:1.2;cursor:pointer}
+.m3d-tag-x:hover,.m3d-tag-x:focus-visible{color:#fff;background:rgba(255,255,255,.16)}
 .m3d-tag.tick{font-size:10px;font-weight:600;padding:1px 5px;border-left-width:3px}
 body.m3d-open .app{visibility:hidden}
 /* While a dialog is open the app behind it is neither tabbable nor readable, which is what aria-modal already

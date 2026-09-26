@@ -1495,6 +1495,15 @@ function closeBrief() { $("#brief").hidden = true; lockApp(false); if (returnFoc
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => Scene3D.qualityKey(store.get("3dquality", "detailed"));
+// A project's own measurements for its 3D tag: a line's length (as published, or measured along its mapped route),
+// voltage and typical cleared right-of-way; a substation or plant has no published footprint, so only its voltage.
+function measure3d(p) {
+  const kv = p.kv ? `${p.kv} kV` : null;
+  if (!Engine.isLine(p) && !p.miles) return [p.type === "generation" ? "Plant" : "Substation", kv, "footprint not published"].filter(Boolean).join(" · ");
+  const L = Engine.lengthKm(p), mi = L / 1.609344, row = p.kv >= 500 ? [200, 61] : p.kv >= 230 ? [150, 46] : [100, 30];
+  const len = `${L < 10 ? +L.toFixed(1) : Math.round(L)} km · ${mi < 10 ? +mi.toFixed(1) : Math.round(mi)} mi ${p.miles ? "long" : "as mapped"}`;
+  return [len, kv, `${row[0]} ft (${row[1]} m) typical right-of-way`].filter(Boolean).join(" · ");
+}
 function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
   Scene3D.open(x, Object.assign({
@@ -1503,6 +1512,7 @@ function open3d(x, extra) {
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
+    measureA: measure3d(x.p), measureB: measure3d(x.q),
   }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
@@ -1812,6 +1822,7 @@ $("#briefCopy").onclick = () => navigator.clipboard.writeText($("#briefDoc").inn
 $("#brief").addEventListener("click", e => { if (e.target.id === "brief") closeBrief(); });
 const setLabels3d = on => {
   $("#m3dStage").classList.toggle("nolabels", !on);
+  if (on && Scene3D.restoreTags) Scene3D.restoreTags();
   $("#m3dLabels").setAttribute("aria-pressed", on); $("#m3dLabels").textContent = on ? "Labels on" : "Labels off";
   store.set("3dlabels", on ? "on" : "off");
 };
