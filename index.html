@@ -2581,7 +2581,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       for (let i = 0; i < 48; i++) for (let j = 0; j < 48; j++) ss.push(dem.at(F.latAt((j / 47 * 2 - 1) * H), F.lonAt((i / 47 * 2 - 1) * H)));
       ss.sort((a, b) => a - b);
       const base = ss[Math.floor(ss.length * 0.03)], top = ss[Math.floor(ss.length * 0.99)], span = Math.max(1, top - base);
-      const ex = Math.max(2, Math.min(25, 6 / (span / 1000 * S)));
+      const ex = Math.max(1, Math.min(5, 6 / (span / 1000 * S))); // kept modest so slopes and bluffs look like the real ones
       const k = S / 1000 * ex;
       heightAt = (x, z) => Math.max(-1.2, (dem.at(F.latAt(z), F.lonAt(x)) - base) * k - 0.15); // lowest ground sits just under the water
       relief = { ex, low: base, high: top };
@@ -2636,6 +2636,30 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const a = Y(ix, iz), b = Y(ix, iz + 1), c = Y(ix + 1, iz + 1), d = Y(ix + 1, iz);
       return fx + fz <= 1 ? a + (d - a) * fx + (b - a) * fz : c + (b - c) * (1 - fx) + (d - c) * (1 - fz);
     };
+    // A flat strip laid on the drawn ground along a path, w scene units wide (a right-of-way, a painted line).
+    // Returns the strip and its two edges, so a boundary can be outlined.
+    // over the river the strip rides the water surface (with real terrain the water sits at 0.02)
+    const surf = (x, z) => dem ? Math.max(0.02, groundAt(x, z)) : groundAt(x, z);
+    const drape = (path, w, mat, off = 0.04) => {
+      const xz = [], P = [], I = [], edges = [[], []], step = GC * 0.5;
+      for (let i = 1; i < path.length; i++) {
+        const a = path[i - 1], b = path[i], n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / step));
+        for (let k = i === 1 ? 0 : 1; k <= n; k++) xz.push([a.x + (b.x - a.x) * k / n, a.z + (b.z - a.z) * k / n]);
+      }
+      xz.forEach(([x, z], i) => {
+        const pa = xz[Math.max(0, i - 1)], pb = xz[Math.min(xz.length - 1, i + 1)], l = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) || 1;
+        const nx = -(pb[1] - pa[1]) / l, nz = (pb[0] - pa[0]) / l;
+        [-1, 1].forEach((sd, e) => { const X = x + nx * sd * w / 2, Z = z + nz * sd * w / 2, Y = surf(X, Z) + off; P.push(X, Y, Z); edges[e].push(new T.Vector3(X, Y + 0.01, Z)); });
+        if (i) { const o = (i - 1) * 2; I.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); }
+      });
+      const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(P, 3)); g.setIndex(I); g.computeVertexNormals();
+      const m = new T.Mesh(g, mat); m.receiveShadow = true; scene.add(m);
+      return { m, edges };
+    };
+    const flat = (color, opacity = 1) => new T.MeshLambertMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const outline = (pts, color) => { const l = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color })); scene.add(l); return l; };
+    // Typical cleared right-of-way widths: about 100 ft at 115 kV, 150 ft at 230 kV, 200 ft at 500 kV.
+    const rowM = kv => kv >= 500 ? 61 : kv >= 230 ? 46 : 30, mU = S / 1000;
     // speckled grass texture, multiplied over the vertex colors
     const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
@@ -2727,6 +2751,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           obstacles.push([v.x, v.z, 1.6 * TS]);
         });
         steelI.castShadow = accI.castShadow = insI.castShadow = true; scene.add(steelI, accI, insI);
+        // the cleared right-of-way at its real width, mowed lighter than the fields, with its limits marked
+        const row = drape(pts, rowM(p.kv) * mU, flat(0xcfc792, 0.32), 0.03);
+        row.edges.forEach(e => outline(e, colorHex));
         // sagging conductors between towers
         const cond = [], shield = [], balls = [], SH = heads[0].length - 1;
         for (let i = 1; i < heads.length; i++) heads[i].forEach((b, k) => {
@@ -2761,31 +2788,61 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     // ---------- the closest-point link and what the tier lets them share ----------
     const va = toV(pair.ca), vb = toV(pair.cb), tierHex = new T.Color(opts.tierColor).getHex();
     const mid = va.clone().lerp(vb, 0.5), pulse = [];
-    const glow = c => new T.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.5, blending: T.AdditiveBlending, depthWrite: false, fog: false });
+    const dirAB = vb.clone().sub(va); dirAB.y = 0; if (dirAB.lengthSq() < 1e-6) dirAB.set(1, 0, 0); dirAB.normalize();
+    const perp = new T.Vector3(dirAB.z, 0, -dirAB.x);
+    // How the gap is marked on site: a surveyor's stake with flagging tape at each closest point, a painted line on
+    // the ground between them (its length is the real gap, to scale), and a short marker post at every even step.
+    // Stakes and posts are drawn a few times life size so they can be found from the air; the line itself is not.
+    const kS = U * 2.2 * Math.min(1.6, TS), wood = pbr(T, 0xb08a5a, { rough: 0.9 }), paint = pbr(T, 0xff5a1f, { rough: 0.6 });
+    const tape = new T.MeshLambertMaterial({ color: 0xff3d9a, side: T.DoubleSide });
+    // a surveyor's range pole (red and white half-meter bands) with flagging tape, set on each closest point
+    const white = pbr(T, 0xf2f2ee, { rough: 0.6 }), red = pbr(T, 0xd8322a, { rough: 0.6 });
+    const stake = v => {
+      const g = new T.Group();
+      for (let k = 0; k < 5; k++) g.add(mesh(T, new T.CylinderGeometry(0.05 * kS, 0.05 * kS, 0.5 * kS, 8).translate(0, (k + 0.5) * 0.5 * kS, 0), k % 2 ? white : red));
+      g.add(mesh(T, new T.BoxGeometry(0.4 * kS, 0.08 * kS, 0.4 * kS).translate(0, 0.04 * kS, 0), wood)); // hub stake driven flush, painted
+      g.add(mesh(T, new T.BoxGeometry(0.1 * kS, 0.06 * kS, 0.1 * kS).translate(0, 0.1 * kS, 0), paint));
+      [[0.06, 0.3], [-0.05, -0.35]].forEach(([x, r]) => { const f = new T.Mesh(new T.PlaneGeometry(0.06 * kS, 0.6 * kS), tape); f.position.set(x * kS, 2.2 * kS, 0.05 * kS); f.rotation.set(0.1, r, r * 0.4); g.add(f); });
+      g.userData.kind = "stake"; g.position.set(v.x, surf(v.x, v.z), v.z); g.rotation.y = Math.atan2(dirAB.x, dirAB.z); scene.add(g);
+      solids.push([v.x, v.z, 0.2 * kS]);
+    };
+    stake(va); if (pair.km > 0.1) stake(vb);
+    const fmtD = d => d < 1 ? Math.round(d * 1000) + " m" : (d < 10 ? +d.toFixed(2) : +d.toFixed(1)) + " km";
+    let every = null;
     if (pair.km > 0.1) {
-      const arc = [], lift = Math.min(6, 0.8 + va.distanceTo(vb) * 0.18);
-      for (let i = 0; i <= 40; i++) { const t = i / 40, v = va.clone().lerp(vb, t); v.y += 0.3 + lift * 4 * t * (1 - t); arc.push(v); }
-      const link = new T.Line(new T.BufferGeometry().setFromPoints(arc), new T.LineDashedMaterial({ color: tierHex, dashSize: 0.7, gapSize: 0.45 }));
-      link.computeLineDistances(); scene.add(link);
-      [va, vb].forEach(v => { const m = new T.Mesh(new T.SphereGeometry(0.35, 12, 8), new T.MeshBasicMaterial({ color: tierHex })); m.position.copy(v).add(new T.Vector3(0, 0.3, 0)); scene.add(m); pulse.push({ m, kind: "dot" }); });
-      mid.y = Math.max(va.y, vb.y) + lift;
+      const w = Math.max(0.16, Math.min(0.45, pair.km * S * 0.012));
+      // edged in the tier color, which stays a pixel wide from any height so the gap can be followed from the air
+      drape([va, vb], w, flat(0xf4f1e6), 0.08).edges.forEach(e => outline(e, tierHex));
+      // end caps and step ticks painted across the line, a marker post beside each tick
+      const cross = (v, len) => drape([v.clone().addScaledVector(perp, -len / 2), v.clone().addScaledVector(perp, len / 2)], w, flat(0xf4f1e6), 0.08);
+      cross(va, w * 9); cross(vb, w * 9);
+      const step = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10].find(st => pair.km / st <= 10) || 10, n = Math.floor(pair.km / step - 1e-6);
+      if (n >= 1) {
+        const post = new T.InstancedMesh(new T.BoxGeometry(0.08 * kS, 1.2 * kS, 0.08 * kS).translate(0, 0.6 * kS, 0), pbr(T, 0xf2f2ee, { rough: 0.7 }), n);
+        const cap = new T.InstancedMesh(new T.BoxGeometry(0.085 * kS, 0.2 * kS, 0.085 * kS).translate(0, 1.1 * kS, 0), pbr(T, tierHex, { rough: 0.6 }), n);
+        for (let j = 1; j <= n; j++) {
+          const v = va.clone().lerp(vb, j * step / pair.km), major = j % 5 === 0;
+          cross(v, w * (major ? 7 : 4));
+          const pp = v.clone().addScaledVector(perp, w * 5); mtx.makeTranslation(pp.x, surf(pp.x, pp.z), pp.z); post.setMatrixAt(j - 1, mtx); cap.setMatrixAt(j - 1, mtx);
+        }
+        post.castShadow = true; scene.add(post, cap);
+        every = fmtD(step);
+      }
     }
-    const beamM = new T.Mesh(new T.CylinderGeometry(0.28, 0.28, 30, 12, 1, true), glow(tierHex)); beamM.position.set(mid.x, heightAt(mid.x, mid.z) + 15, mid.z); scene.add(beamM); pulse.push({ m: beamM, kind: "beam" });
-    const ring = new T.Mesh(new T.RingGeometry(1.6, 2.1, 40), glow(tierHex)); ring.rotation.x = -Math.PI / 2; ring.position.set(mid.x, heightAt(mid.x, mid.z) + 0.12, mid.z); scene.add(ring); pulse.push({ m: ring, kind: "ring" });
+    mid.y = surf(mid.x, mid.z);
+    const mi = pair.km / 1.609344, gapText = pair.km > 0.1 ? `${fmtD(pair.km)} · ${mi < 10 ? +mi.toFixed(2) : +mi.toFixed(1)} mi between closest points` : "The two projects cross here";
 
     const labels = [
-      makeLabel(opts.distText, opts.tierColor, new T.Vector3(mid.x, mid.y + 4.5, mid.z), "big"),
+      makeLabel(`${gapText}${every ? ` · a post every ${every}` : ""}`, opts.tierColor, new T.Vector3(mid.x, mid.y + 2.2 * Math.min(1.6, TS), mid.z), "big"),
       makeLabel(opts.nameA, opts.colorA, new T.Vector3(A.anchor.x, A.anchor.y + A.top + 1.6, A.anchor.z)),
       makeLabel(opts.nameB, opts.colorB, new T.Vector3(B.anchor.x, B.anchor.y + B.top + 1.6, B.anchor.z)),
     ];
-    const dirAB = vb.clone().sub(va); dirAB.y = 0; if (dirAB.lengthSq() < 1e-6) dirAB.set(1, 0, 0); dirAB.normalize();
-    const perp = new T.Vector3(dirAB.z, 0, -dirAB.x);
     if (pair.tier <= 1) {
-      // shared right-of-way strip with a dirt access road down the middle
-      const len = Math.max(10, va.distanceTo(vb) + 8), ang = Math.atan2(dirAB.x, dirAB.z), gm = mid.clone(); gm.y = heightAt(mid.x, mid.z);
-      const corr = new T.Mesh(new T.PlaneGeometry(4, len), new T.MeshBasicMaterial({ color: tierHex, transparent: true, opacity: 0.25, depthWrite: false }));
-      corr.rotation.set(-Math.PI / 2, 0, ang); corr.position.set(gm.x, gm.y + 0.08, gm.z); scene.add(corr);
-      const road = mesh(T, new T.PlaneGeometry(0.9, len), pbr(T, 0xa58d68), false); road.rotation.set(-Math.PI / 2, 0, ang); road.position.set(gm.x, gm.y + 0.1, gm.z); scene.add(road);
+      // shared right-of-way at the wider of the two lines' real widths, with a gravel access road down the middle
+      const ext = Math.max(5, 4 * TS), gm = mid.clone(), e0 = va.clone().addScaledVector(dirAB, -ext), e1 = vb.clone().addScaledVector(dirAB, ext);
+      const shared = drape([e0, e1], Math.max(rowM(pair.p.kv), rowM(pair.q.kv)) * mU, flat(tierHex, 0.22), 0.035);
+      shared.edges.forEach(e => outline(e, tierHex));
+      drape([e0, e1], 5 * mU, flat(0xa58d68), 0.045);
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
@@ -2932,8 +2989,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       close(true);
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q, dem);
-      const ft = built.relief ? `Real ground elevation from ${built.demSource}, ${Math.round(built.relief.low)} to ${Math.round(built.relief.high)} m, heights stretched ×${built.relief.ex.toFixed(built.relief.ex < 10 ? 1 : 0)}.` : "Ground shape is illustrative (elevation tiles didn't load).";
-      document.getElementById("m3dFoot").textContent = `Drag to fly over the scene, right-drag or Ctrl-drag to turn, scroll to climb or descend. Distances along the ground are to scale; tower heights are exaggerated. ${ft}`;
+      const ft = built.relief ? `Real ground elevation from ${built.demSource}, ${Math.round(built.relief.low)} to ${Math.round(built.relief.high)} m, heights stretched ×${built.relief.ex.toFixed(1)} so the gentle slopes show.` : "Ground shape is illustrative (elevation tiles didn't load).";
+      document.getElementById("m3dFoot").textContent = `Drag to fly over the scene, right-drag or Ctrl-drag to turn, scroll to climb or descend. The painted gap line, its marker posts and the right-of-way widths are true to scale; towers, stakes and vehicles are drawn larger so they can be seen. ${ft}`;
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       // nothing that casts a shadow moves, so the shadow map is drawn once instead of every frame
