@@ -2640,8 +2640,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     // Returns the strip and its two edges, so a boundary can be outlined.
     // over the river the strip rides the water surface (with real terrain the water sits at 0.02)
     const surf = (x, z) => dem ? Math.max(0.02, groundAt(x, z)) : groundAt(x, z);
-    const drape = (path, w, mat, off = 0.04) => {
-      const xz = [], P = [], I = [], edges = [[], []], step = GC * 0.5;
+    const stripGeo = (path, w, off, edges = [[], []]) => {
+      const xz = [], P = [], I = [], step = GC * 0.5;
       for (let i = 1; i < path.length; i++) {
         const a = path[i - 1], b = path[i], n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / step));
         for (let k = i === 1 ? 0 : 1; k <= n; k++) xz.push([a.x + (b.x - a.x) * k / n, a.z + (b.z - a.z) * k / n]);
@@ -2653,8 +2653,25 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         if (i) { const o = (i - 1) * 2; I.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); }
       });
       const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(P, 3)); g.setIndex(I); g.computeVertexNormals();
-      const m = new T.Mesh(g, mat); m.receiveShadow = true; scene.add(m);
+      return g;
+    };
+    const drape = (path, w, mat, off = 0.04) => {
+      const edges = [[], []], m = new T.Mesh(stripGeo(path, w, off, edges), mat); m.receiveShadow = true; scene.add(m);
       return { m, edges };
+    };
+    // Survey marks keep a minimum size on screen: each frame the renderer passes the world size of one pixel at the
+    // mark, and a mark smaller than its minimum grows (a strip gets wider, a pole taller). Lengths never change.
+    const marks = [];
+    const strip = (a, b, w, mat, off, minPx, grow) => {
+      const c = a.clone().lerp(b, 0.5), s = drape([a, b], w, mat, off);
+      let f0 = 1;
+      marks.push({ at: c, fit: px => {
+        const f = Math.max(1, minPx * px / w);
+        if (Math.abs(f - f0) < 0.06 * f0) return;
+        f0 = f; s.m.geometry.dispose();
+        s.m.geometry = stripGeo(grow ? [c.clone().lerp(a, f), c.clone().lerp(b, f)] : [a, b], w * f, off);
+      } });
+      return s;
     };
     const flat = (color, opacity = 1) => new T.MeshLambertMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     const outline = (pts, color) => { const l = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color })); scene.add(l); return l; };
@@ -2799,22 +2816,37 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const white = pbr(T, 0xf2f2ee, { rough: 0.6 }), red = pbr(T, 0xd8322a, { rough: 0.6 });
     const stake = v => {
       const g = new T.Group();
-      for (let k = 0; k < 5; k++) g.add(mesh(T, new T.CylinderGeometry(0.05 * kS, 0.05 * kS, 0.5 * kS, 8).translate(0, (k + 0.5) * 0.5 * kS, 0), k % 2 ? white : red));
-      g.add(mesh(T, new T.BoxGeometry(0.4 * kS, 0.08 * kS, 0.4 * kS).translate(0, 0.04 * kS, 0), wood)); // hub stake driven flush, painted
-      g.add(mesh(T, new T.BoxGeometry(0.1 * kS, 0.06 * kS, 0.1 * kS).translate(0, 0.1 * kS, 0), paint));
+      for (let k = 0; k < 5; k++) g.add(mesh(T, new T.CylinderGeometry(0.05 * kS, 0.05 * kS, 0.5 * kS, 8).translate(0, (k + 0.5) * 0.5 * kS, 0), k % 2 ? white : red, false));
+      g.add(mesh(T, new T.BoxGeometry(0.4 * kS, 0.08 * kS, 0.4 * kS).translate(0, 0.04 * kS, 0), wood, false)); // hub stake driven flush, painted
+      g.add(mesh(T, new T.BoxGeometry(0.1 * kS, 0.06 * kS, 0.1 * kS).translate(0, 0.1 * kS, 0), paint, false));
       [[0.06, 0.3], [-0.05, -0.35]].forEach(([x, r]) => { const f = new T.Mesh(new T.PlaneGeometry(0.06 * kS, 0.6 * kS), tape); f.position.set(x * kS, 2.2 * kS, 0.05 * kS); f.rotation.set(0.1, r, r * 0.4); g.add(f); });
       g.userData.kind = "stake"; g.position.set(v.x, surf(v.x, v.z), v.z); g.rotation.y = Math.atan2(dirAB.x, dirAB.z); scene.add(g);
       solids.push([v.x, v.z, 0.2 * kS]);
+      // at least 56 px tall and 6 px thick, so the pole stands out even where it sits among a crossing's towers
+      marks.push({ at: g.position, fit: px => { const h = Math.max(1, 56 * px / (2.5 * kS)); g.scale.set(Math.min(h, Math.max(1, 6 * px / (0.1 * kS))), h, Math.min(h, Math.max(1, 6 * px / (0.1 * kS)))); } });
     };
-    stake(va); if (pair.km > 0.1) stake(vb);
+    if (pair.km > 0.1) { stake(va); stake(vb); } else {
+      // where the lines cross, a tower usually stands on the point, so the pole goes on the nearest clear ground as a
+      // witness stake (what a crew sets when the point itself is taken), with a painted cross on the crossing
+      let at = va;
+      for (let rad = 1.5 * TS; rad < 12 * TS && at === va; rad += 0.5 * TS) for (let k = 0; k < 12 && at === va; k++) {
+        const c = va.clone().add(new T.Vector3(Math.cos(k * Math.PI / 6) * rad, 0, Math.sin(k * Math.PI / 6) * rad));
+        if (obstacles.every(([ox, oz, r]) => Math.hypot(c.x - ox, c.z - oz) > r * 0.8 + 0.4)) at = c;
+      }
+      stake(at);
+      const x = 0.25 * TS;
+      for (const d of [dirAB.clone().add(perp), dirAB.clone().sub(perp)]) { d.normalize(); strip(va.clone().addScaledVector(d, -1.2 * TS), va.clone().addScaledVector(d, 1.2 * TS), x, flat(0xff5a1f), 0.09, 4); }
+      if (at !== va) strip(va, at, x * 0.6, flat(0xfbfaf4), 0.08, 3);
+    }
     const fmtD = d => d < 1 ? Math.round(d * 1000) + " m" : (d < 10 ? +d.toFixed(2) : +d.toFixed(1)) + " km";
     let every = null;
     if (pair.km > 0.1) {
       const w = Math.max(0.16, Math.min(0.45, pair.km * S * 0.012));
-      // edged in the tier color, which stays a pixel wide from any height so the gap can be followed from the air
-      drape([va, vb], w, flat(0xf4f1e6), 0.08).edges.forEach(e => outline(e, tierHex));
+      // white paint over a dark casing, so the line reads over grass, sand and water alike
+      strip(va, vb, w * 2, flat(0x1d2328), 0.07, 9);
+      strip(va, vb, w, flat(0xfbfaf4), 0.08, 4);
       // end caps and step ticks painted across the line, a marker post beside each tick
-      const cross = (v, len) => drape([v.clone().addScaledVector(perp, -len / 2), v.clone().addScaledVector(perp, len / 2)], w, flat(0xf4f1e6), 0.08);
+      const cross = (v, len) => strip(v.clone().addScaledVector(perp, -len / 2), v.clone().addScaledVector(perp, len / 2), w, flat(0xfbfaf4), 0.085, 3, true);
       cross(va, w * 9); cross(vb, w * 9);
       const step = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10].find(st => pair.km / st <= 10) || 10, n = Math.floor(pair.km / step - 1e-6);
       if (n >= 1) {
@@ -2823,9 +2855,14 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         for (let j = 1; j <= n; j++) {
           const v = va.clone().lerp(vb, j * step / pair.km), major = j % 5 === 0;
           cross(v, w * (major ? 7 : 4));
-          const pp = v.clone().addScaledVector(perp, w * 5); mtx.makeTranslation(pp.x, surf(pp.x, pp.z), pp.z); post.setMatrixAt(j - 1, mtx); cap.setMatrixAt(j - 1, mtx);
+          const pp = v.clone().addScaledVector(perp, w * 5); pp.y = surf(pp.x, pp.z);
+          const set = k => { mtx.makeScale(k, k, k).setPosition(pp); post.setMatrixAt(j - 1, mtx); cap.setMatrixAt(j - 1, mtx); post.instanceMatrix.needsUpdate = cap.instanceMatrix.needsUpdate = true; };
+          set(1);
+          // at least 22 px tall, stepping out from the line as it grows so it never stands on the paint
+          let k0 = 1;
+          marks.push({ at: pp, fit: px => { const k = Math.max(1, 22 * px / (1.2 * kS)); if (Math.abs(k - k0) > 0.06 * k0) { k0 = k; pp.copy(v).addScaledVector(perp, w * 5 * k); pp.y = surf(pp.x, pp.z); set(k); } } });
         }
-        post.castShadow = true; scene.add(post, cap);
+        scene.add(post, cap);
         every = fmtD(step);
       }
     }
@@ -2833,7 +2870,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const mi = pair.km / 1.609344, gapText = pair.km > 0.1 ? `${fmtD(pair.km)} · ${mi < 10 ? +mi.toFixed(2) : +mi.toFixed(1)} mi between closest points` : "The two projects cross here";
 
     const labels = [
-      makeLabel(`${gapText}${every ? ` · a post every ${every}` : ""}`, opts.tierColor, new T.Vector3(mid.x, mid.y + 2.2 * Math.min(1.6, TS), mid.z), "big"),
+      makeLabel(`${gapText}${every ? ` · a post every ${every}` : ""}`, opts.tierColor, new T.Vector3(mid.x, mid.y + 4.5 * Math.min(1.6, TS), mid.z), "big"),
       makeLabel(opts.nameA, opts.colorA, new T.Vector3(A.anchor.x, A.anchor.y + A.top + 1.6, A.anchor.z)),
       makeLabel(opts.nameB, opts.colorB, new T.Vector3(B.anchor.x, B.anchor.y + B.top + 1.6, B.anchor.z)),
     ];
@@ -2846,13 +2883,15 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
+      // distance from the painted gap line, so the yard never sits on top of it
+      const offGap = (x, z) => { const ax = vb.x - va.x, az = vb.z - va.z, t = Math.max(0, Math.min(1, ((x - va.x) * ax + (z - va.z) * az) / (ax * ax + az * az || 1))); return Math.hypot(x - va.x - ax * t, z - va.z - az * t); };
       // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
       const yd = yardGroup(T, 12, 8, K), yr = 7.4 * TS;
       let spot = null;
       for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
         const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
         const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
-        if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
+        if (Math.hypot(x, z) < R * 1.05 && offGap(x, z) > yr + 3 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
       }
       if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
       yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 6.6 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
@@ -2969,7 +3008,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene, REAL ? 0.55 : 0.35);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, groundAt, toV, TS, R, obstacles, solids, water: !!dem, walkStart };
+    return { scene, sky, marks, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, groundAt, toV, TS, R, obstacles, solids, water: !!dem, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -3238,6 +3277,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           p.scale.setScalar((u.big ? 1.6 : 0.8) * (0.6 + k * 2.4));
           p.material.opacity = 0.8 * Math.min(1, k * 6) * (1 - k);
         });
+        // one pixel in world units at a mark: its distance times the view's height in world units per pixel
+        const pxAt = 2 * Math.tan(cam.fov * Math.PI / 360) / Math.max(1, stageH);
+        built.marks.forEach(mk => mk.fit(cam.position.distanceTo(mk.at) * pxAt));
         built.pulse.forEach(({ m, kind }) => {
           if (kind === "ring") { const k = (t * 0.5) % 1; m.scale.setScalar(0.6 + k * 1.8); m.material.opacity = 0.7 * (1 - k); }
           else if (kind === "beam") m.material.opacity = 0.28 + 0.14 * Math.sin(t * 2.4);
