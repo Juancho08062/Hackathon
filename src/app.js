@@ -27,6 +27,7 @@ const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
   tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  grid: true,
   basemap: ["plain", "relief", "satellite", "topo"].includes(store.get("basemap", "plain")) ? store.get("basemap", "plain") : "plain",
 };
 const STATUS = store.get("status", {});
@@ -189,6 +190,7 @@ function mapClick(hit) {
 }
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
+  if (hit.layer === "grid") return tip(ev, `<b>Existing ${hit.kv} kV line</b>${hit.op ? "<br>" + esc(hit.op) : ""}<br><span style="opacity:.7">OpenStreetMap</span>`);
   const p = PROJECTS.find(v => v.id === hit.id) || EXIST.find(v => v.id === hit.id);
   if (p) return showTip(ev, p);
   const x = VIEW.find(v => keyOf(v) === hit.id);
@@ -204,6 +206,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
@@ -993,6 +996,7 @@ function readHash() {
   if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
   if (num("h") != null) state.horizon = num("h");
   if (h.get("past") === "0") state.past = false;
+  if (h.get("grid") === "0") state.grid = false;
   if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
   if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
   const cam = (h.get("cam") || "").split(",").map(Number);
@@ -1031,6 +1035,7 @@ function writeHash() {
     if (state.mode !== "near") h.set("m", state.mode);
     if (state.horizon) h.set("h", state.horizon);
     if (!state.past) h.set("past", "0");
+    if (!state.grid) h.set("grid", "0");
     if (state.tab !== "overlaps") h.set("tab", state.tab);
     const x = state.sel;
     if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
@@ -1094,6 +1099,7 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v;
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#bgrid").onclick = () => { state.grid = !state.grid; $("#bgrid").setAttribute("aria-pressed", state.grid); SeamMap.setGrid(state.grid); legend(); writeHash(); };
 $("#share").onclick = () => {
   clearTimeout(hashTimer); writeHash();
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
@@ -1165,6 +1171,7 @@ SeamMap.init($("#map"), BASE, {
 }).then(() => {
   mapReady = true;
   SeamMap.setBasemap(state.basemap);
+  SeamMap.setGrid(state.grid); $("#bgrid").setAttribute("aria-pressed", state.grid);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
   if (!applyPendingView()) fitAll(0);
