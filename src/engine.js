@@ -92,7 +92,27 @@
   // Planning-level unit costs, used only when a plan lists no cost.
   const PER_KM = { new_line: { 500: 2.5e6, 230: 1.4e6, 115: 0.95e6, 46: 0.6e6 }, rebuild: { 500: 1.25e6, 230: 0.75e6, 115: 0.55e6, 46: 0.4e6 } };
   const SUB = { 500: 60e6, 230: 25e6, 115: 8e6, 46: 4e6 };
-  const ASSUME = { mobPct: 0.05, mobShare: 0.5, yard: 400e3, rowKm: 1.0, rowWidthM: 45, landPerHa: 37e3, access: 90e3, permits: 150e3, outage: 250e3 };
+  // Unit costs behind each shared item. Planning assumptions, editable in the app's Cost assumptions panel.
+  // "check" names a public source to compare against; the values are Seamline's round planning numbers, not quotes from it.
+  const ASSUMPTIONS = [
+    { key: "outage", group: "Touching or crossing", label: "Coordinated outage", unit: "$ per outage avoided", value: 250e3, check: "switching crews, standby and replacement power for one planned outage" },
+    { key: "crossing", group: "Touching or crossing", label: "Crossing structure design", unit: "$ per crossing", value: 120e3, check: "engineering and one set of crossing structures designed once" },
+    { key: "rowKm", group: "Under 1.6 km", label: "Shared corridor length", unit: "km", value: 1.0, check: "length where the two projects could run side by side" },
+    { key: "rowWidthM", group: "Under 1.6 km", label: "Right-of-way width", unit: "m", value: 45, check: "typical 115 to 230 kV easement is 30 to 45 m (100 to 150 ft)" },
+    { key: "landPerAcre", group: "Under 1.6 km", label: "Easement cost", unit: "$ per acre", value: 15e3, check: "compare with USDA NASS Land Values; easements usually cost more than the land's farm value" },
+    { key: "accessPerKm", group: "Under 1.6 km", label: "Access road", unit: "$ per km", value: 90e3, check: "gravel construction access road, grading and culverts" },
+    { key: "permits", group: "Under 1.6 km", label: "Permit package", unit: "$ per package", value: 150e3, check: "environmental review, wetlands and local permits filed once" },
+    { key: "yard", group: "Under 8 km", label: "Laydown yard", unit: "$ per yard", value: 400e3, check: "about 3 ha (7 acres) of lease, grading, fencing and security for the build" },
+    { key: "loads", group: "Under 8 km", label: "Shared deliveries", unit: "loads combined", value: 12, check: "heavy-haul loads that can share one trip" },
+    { key: "perLoad", group: "Under 8 km", label: "Heavy-haul trip", unit: "$ per load", value: 5e3, check: "oversize permit, escort and trucking for one load" },
+    { key: "mobPct", group: "Under 40 km", label: "Crew mobilization", unit: "% of project cost", value: 5, check: "mobilization is commonly 3 to 7% of construction cost" },
+    { key: "craneDays", group: "Under 40 km", label: "Crane days shared", unit: "days", value: 20, check: "days a crane can move between the two sites instead of two rentals" },
+    { key: "craneDay", group: "Under 40 km", label: "Crane rental", unit: "$ per day", value: 6.5e3, check: "crawler or truck crane with operator, compare with local rental rates" },
+    { key: "contractorPct", group: "Under 40 km", label: "Contractor overhead", unit: "% of project cost", value: 1, check: "bidding, supervision and site setup a shared contractor avoids" },
+    { key: "share", group: "All", label: "Each side’s share of a shared cost", unit: "%", value: 50, check: "a shared cost is split, so half of one side's cost is saved" },
+  ];
+  const DEFAULTS = Object.fromEntries(ASSUMPTIONS.map(a => [a.key, a.value]));
+  const ASSUME = Object.assign({}, DEFAULTS);
   const kvKey = kv => kv >= 500 ? 500 : kv >= 230 ? 230 : kv >= 115 ? 115 : 46;
   function estCost(p) {
     if (p.cost) return { v: p.cost, est: false };
@@ -100,19 +120,36 @@
     if (p.type === "substation") return { v: SUB[kvKey(p.kv)], est: true };
     return { v: PER_KM[p.type === "new_line" ? "new_line" : "rebuild"][kvKey(p.kv)] * Math.max(lengthKm(p), 3), est: true };
   }
+  // One line per shareable item, each with its own estimate and the math behind it.
   function savings(x) {
-    const A = ASSUME, items = [];
+    const A = ASSUME, items = [], sh = A.share / 100;
     const ca = estCost(x.p), cb = estCost(x.q), small = ca.v <= cb.v ? ca : cb;
-    if (x.tier <= 3 && x.sameWindow) items.push({ k: "Shared crews, cranes and contractors", v: small.v * A.mobPct * A.mobShare, how: `one mobilization instead of two: half of a ${A.mobPct * 100}% mobilization cost on the smaller project (${fmtMoney(small.v)}${small.est ? ", estimated" : ""})` });
-    if (x.tier <= 2 && x.sameWindow) items.push({ k: "One laydown yard and shared deliveries", v: A.yard, how: "about 3 ha yard lease, grading and security for the build" });
-    if (x.tier <= 1) {
-      const ha = A.rowKm * A.rowWidthM / 10;
-      items.push({ k: "Shared right-of-way, access roads and permits", v: ha * A.landPerHa + A.access + A.permits, how: `${ha.toFixed(1)} ha of ${A.rowWidthM} m corridor over ${A.rowKm} km at ${fmtMoney(A.landPerHa)}/ha, plus one access road and a joint permit package` });
+    const add = (share, k, v, how) => items.push({ share, k, v, how });
+    const sm = `${fmtMoney(small.v)}${small.est ? " est." : ""}`;
+    if (x.tier === 0) {
+      add("Outage timing", "One coordinated outage", A.outage, `one planned outage instead of two, ${fmtMoney(A.outage)}`);
+      add("Crossing structures", "Crossing designed once", A.crossing, `one crossing design and structure set, ${fmtMoney(A.crossing)}`);
     }
-    if (x.tier === 0) items.push({ k: "One coordinated outage and crossing design", v: A.outage, how: "one crossing outage and crew standby instead of two, with crossing structures designed once" });
+    if (x.tier <= 1) {
+      const acres = A.rowKm * 1000 * A.rowWidthM / 4046.86;
+      add("Right-of-way", "Shared right-of-way", acres * A.landPerAcre * sh, `${acres.toFixed(1)} acres (${A.rowKm} km × ${A.rowWidthM} m) × ${fmtMoney(A.landPerAcre)}/acre × ${A.share}%`);
+      add("Access roads", "Shared access road", A.rowKm * A.accessPerKm * sh, `${A.rowKm} km × ${fmtMoney(A.accessPerKm)}/km × ${A.share}%`);
+      add("Permits", "Joint permit package", A.permits * sh, `one ${fmtMoney(A.permits)} package instead of two × ${A.share}%`);
+    }
+    if (x.tier <= 2 && x.sameWindow) {
+      add("Laydown yards", "One laydown yard", A.yard * sh, `one ${fmtMoney(A.yard)} yard instead of two × ${A.share}%`);
+      add("Deliveries", "Combined deliveries", A.loads * A.perLoad * sh, `${A.loads} loads × ${fmtMoney(A.perLoad)} × ${A.share}%`);
+    }
+    if (x.tier <= 3 && x.sameWindow) {
+      add("Crews", "One crew mobilization", small.v * A.mobPct / 100 * sh, `${A.mobPct}% of the smaller project (${sm}) × ${A.share}%`);
+      add("Cranes", "Shared crane time", A.craneDays * A.craneDay * sh, `${A.craneDays} days × ${fmtMoney(A.craneDay)}/day × ${A.share}%`);
+      add("Contractors", "One contractor setup", small.v * A.contractorPct / 100 * sh, `${A.contractorPct}% of the smaller project (${sm}) × ${A.share}%`);
+    }
     return { items, total: items.reduce((s, i) => s + i.v, 0), ca, cb };
   }
-  const fmtMoney = c => c == null ? "" : c >= 1e6 ? "$" + (c / 1e6).toFixed(1) + "M" : "$" + Math.round(c / 1e3) + "K";
+  const setAssumptions = vals => { Object.assign(ASSUME, DEFAULTS); for (const [k, v] of Object.entries(vals || {})) if (k in DEFAULTS && isFinite(v) && v >= 0) ASSUME[k] = +v; };
+  const customized = () => ASSUMPTIONS.some(a => ASSUME[a.key] !== a.value);
+  const fmtMoney = c => c == null ? "" : c >= 1e6 ? "$" + (c / 1e6).toFixed(1) + "M" : c >= 1e4 || c === 0 ? "$" + Math.round(c / 1e3) + "K" : c >= 1e3 ? "$" + +(c / 1e3).toFixed(1) + "K" : "$" + Math.round(c);
 
   // ---------- pairing and ranking ----------
   // opts: { utilA, utilB, maxKm, bufferMonths, mode: "near" | "both" | "time" }
@@ -137,6 +174,6 @@
     return { pairs: out, checked: A.length * B.length };
   }
 
-  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
+  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);

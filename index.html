@@ -220,7 +220,25 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .sg .sl{font-size:12px;font-weight:600;color:var(--c)}
 .sg .chips{margin:0}
 .sg em{grid-column:2;font-style:normal;font-size:11px;color:var(--ink3)}
-.sg.off .chip{opacity:.45}
+.sg.off .si{opacity:.5}
+.si{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.si li{display:grid;grid-template-columns:1fr auto;gap:0 10px;font-size:13px}
+.si b{font-family:var(--mono);font-weight:600;font-size:12px;text-align:right}
+.si small{grid-column:1/-1;color:var(--ink2);font-size:11px}
+.sg{align-items:start}
+.asm-lede{margin:0;padding:10px 16px 0;max-width:90ch}
+.asm-wrap{overflow-x:auto;padding:4px 16px 14px}
+.asm{width:100%;border-collapse:collapse;font-size:13px}
+.asm th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600;padding:8px 10px 6px 0;border-bottom:1px solid var(--line)}
+.asm td{padding:5px 10px 5px 0;border-bottom:1px solid var(--grid);vertical-align:middle}
+.asm td:last-child{color:var(--ink2);font-size:12px}
+.asm .ag td{font-weight:600;color:var(--seam);padding-top:12px;font-size:12px;border-bottom:0}
+.asm input{width:110px;font-family:var(--mono);font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.asm .u{margin-left:6px;font-size:11px;color:var(--ink3);white-space:nowrap}
+.asm .chg input{border-color:var(--seam);box-shadow:0 0 0 1px var(--seam)}
+.asm em{font-style:normal;color:var(--seam);font-size:11px;white-space:nowrap}
+.card>h2 .btn{font-family:var(--body);font-size:12px}
+@media (max-width:640px){.asm td:last-child,.asm th:last-child{display:none}.asm input{width:90px}}
 .whatif{display:grid;gap:8px;padding:12px;border-radius:var(--r-sm);background:var(--panel);box-shadow:inset 0 0 0 1px var(--grid)}
 .whatif .dh{flex-wrap:wrap}
 .whatif .seg button{font-size:12px;padding:4px 10px}
@@ -250,7 +268,7 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .b-kpis b{display:block;font-family:var(--display);font-size:26px;font-weight:600;line-height:1.05}
 .b-kpis span{font-size:12px;color:#4A5B62}
 .brief h4{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin:16px 0 6px;color:#13222A}
-.b-tab{width:100%;border-collapse:collapse}
+.b-tab{width:100%;border-collapse:collapse;font-size:13px}
 .b-tab th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#4A5B62;border-bottom:1px solid #13222A;padding:4px 8px 4px 0}
 .b-tab td{padding:6px 8px 6px 0;border-bottom:1px solid #E4EAE9;vertical-align:top}
 .b-tab td span{font-size:11px;color:#4A5B62}
@@ -258,6 +276,7 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .b-tab .n{text-align:right;font-family:var(--mono);white-space:nowrap}
 .b-tab .tot td{font-weight:600;border-bottom:0}
 .brief ul,.brief ol{margin:0;padding-left:20px;display:grid;gap:3px}
+.b-note{margin:4px 0 0;font-size:11px;color:#4A5B62}
 .b-foot{margin:18px 0 0;padding-top:10px;border-top:1px solid #E4EAE9;font-size:11px;color:#4A5B62}
 @media (max-width:640px){.brief{padding:24px 20px}.b-grid{grid-template-columns:1fr}}
 @media print{
@@ -274,9 +293,10 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
   .b-kpis{gap:6px}
   .b-kpis b{font-size:20px}
   .brief h4{font-size:12.5px;margin:8px 0 2px}
+  .b-tab{font-size:10.5px}
   .b-tab td span{font-size:9.5px}
   /* two columns of steps; numbers live inside each column so they never reach into the neighbor */
-  .brief ol{columns:2;column-gap:28px;display:block;padding-left:0;list-style:none;counter-reset:step}
+  .brief ol{columns:2;column-gap:40px;display:block;padding-left:0;list-style:none;counter-reset:step}
   .brief ol li{break-inside:avoid;margin-bottom:3px;position:relative;padding-left:18px;counter-increment:step}
   .brief ol li::before{content:counter(step) ".";position:absolute;left:0;font-weight:600}
   .b-tab td{padding:3px 8px 3px 0}
@@ -461,10 +481,16 @@ svg text{font-family:var(--body)}
     <div class="tlwrap"><svg id="tl" role="img" aria-label="Timeline of flagged projects"></svg></div>
   </div>
 
+  <div class="card" id="assume">
+    <h2>Cost assumptions <em>planning estimates, not quotes; change any number and every saving updates</em> <button type="button" class="btn" id="asmReset" hidden>Reset to defaults</button></h2>
+    <p class="note asm-lede">Each shared item's saving is worked out from these unit costs. When one utility's cost is shared, each side saves its share (50% by default). A coordinated outage and a crossing designed once are counted in full. To check the numbers, compare them with USDA NASS Land Values for land, the MISO Transmission Cost Estimation Guide for line, road and yard costs, and local crane rental and heavy-haul rates.</p>
+    <div class="asm-wrap" id="asmBody"></div>
+  </div>
+
   <div class="foot">
     <div><b>Built-in data.</b> DESC: <a href="https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf" target="_blank" rel="noopener">SCRTP 2026 to 2030 project descriptions ($2M and above)</a>. Georgia: <a href="https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf" target="_blank" rel="noopener">SERTP 2026 preliminary expansion plan</a>, <a href="https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf" target="_blank" rel="noopener">2025 SERTP report</a>, and Georgia Power's pages for <a href="https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/callaway-thomson.html" target="_blank" rel="noopener">Callaway Road to Thomson</a> and <a href="https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/effingham-county.html" target="_blank" rel="noopener">Effingham County</a>. Georgia's grid is planned jointly by Georgia Power, Georgia Transmission and MEAG, so all three appear as one system.</div>
     <div><b>Method.</b> Distance is measured between the closest points of two projects, not their centers. Pairs within 40 km are flagged and tiered: touching, under 1.6 km, under 8 km, under 40 km. Ranking is tier first, then whether the build windows overlap, then distance. Plans list in-service dates, so construction start is estimated from type, voltage and length unless a start date is given.</div>
-    <div><b>Assumptions.</b> Public plans name substations, not coordinates, so built-in locations are placed by hand; dashed lines are best guesses. Grey markers are existing assets for reference. Cost model: the plan's cost where listed; otherwise about $2.5M/km for new 500 kV line, $1.4M/km at 230 kV, $0.95M/km at 115 kV, half that for rebuilds, and $60M, $25M or $8M for 500, 230 or 115 kV substations. Savings are half of a 5% mobilization cost (same window, under 40 km), one $400K laydown yard (under 8 km), shared right-of-way and permits (under 1.6 km) and one $250K outage (touching).</div>
+    <div><b>Assumptions.</b> Public plans name substations, not coordinates, so built-in locations are placed by hand; dashed lines are best guesses. Grey markers are existing assets for reference. Cost model: the plan's cost where listed; otherwise about $2.5M/km for new 500 kV line, $1.4M/km at 230 kV, $0.95M/km at 115 kV, half that for rebuilds, and $60M, $25M or $8M for 500, 230 or 115 kV substations. Savings are worked out item by item from the unit costs under Cost assumptions, which you can change.</div>
   </div>
 </div>
 <div class="tip" id="tip" hidden></div>
@@ -585,7 +611,27 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   // Planning-level unit costs, used only when a plan lists no cost.
   const PER_KM = { new_line: { 500: 2.5e6, 230: 1.4e6, 115: 0.95e6, 46: 0.6e6 }, rebuild: { 500: 1.25e6, 230: 0.75e6, 115: 0.55e6, 46: 0.4e6 } };
   const SUB = { 500: 60e6, 230: 25e6, 115: 8e6, 46: 4e6 };
-  const ASSUME = { mobPct: 0.05, mobShare: 0.5, yard: 400e3, rowKm: 1.0, rowWidthM: 45, landPerHa: 37e3, access: 90e3, permits: 150e3, outage: 250e3 };
+  // Unit costs behind each shared item. Planning assumptions, editable in the app's Cost assumptions panel.
+  // "check" names a public source to compare against; the values are Seamline's round planning numbers, not quotes from it.
+  const ASSUMPTIONS = [
+    { key: "outage", group: "Touching or crossing", label: "Coordinated outage", unit: "$ per outage avoided", value: 250e3, check: "switching crews, standby and replacement power for one planned outage" },
+    { key: "crossing", group: "Touching or crossing", label: "Crossing structure design", unit: "$ per crossing", value: 120e3, check: "engineering and one set of crossing structures designed once" },
+    { key: "rowKm", group: "Under 1.6 km", label: "Shared corridor length", unit: "km", value: 1.0, check: "length where the two projects could run side by side" },
+    { key: "rowWidthM", group: "Under 1.6 km", label: "Right-of-way width", unit: "m", value: 45, check: "typical 115 to 230 kV easement is 30 to 45 m (100 to 150 ft)" },
+    { key: "landPerAcre", group: "Under 1.6 km", label: "Easement cost", unit: "$ per acre", value: 15e3, check: "compare with USDA NASS Land Values; easements usually cost more than the land's farm value" },
+    { key: "accessPerKm", group: "Under 1.6 km", label: "Access road", unit: "$ per km", value: 90e3, check: "gravel construction access road, grading and culverts" },
+    { key: "permits", group: "Under 1.6 km", label: "Permit package", unit: "$ per package", value: 150e3, check: "environmental review, wetlands and local permits filed once" },
+    { key: "yard", group: "Under 8 km", label: "Laydown yard", unit: "$ per yard", value: 400e3, check: "about 3 ha (7 acres) of lease, grading, fencing and security for the build" },
+    { key: "loads", group: "Under 8 km", label: "Shared deliveries", unit: "loads combined", value: 12, check: "heavy-haul loads that can share one trip" },
+    { key: "perLoad", group: "Under 8 km", label: "Heavy-haul trip", unit: "$ per load", value: 5e3, check: "oversize permit, escort and trucking for one load" },
+    { key: "mobPct", group: "Under 40 km", label: "Crew mobilization", unit: "% of project cost", value: 5, check: "mobilization is commonly 3 to 7% of construction cost" },
+    { key: "craneDays", group: "Under 40 km", label: "Crane days shared", unit: "days", value: 20, check: "days a crane can move between the two sites instead of two rentals" },
+    { key: "craneDay", group: "Under 40 km", label: "Crane rental", unit: "$ per day", value: 6.5e3, check: "crawler or truck crane with operator, compare with local rental rates" },
+    { key: "contractorPct", group: "Under 40 km", label: "Contractor overhead", unit: "% of project cost", value: 1, check: "bidding, supervision and site setup a shared contractor avoids" },
+    { key: "share", group: "All", label: "Each side’s share of a shared cost", unit: "%", value: 50, check: "a shared cost is split, so half of one side's cost is saved" },
+  ];
+  const DEFAULTS = Object.fromEntries(ASSUMPTIONS.map(a => [a.key, a.value]));
+  const ASSUME = Object.assign({}, DEFAULTS);
   const kvKey = kv => kv >= 500 ? 500 : kv >= 230 ? 230 : kv >= 115 ? 115 : 46;
   function estCost(p) {
     if (p.cost) return { v: p.cost, est: false };
@@ -593,19 +639,36 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     if (p.type === "substation") return { v: SUB[kvKey(p.kv)], est: true };
     return { v: PER_KM[p.type === "new_line" ? "new_line" : "rebuild"][kvKey(p.kv)] * Math.max(lengthKm(p), 3), est: true };
   }
+  // One line per shareable item, each with its own estimate and the math behind it.
   function savings(x) {
-    const A = ASSUME, items = [];
+    const A = ASSUME, items = [], sh = A.share / 100;
     const ca = estCost(x.p), cb = estCost(x.q), small = ca.v <= cb.v ? ca : cb;
-    if (x.tier <= 3 && x.sameWindow) items.push({ k: "Shared crews, cranes and contractors", v: small.v * A.mobPct * A.mobShare, how: `one mobilization instead of two: half of a ${A.mobPct * 100}% mobilization cost on the smaller project (${fmtMoney(small.v)}${small.est ? ", estimated" : ""})` });
-    if (x.tier <= 2 && x.sameWindow) items.push({ k: "One laydown yard and shared deliveries", v: A.yard, how: "about 3 ha yard lease, grading and security for the build" });
-    if (x.tier <= 1) {
-      const ha = A.rowKm * A.rowWidthM / 10;
-      items.push({ k: "Shared right-of-way, access roads and permits", v: ha * A.landPerHa + A.access + A.permits, how: `${ha.toFixed(1)} ha of ${A.rowWidthM} m corridor over ${A.rowKm} km at ${fmtMoney(A.landPerHa)}/ha, plus one access road and a joint permit package` });
+    const add = (share, k, v, how) => items.push({ share, k, v, how });
+    const sm = `${fmtMoney(small.v)}${small.est ? " est." : ""}`;
+    if (x.tier === 0) {
+      add("Outage timing", "One coordinated outage", A.outage, `one planned outage instead of two, ${fmtMoney(A.outage)}`);
+      add("Crossing structures", "Crossing designed once", A.crossing, `one crossing design and structure set, ${fmtMoney(A.crossing)}`);
     }
-    if (x.tier === 0) items.push({ k: "One coordinated outage and crossing design", v: A.outage, how: "one crossing outage and crew standby instead of two, with crossing structures designed once" });
+    if (x.tier <= 1) {
+      const acres = A.rowKm * 1000 * A.rowWidthM / 4046.86;
+      add("Right-of-way", "Shared right-of-way", acres * A.landPerAcre * sh, `${acres.toFixed(1)} acres (${A.rowKm} km × ${A.rowWidthM} m) × ${fmtMoney(A.landPerAcre)}/acre × ${A.share}%`);
+      add("Access roads", "Shared access road", A.rowKm * A.accessPerKm * sh, `${A.rowKm} km × ${fmtMoney(A.accessPerKm)}/km × ${A.share}%`);
+      add("Permits", "Joint permit package", A.permits * sh, `one ${fmtMoney(A.permits)} package instead of two × ${A.share}%`);
+    }
+    if (x.tier <= 2 && x.sameWindow) {
+      add("Laydown yards", "One laydown yard", A.yard * sh, `one ${fmtMoney(A.yard)} yard instead of two × ${A.share}%`);
+      add("Deliveries", "Combined deliveries", A.loads * A.perLoad * sh, `${A.loads} loads × ${fmtMoney(A.perLoad)} × ${A.share}%`);
+    }
+    if (x.tier <= 3 && x.sameWindow) {
+      add("Crews", "One crew mobilization", small.v * A.mobPct / 100 * sh, `${A.mobPct}% of the smaller project (${sm}) × ${A.share}%`);
+      add("Cranes", "Shared crane time", A.craneDays * A.craneDay * sh, `${A.craneDays} days × ${fmtMoney(A.craneDay)}/day × ${A.share}%`);
+      add("Contractors", "One contractor setup", small.v * A.contractorPct / 100 * sh, `${A.contractorPct}% of the smaller project (${sm}) × ${A.share}%`);
+    }
     return { items, total: items.reduce((s, i) => s + i.v, 0), ca, cb };
   }
-  const fmtMoney = c => c == null ? "" : c >= 1e6 ? "$" + (c / 1e6).toFixed(1) + "M" : "$" + Math.round(c / 1e3) + "K";
+  const setAssumptions = vals => { Object.assign(ASSUME, DEFAULTS); for (const [k, v] of Object.entries(vals || {})) if (k in DEFAULTS && isFinite(v) && v >= 0) ASSUME[k] = +v; };
+  const customized = () => ASSUMPTIONS.some(a => ASSUME[a.key] !== a.value);
+  const fmtMoney = c => c == null ? "" : c >= 1e6 ? "$" + (c / 1e6).toFixed(1) + "M" : c >= 1e4 || c === 0 ? "$" + Math.round(c / 1e3) + "K" : c >= 1e3 ? "$" + +(c / 1e3).toFixed(1) + "K" : "$" + Math.round(c);
 
   // ---------- pairing and ranking ----------
   // opts: { utilA, utilB, maxKm, bufferMonths, mode: "near" | "both" | "time" }
@@ -630,7 +693,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     return { pairs: out, checked: A.length * B.length };
   }
 
-  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
+  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);
 
@@ -1998,9 +2061,6 @@ function renderDetail() {
     return;
   }
   const s = x.sav;
-  const imp = s.items.length
-    ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated</td><td>${money(s.total)}</td></tr></tbody></table>`
-    : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
   const key = x.p.id + "|" + x.q.id;
   if (!state.wi || state.wi.key !== key) state.wi = { key, who: "q", shift: 0 };
   el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="brf">Coordination brief</button><button type="button" class="btn" id="clr" aria-label="Close details">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
@@ -2012,7 +2072,7 @@ function renderDetail() {
       <svg id="wiChart" role="img" aria-label="Both build windows after the shift"></svg>
       <p class="wi-res" id="wiRes" aria-live="polite"></p>
       <div class="row"><button type="button" class="btn" id="wiRec"></button><button type="button" class="btn" id="wiReset">Reset to plan</button></div></div>
-    <div><h3>Cost and impact estimate</h3><div id="impBox">${imp}</div></div></div>`;
+    <div><h3>Cost and impact estimate</h3><div id="impBox"></div></div></div>`;
   $("#clr").onclick = () => select(null);
   $("#v3d").onclick = () => open3d(x);
   $("#brf").onclick = () => openBrief(x);
@@ -2076,16 +2136,17 @@ function updateWhatIf(x) {
   recBtn.hidden = rec == null || rec === 0 || rec === shift;
   if (rec) { recBtn.textContent = `Try ${moLabel(rec)}`; recBtn.onclick = () => { state.wi.shift = rec; $("#wiShift").value = rec; updateWhatIf(x); }; }
   $("#wiReset").hidden = !shift;
-  const s = y.sav;
-  $("#impBox").innerHTML = s.items.length
-    ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}</td><td>${money(s.total)}</td></tr></tbody></table>`
-    : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
+  const s = y.sav, off = Engine.shareable(y).some(g => !g.active);
+  $("#impBox").innerHTML = `<table class="imp"><tbody><tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}<small>the sum of the ${s.items.length} item${s.items.length === 1 ? "" : "s"} priced above</small></td><td>${s.total ? money(s.total) : "$0"}</td></tr></tbody></table>
+    <p class="note">${off ? "Yard, delivery, crew, crane and contractor savings count only when both are built at the same time. " : ""}Planning estimates. Change any unit cost under <a href="#assume">Cost assumptions</a> and every pair updates.</p>`;
 }
 
 // What the pair can share, tier by tier, in the challenge's wording. Crew and yard sharing needs a shared build window.
+// Each item carries its own estimated saving and the math behind it.
 function sharesHTML(x) {
+  const by = Object.fromEntries(x.sav.items.map(i => [i.share, i]));
   return `<div class="shares"><h3>What they can share</h3>${Engine.shareable(x).map(g => `<div class="sg${g.active ? "" : " off"}" style="--c:${tcol(g.tier)}">
-    <span class="sl">${esc(g.label)}</span><span class="chips">${g.items.map(i => `<span class="chip">${esc(i)}</span>`).join("")}</span>
+    <span class="sl">${esc(g.label)}</span><ul class="si">${g.items.map(n => { const i = by[n]; return `<li><span>${esc(n)}</span><b>${i ? money(i.v) : "–"}</b>${i ? `<small>${esc(i.how)}</small>` : ""}</li>`; }).join("")}</ul>
     ${g.active ? "" : `<em>only if both are built at the same time</em>`}</div>`).join("")}
     ${x.res.length ? `<p class="note">Also in common: ${x.res.map(esc).join(", ")}.</p>` : ""}</div>`;
 }
@@ -2117,10 +2178,11 @@ function openBrief(x0) {
       <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.ov > 0 ? Math.round(x.ov) + " mo" : Math.round(x.gap) + " mo gap"}</b><span>${x.ov > 0 ? "of shared build window" : "between build windows"}</span></div><div><b>${(s.total ? money(s.total) : "$0")}</b><span>rough savings</span></div></div></div>
     <h4>The projects</h4>
     <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
-    <h4>What they can share</h4>
+    ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total${Engine.customized() ? " (with edited cost assumptions)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>
+      ${(() => { const off = Engine.shareable(x).filter(g => !g.active).flatMap(g => g.items); return off.length || x.res.length ? `<p class="b-note">${off.length ? `Only if both are built at the same time: ${esc(off.join(", ").toLowerCase())}. ` : ""}${x.res.length ? `Also in common: ${x.res.map(esc).join(", ")}.` : ""}</p>` : ""; })()}`
+    : `<h4>What they can share</h4>
     <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
-      ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>
-    ${s.items.length ? `<h4>Savings estimate</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<br><span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
+      ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   $("#brief").hidden = false;
@@ -2268,6 +2330,42 @@ async function importFiles(files) {
 }
 
 // ---------- wiring ----------
+// ---------- cost assumptions ----------
+// Every unit cost behind the savings estimate, editable. Changes are remembered on this device and recompute every pair.
+function renderAssume() {
+  let g0 = "";
+  $("#asmBody").innerHTML = `<table class="asm"><thead><tr><th>Item</th><th>Value</th><th>What it covers</th></tr></thead><tbody>${Engine.ASSUMPTIONS.map(a => {
+    const head = a.group !== g0 ? `<tr class="ag"><td colspan="3">${esc(a.group)}</td></tr>` : ""; g0 = a.group;
+    const v = Engine.ASSUME[a.key], changed = v !== a.value;
+    return `${head}<tr${changed ? ' class="chg"' : ""}><td><label for="as-${a.key}">${esc(a.label)}</label></td><td><input id="as-${a.key}" data-k="${a.key}" type="number" min="0" step="any" inputmode="decimal" value="${v}"><span class="u">${esc(a.unit)}</span></td><td>${esc(a.check)}${changed ? ` <em>default ${esc(String(a.value))}</em>` : ""}</td></tr>`;
+  }).join("")}</tbody></table>`;
+  $("#asmBody").querySelectorAll("input").forEach(inp => inp.onchange = () => {
+    const vals = {};
+    $("#asmBody").querySelectorAll("input").forEach(i => { const n = parseFloat(i.value); if (isFinite(n) && n >= 0) vals[i.dataset.k] = n; });
+    saveAssume(vals, true);
+  });
+  $("#asmReset").hidden = !Engine.customized();
+}
+function saveAssume(vals, typing) {
+  Engine.setAssumptions(vals);
+  try { if (Engine.customized()) localStorage.setItem("seamline.assume", JSON.stringify(vals)); else localStorage.removeItem("seamline.assume"); } catch (err) { /* storage blocked: keep the numbers for this visit only */ }
+  if (typing) markAssume(); else renderAssume();
+  refresh();
+}
+function markAssume() {
+  $("#asmBody").querySelectorAll("input").forEach(i => {
+    const a = Engine.ASSUMPTIONS.find(o => o.key === i.dataset.k), tr = i.closest("tr"), changed = Engine.ASSUME[a.key] !== a.value;
+    tr.classList.toggle("chg", changed);
+    let em = tr.lastElementChild.querySelector("em");
+    if (changed && !em) { em = document.createElement("em"); tr.lastElementChild.append(" ", em); }
+    if (em) em.textContent = changed ? `default ${a.value}` : "";
+  });
+  $("#asmReset").hidden = !Engine.customized();
+}
+try { const a = JSON.parse(localStorage.getItem("seamline.assume") || "null"); if (a && typeof a === "object") Engine.setAssumptions(a); } catch (err) { /* storage blocked or bad value: use the defaults */ }
+$("#asmReset").onclick = () => saveAssume({});
+renderAssume();
+
 function select(x) { if (!x || !state.wi || state.wi.key !== (x.p && x.q ? x.p.id + "|" + x.q.id : "")) state.wi = null; state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline(); }
 function refresh() {
   $("#distv").textContent = `${state.D} km (${Math.round(state.D / 1.609)} mi)`;

@@ -24,14 +24,15 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 - **Ranked list.** Tier first, then pairs built in the same window, then distance. Filter by tier, search, and copy the list as CSV.
 - **What each pair can share.** Every pair lists what its tier allows, in the challenge's words: outage timing and crossing structures (touching), right-of-way, access roads and permits (under 1.6 km), laydown yards and deliveries (under 8 km), and crews, cranes and contractors (under 40 km). Closer pairs get everything farther tiers allow; yard and crew sharing needs a shared build window.
 - **Existing infrastructure.** Existing plants, the Stevens Creek hydro plant and existing lines are drawn in grey and can be switched off. Existing lines and substations downloaded from HIFLD (GeoJSON, shapefile or KML) load as a background layer from the import panel.
-- **Cost and impact estimate.** A rough savings figure for each pair, with every assumption listed.
+- **Cost for each shared item.** Every item a pair can share gets its own savings figure with the math shown, like "20 days × $6.5K/day × 50%". The pair's total is their sum.
+- **Cost assumptions.** Every unit cost behind those figures (easement $ per acre, access road $ per km, permit package, laydown yard, heavy-haul trip, crane day, mobilization and contractor percentages, and each side's share) is editable at the bottom of the page. Every pair, the totals and the brief recalculate at once, and the numbers are remembered on that device.
 - **Light and dark themes** that follow the system setting.
 - **Map** with pan and zoom and four styles: Plain, Streets, Satellite and Terrain.
 - **Timeline** of each flagged project's estimated construction window.
 - **The Seam.** The Georgia and South Carolina border, the Savannah River both utilities build along, is drawn as a stitched seam on the map.
 - **Play the build years.** A time scrubber steps the map month by month. Projects light up while they're under construction, and flagged pairs that are building at the same time spark.
 - **What-if schedule shift.** For any pair, slide one project earlier or later and watch the shared window and savings update. Seamline suggests the smallest move that gives both builds a real shared window.
-- **Coordination brief.** One click writes a one-page memo for a pair, addressed to both utilities' planners: where and when they meet, what they can share, the savings estimate, a locator map and next steps. Print it, save it as a PDF, or copy the text.
+- **Coordination brief.** One click writes a one-page memo for a pair, addressed to both utilities' planners: where and when they meet, each item they can share with its savings and math, a locator map and next steps. Print it, save it as a PDF, or copy the text.
 - **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Rendered realistically: physically based materials, a physical sky that lights the scene, soft shadows, bloom and filmic tone mapping. A Labels button hides the floating tags for a clean view.
 - **Import** any utility's plan and compare any two utilities, or set the second utility to **None** to just browse one utility's projects.
 
@@ -45,7 +46,7 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
   - Under 8 km: can share laydown yards and deliveries
   - Under 40 km: can share crews, cranes and contractors
 - **Timeline (secondary).** Two projects are in the same build window if their construction periods overlap, plus an optional buffer. Plans usually list only an in-service date, so the start date is estimated from project type, voltage and length unless the file provides one.
-- **Cost and impact.** Each pair gets a rough savings estimate: shared mobilization, a shared laydown yard, shared right-of-way and permits, and one coordinated outage. The unit costs are in `src/engine.js` (`PER_KM`, `SUB`, `ASSUME`).
+- **Cost and impact.** Each shareable item the tier allows gets its own planning estimate, and yard, delivery, crew, crane and contractor items count only when the builds share a window. When one side's cost can be shared, each utility saves its share (50% by default); a coordinated outage and a crossing designed once count in full. The defaults are in `ASSUMPTIONS` in `src/engine.js` and can be changed in the app. They are round planning numbers, not quotes: compare them with USDA NASS Land Values, the MISO Transmission Cost Estimation Guide, and local crane and heavy-haul rates.
 
 ## Loading a utility's plans
 

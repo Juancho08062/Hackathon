@@ -64,5 +64,20 @@ t("shareable: closer tiers include everything farther tiers allow, in the challe
   const g = E.shareable({ tier: 1, sameWindow: false });
   assert.deepStrictEqual(g.map(x => x.active), [true, false, false]); // land yes; yards and crews need a shared window
 });
+t("savings: one line per shareable item, with the math, and editable unit costs", () => {
+  const p = { type: "substation", kv: 230, coords: [[33, -81]] }, q = { type: "substation", kv: 115, coords: [[33, -81]] };
+  const x = { p, q, tier: 0, sameWindow: true };
+  const s = E.savings(x);
+  assert.deepStrictEqual(s.items.map(i => i.share), E.shareable(x).flatMap(g => g.items)); // every shareable item gets a figure
+  const row = s.items.find(i => i.share === "Right-of-way"); // 1 km × 45 m = 11.1 acres × $15K × 50%
+  assert.ok(Math.abs(row.v - 1000 * 45 / 4046.86 * 15e3 * 0.5) < 1 && /11\.1 acres/.test(row.how));
+  assert.strictEqual(s.items.find(i => i.share === "Crews").v, 8e6 * 0.05 * 0.5); // 5% of the smaller ($8M) project, half each
+  assert.strictEqual(E.savings({ p, q, tier: 3, sameWindow: false }).items.length, 0); // crews need a shared window
+  E.setAssumptions({ landPerAcre: 30e3, bogus: 1, permits: -5 });
+  assert.ok(E.customized() && Math.abs(E.savings(x).items.find(i => i.share === "Right-of-way").v - 2 * row.v) < 1);
+  assert.strictEqual(E.ASSUME.permits, 150e3); // bad values are ignored
+  E.setAssumptions({});
+  assert.ok(!E.customized() && E.savings(x).total === s.total);
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);
