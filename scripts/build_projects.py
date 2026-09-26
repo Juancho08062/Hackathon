@@ -9,7 +9,9 @@ Sources
   https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf
 
 Coordinates are APPROXIMATE: public plans name substations, not coordinates, so
-endpoints are placed at the named town/plant/substation area by hand.
+endpoints are placed at the named town/plant/substation area by hand. Substations
+that OpenStreetMap or the challenge's reference table locate (Okatie, McIntosh,
+Stevens Creek, Modoc, Graniteville, Urquhart, Vogtle) use those coordinates.
 loc = "med" (named plant/town, within a few miles) or "low" (best guess).
 Plans give in-service dates only; construction windows are estimated
 (see est_months) and are adjustable in the app.
@@ -30,26 +32,26 @@ DESC = [
 ("Eastover - Sumter 115kV DEP Tie: Rebuild","Upgrade DESC section (~1 mi) of tie line to 1272 ACSR",115,1,"rebuild","2026-05-31",1238443,[(33.877,-80.695)],"med"),
 ("Batesburg - Saluda County 115kV: Rebuild","Rebuild 13.5 miles of conductor",115,13.5,"rebuild","2026-06-30",13040765,[(33.908,-81.547),(34.001,-81.772)],"med"),
 ("Summerville - Boone Hill 115kV: Move Line","Move ~1.2 mi (23 poles) for SCDOT road widening",115,1.2,"rebuild","2026-07-31",12475000,[(33.018,-80.176),(32.99,-80.23)],"med"),
-("Urquhart - Toolebeck 115kV: Rebuild","Upgrade 477 ACSR to 1272 ACSR, single-pole double-circuit, ~12.5 mi",115,12.5,"rebuild","2026-08-12",15948620,[(33.435,-81.923),(33.53,-81.80)],"low"),
+("Urquhart - Toolebeck 115kV: Rebuild","Upgrade 477 ACSR to 1272 ACSR, single-pole double-circuit, ~12.5 mi",115,12.5,"rebuild","2026-08-12",15948620,[(33.43287,-81.911081),(33.53,-81.80)],"low"),
 ("Dawson 230kV Sub and Fold-in: Construct and Rebuild","New Dawson 230 kV sub, fold in Canadys lines, rebuild Canadys-Dawson #1/#2",230,None,"substation","2026-10-01",93603207,[(33.06,-80.62),(32.88,-80.30)],"low"),
 ("Cainhoy - Hamlin 115kV: Rebuild and Construct","Upgrade 954 ACSR to B795; new Cainhoy-Hamlin 115 kV #2",115,None,"new_line","2026-12-02",40858628,[(32.93,-79.83),(32.86,-79.80)],"med"),
 ("Coit - Gills Creek 115kV: Construct","Convert 33 kV line to 115 kV, ~1.25 mi",115,1.25,"rebuild","2026-12-31",5773202,[(33.99,-80.97),(33.97,-80.95)],"med"),
-("Okatie 230-115kV Substation, Jasper-Yemassee #1 Fold-in","Expand Okatie sub, add 230-115 autobank, fold in Jasper-Yemassee 230 kV #1",230,None,"substation","2026-12-31",11630257,[(32.30,-80.93)],"med"),
-("Jasper - Okatie 230kV #2: Construct","New 230 kV line, B1272 ACSR, ~6.5 mi",230,6.5,"new_line","2026-12-01",19280474,[(32.30,-81.08),(32.30,-80.93)],"med"),
-("Riverport 115kV Tap: Construct","230 kV tap from Okatie to Riverport",230,None,"new_line","2026-12-01",41389047,[(32.30,-80.93),(32.25,-81.05)],"low"),
+("Okatie 230-115kV Substation, Jasper-Yemassee #1 Fold-in","Expand Okatie sub, add 230-115 autobank, fold in Jasper-Yemassee 230 kV #1",230,None,"substation","2026-12-31",11630257,[(32.333758,-81.032495)],"med"),
+("Jasper - Okatie 230kV #2: Construct","New 230 kV line, B1272 ACSR, ~6.5 mi",230,6.5,"new_line","2026-12-01",19280474,[(32.30,-81.08),(32.333758,-81.032495)],"med"),
+("Riverport 115kV Tap: Construct","230 kV tap from Okatie to Riverport",230,None,"new_line","2026-12-01",41389047,[(32.333758,-81.032495),(32.25,-81.05)],"low"),
 ("Flat Rock 115kV Sub and Tap: Construct","115 kV tap off Belvedere Sw Sta - Graniteville 115 kV #1",115,None,"substation","2026-12-31",3950000,[(33.53,-81.87)],"low"),
 ("Saluda Hydro - Bush River 115kV #1 & #2 Tie Rebuild","Rebuild tie lines to SPDC 1272",115,None,"rebuild","2026-12-31",20400000,[(34.05,-81.21),(34.03,-81.10)],"med"),
 ("Church Creek - Faber Place - Charleston: Add 230kV Line","New 230 kV Church Creek-Charleston line, rebuild Church Creek-Faber Place, add transformer",230,None,"new_line","2027-05-01",22788174,[(32.82,-80.07),(32.80,-79.95)],"med"),
 ("Yemassee - Ritter 230kV #1 & #2: Construct SPDC","Ritter-Yemassee 230 kV #1/#2 SPDC, B1272 ACSR",230,None,"new_line","2027-06-01",39066742,[(32.69,-80.85),(32.73,-80.58)],"med"),
 ("Fairfax - Yemassee 115kV: Upgrade","Upgrade 336 ACSR portion to 1272 ACSR (generator interconnection)",115,None,"rebuild","2027-09-07",20350000,[(32.96,-81.24),(32.69,-80.85)],"med"),
 ("St George - Sumter 230kV Tie: Rebuild Line","Rebuild Santee Sub - Duke/Progress tie",230,None,"rebuild","2027-12-31",4569331,[(33.48,-80.49),(33.60,-80.40)],"low"),
-("Hooks - Modoc 115/46kV Rebuild","Upgrade 6.5 mi aging conductor to 1272 ACSR, SPDC",115,6.5,"rebuild","2027-12-31",10534285,[(33.72,-82.21),(33.65,-82.13)],"low"),
+("Hooks - Modoc 115/46kV Rebuild","Upgrade 6.5 mi aging conductor to 1272 ACSR, SPDC",115,6.5,"rebuild","2027-12-31",10534285,[(33.65682,-82.159478),(33.736288,-82.201504)],"low"),
 ("Burton - St Helena 115kV: Rebuild Frogmore Section","Steel structures, restring 1272 ACSR",115,None,"rebuild","2027-12-31",18129932,[(32.43,-80.68),(32.39,-80.58)],"med"),
 ("Wagener 115kV Tap: Construct","115 kV tap off Edmund Sw Sta - Owens Corning 115 kV",115,None,"new_line","2027-12-31",7540000,[(33.65,-81.36)],"med"),
 ("Cameron Jct - Elloree 46kV Rebuild","Rebuild 7.3 mi",46,7.3,"rebuild","2027-12-31",8075000,[(33.56,-80.71),(33.53,-80.57)],"med"),
 ("Atomic Road 115/12kV Sub: Construct","New 115-12 kV sub, 28 MVA transformer",115,None,"substation","2028-12-31",3646027,[(33.40,-81.85)],"low"),
 ("Elloree - Santee City 46kV: Rebuild","Rebuild 8.35 mi",46,8.35,"rebuild","2027-12-31",10294609,[(33.53,-80.57),(33.48,-80.49)],"med"),
-("Urquhart - Aiken PSA 46kV: Rebuild","Rebuild 4.5 mi",46,4.5,"rebuild","2027-12-31",3000000,[(33.435,-81.923),(33.47,-81.86)],"low"),
+("Urquhart - Aiken PSA 46kV: Rebuild","Rebuild 4.5 mi",46,4.5,"rebuild","2027-12-31",3000000,[(33.43287,-81.911081),(33.47,-81.86)],"low"),
 ("Wateree - Hopkins 230kV #1: Rebuild","Rebuild SPSC with 1272 ACSR",230,None,"rebuild","2027-12-31",22400000,[(33.83,-80.62),(33.90,-80.88)],"med"),
 ("Adams Run - Red House Road 46kV: Replace River Crossing","Dawhoo River crossing, 58 structures in marsh",46,None,"rebuild","2027-12-31",11000000,[(32.62,-80.35)],"med"),
 ("Lyles - Kilbourne Park 115kV: Replace Structures","Rebuild 2.85 mi",115,2.85,"rebuild","2027-12-01",4770000,[(34.01,-81.02),(33.98,-80.99)],"med"),
@@ -64,15 +66,15 @@ DESC = [
 ("Millrace 115kV Tap: Construct","Tap from Dunbar Road - Lyles 115 kV, 1272 ACSR",115,None,"new_line","2028-12-31",3200000,[(33.97,-81.10)],"low"),
 ("Williams St, AM Williams, McMeekin Subs: Replace/Add","Switch houses, equipment and relay panels",115,None,"substation","2028-12-31",11182924,[(34.00,-81.04)],"low"),
 ("Cameron Jct - St Matthews 46kV: Rebuild","Rebuild 9.8 mi",46,9.8,"rebuild","2028-12-31",11700000,[(33.56,-80.71),(33.66,-80.78)],"med"),
-("Okatie - McIntosh 115kV Tie: Add Series Reactor","New Deerfield switching station and 9% series reactor on the DESC-Georgia tie",115,None,"substation","2028-12-31",5376418,[(32.30,-80.93),(32.357,-81.169)],"med"),
+("Okatie - McIntosh 115kV Tie: Add Series Reactor","New Deerfield switching station and 9% series reactor on the DESC-Georgia tie",115,None,"substation","2028-12-31",5376418,[(32.333758,-81.032495),(32.352116,-81.175112)],"med"),
 ("CAE Industrial Park - Springdale 115kV: Replace Poles","Replace 28 laminated wood poles",115,None,"rebuild","2028-12-31",4450000,[(33.95,-81.12)],"med"),
 ("St George - Holly Hill 115kV: Rebuild Structures","Rebuild structures 83-108, 3.4 mi",115,3.4,"rebuild","2028-12-31",8125000,[(33.25,-80.50)],"med"),
 ("Canadys - Ritter 115kV: Rebuild SPDC","Rebuild as SPDC with 1272 ACSR, 17.5 mi",115,17.5,"rebuild","2029-06-01",38121795,[(33.06,-80.62),(32.73,-80.58)],"med"),
 ("Wateree - Killian 230kV: Rebuild","Rebuild 35 mi",230,35,"rebuild","2029-12-31",44517719,[(33.83,-80.62),(34.13,-80.95)],"med"),
 ("Church Creek - Dawson 230kV: Rebuild","Rebuild Dawson - Long Savannah SPSC B1272, ~13.6 mi",230,13.6,"rebuild","2029-12-31",42375000,[(32.88,-80.30),(32.83,-80.10)],"low"),
 ("Long Savannah 115kV Tap: Construct","Long Savannah 115 kV tap with Church Creek - Dawson rebuild",115,None,"new_line","2029-12-31",5100000,[(32.83,-80.10)],"med"),
-("Modoc - McCormick 115/46kV Rebuild","Rebuild Modoc - McCormick as SPDC",115,None,"rebuild","2029-12-31",19800000,[(33.72,-82.21),(33.91,-82.29)],"med"),
-("Stevens Creek - Graniteville 115kV: Rebuild","Rebuild 15 mi",115,15,"rebuild","2029-12-31",18200000,[(33.56,-82.05),(33.56,-81.81)],"med"),
+("Modoc - McCormick 115/46kV Rebuild","Rebuild Modoc - McCormick as SPDC",115,None,"rebuild","2029-12-31",19800000,[(33.736288,-82.201504),(33.906536,-82.292804)],"med"),
+("Stevens Creek - Graniteville 115kV: Rebuild","Rebuild 15 mi",115,15,"rebuild","2029-12-31",18200000,[(33.562599,-82.051362),(33.583437,-81.804506)],"med"),
 ("Calhoun County - North 46kV Rebuild","Rebuild 9.5 mi",46,9.5,"rebuild","2029-12-31",10200000,[(33.62,-81.10),(33.70,-80.85)],"low"),
 ("Union Pier 115-13.8kV Sub: Tap","115 kV tap (or feed from Charlotte St) to Union Pier sub",115,None,"substation","2030-12-31",22400000,[(32.79,-79.925)],"med"),
 ("Faber Place - Bayfront 115kV: Rebuild Section","Rebuild N. Bridge Terrace - Bayfront with 1272 ACSR",115,None,"rebuild","2030-12-31",18964478,[(32.86,-79.97),(32.81,-79.94)],"med"),
@@ -126,16 +128,16 @@ GPC_PAGE = "https://www.georgiapower.com/about/grid-reliability/grid-improvement
 GA_PAGES = [
 ("Callaway Road - Thomson Primary 500kV","New Callaway Road 500/230 kV substation (Columbia Co.) and two new 500 kV lines to Thomson, ~10 and ~7 mi. Substation clearing Winter 2026, line construction Summer 2027",500,17,"new_line","2026-12-01","2029-06-01",[(33.48,-82.30),(33.43,-82.45)],"low",GPC_PAGE+"callaway-thomson.html"),
 ("Effingham County 500/230kV Substation","New 500/230 kV substation and 500 kV facilities in Effingham County. Clearing Spring 2027, construction Fall 2027",500,None,"substation","2027-03-01","2029-06-01",[(32.33,-81.30)],"low",GPC_PAGE+"effingham-county.html"),
-("Plant McIntosh Unit 12 Combined Cycle","~800 MW gas combined-cycle unit at Plant McIntosh, Rincon (pre-construction, planned 2030)",500,None,"generation",None,"2030-06-01",[(32.357,-81.169)],"med","https://www.gem.wiki/McIntosh_Combined_Cycle_Facility"),
+("Plant McIntosh Unit 12 Combined Cycle","~800 MW gas combined-cycle unit at Plant McIntosh, Rincon (pre-construction, planned 2030)",500,None,"generation",None,"2030-06-01",[(32.356819,-81.170346)],"med","https://www.gem.wiki/McIntosh_Combined_Cycle_Facility"),
 ]
 
 # Existing assets shown as a reference layer (not paired).
 EXISTING = [
-("Thomson - Vogtle 500kV (in service 2018)","GPC",[(33.43,-82.45),(33.14,-81.76)],"https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/thomson-vogtle.html"),
-("Stevens Creek Hydro (DESC-owned, Martinez GA)","DESC",[(33.56,-82.05)],""),
-("Plant Vogtle","GPC",[(33.14,-81.76)],""),
-("Plant McIntosh","GPC",[(32.357,-81.169)],""),
-("Okatie - McIntosh 115kV tie (DESC-Georgia)","DESC",[(32.30,-80.93),(32.357,-81.169)],""),
+("Thomson - Vogtle 500kV (in service 2018)","GPC",[(33.43,-82.45),(33.145816,-81.76271)],"https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/thomson-vogtle.html"),
+("Stevens Creek Hydro (DESC-owned, Martinez GA)","DESC",[(33.562599,-82.051362)],""),
+("Plant Vogtle","GPC",[(33.145816,-81.76271)],""),
+("Plant McIntosh","GPC",[(32.356819,-81.170346)],""),
+("Okatie - McIntosh 115kV tie (DESC-Georgia)","DESC",[(32.333758,-81.032495),(32.352116,-81.175112)],""),
 ]
 
 def est_months(t, kv, miles):
@@ -168,6 +170,162 @@ for i, (n, d, kv, mi, t, st, isd, co, loc, src) in enumerate(GA_PAGES, len(GA) +
     out.append(dict(id=f"GA-{i:02d}", utility="GPC", owner="GPC", name=n, desc=d, kv=kv, miles=mi, type=t,
                     in_service=end.isoformat(), start=start.isoformat(), date_precision="estimated",
                     start_published=bool(st), cost=None, coords=[list(c) for c in co], loc=loc, source=src, page=""))
+
+# ---------------------------------------------------------------------------
+# Official challenge lists (scripts/extract_official.py -> data/official/*.csv),
+# placed with scripts/locate_official.py. A project already listed above keeps its
+# entry (newer plan, hand-checked location) and gains the official record; the rest
+# are added. Georgia's IRP gives a published project start date; construction is
+# taken as the last est_months before in-service, never earlier than that start.
+# ---------------------------------------------------------------------------
+import csv, sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from locate_official import Locator, endpoints, haversine, official_projects
+
+DESC_PDF = "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)"
+IRP_PDF = "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2"
+# existing id -> official ids describing the same work (checked by name, dates and description)
+SAME = {
+    "DESC-01": ["DESCP-28"], "DESC-03": ["DESCP-33"], "DESC-04": ["DESCP-40"], "DESC-05": ["DESCP-32"],
+    "DESC-07": ["DESCP-35"], "DESC-08": ["DESCP-34"], "DESC-09": ["DESCP-04"], "DESC-10": ["DESCP-30"],
+    "DESC-11": ["DESCP-03"], "DESC-12": ["DESCP-23"], "DESC-13": ["DESCP-22"], "DESC-16": ["DESCP-39"],
+    "DESC-17": ["DESCP-21"], "DESC-19": ["DESCP-29"], "DESC-21": ["DESCP-06"], "DESC-22": ["DESCP-24"],
+    "DESC-23": ["DESCP-41"], "DESC-25": ["DESCP-42"], "DESC-26": ["DESCP-43"], "DESC-31": ["DESCP-36"],
+    "DESC-32": ["DESCP-25"], "DESC-34": ["DESCP-18"], "DESC-36": ["DESCP-08"], "DESC-39": ["DESCP-17"],
+    "DESC-40": ["DESCP-44"], "DESC-44": ["DESCP-20"], "DESC-45": ["DESCP-09"], "DESC-51": ["DESCP-02"],
+    "DESC-52": ["DESCP-12"], "DESC-54": ["DESCP-26"],
+    "GA-01": ["IRP-19358"], "GA-02": ["IRP-09662"], "GA-03": ["IRP-20717"], "GA-06": ["IRP-20797"],
+    "GA-08": ["IRP-19950"], "GA-09": ["IRP-21073"], "GA-10": ["IRP-21113"], "GA-11": ["IRP-21077"],
+    "GA-12": ["IRP-21118"], "GA-13": ["IRP-21116"], "GA-14": ["IRP-21099"], "GA-15": ["IRP-20756"],
+    "GA-16": ["IRP-09661"], "GA-18": ["IRP-21137"], "GA-19": ["IRP-20273"], "GA-20": ["IRP-20002"],
+    "GA-21": ["IRP-19334"], "GA-22": ["IRP-19999", "IRP-20001"], "GA-23": ["IRP-18573"],
+    "GA-24": ["IRP-20858", "IRP-19597"], "GA-25": ["IRP-20776"], "GA-26": ["IRP-20591"], "GA-28": ["IRP-19635"],
+    "GA-29": ["IRP-20020"], "GA-30": ["IRP-18832"], "GA-31": ["IRP-20264"], "GA-32": ["IRP-20503"],
+    "GA-33": ["IRP-20873"], "GA-34": ["IRP-19992"], "GA-36": ["IRP-20586"],
+}
+TODAY = date(2026, 9, 26)
+
+
+def kv_of(text):
+    v = [int(x) for x in re.findall(r"(\d{2,3})(?:[-/]\d{2,3})*\s?-?\s?kv", text, re.I)]
+    v = [x for x in v if x in (46, 69, 115, 161, 230, 500)]
+    return max(v) if v else None
+
+
+def type_of(name, desc, n_points):
+    t = f"{name} {desc}".lower()
+    if re.search(r"\b(new line|construct|new \d+ ?kv line|second line)\b", t) and n_points > 1:
+        return "new_line"
+    if n_points > 1 or re.search(r"rebuild|reconductor|rebld|line", name.lower()):
+        return "rebuild"
+    return "substation"
+
+
+KEEP_UPPER = {"SAV", "GTC", "MEAG", "DU", "USA", "APC", "FPL", "CC", "GPC", "LG&E", "SKC", "QTS", "PSA", "CIP", "SPDC", "ACSR", "ACSS", "TVA", "DEP", "II", "III"}
+
+
+def title(name):
+    """GEORGIA ITS names are all caps: "SAV: GOSHEN (SAV) - MCINTOSH 115KV" -> "SAV: Goshen (SAV) - McIntosh 115kV"."""
+    def word(w):
+        core = w.strip("():#,")
+        if core in KEEP_UPPER or re.fullmatch(r"[\d./-]+", core):
+            return w
+        if re.fullmatch(r"[\d/.-]+KV", core):
+            return w.replace("KV", "kV")
+        t = w.capitalize() if not w[:1] in "(#" else w[0] + w[1:].capitalize()
+        return re.sub(r"\bMc(\w)", lambda m: "Mc" + m.group(1).upper(), t)
+    return " ".join(word(w) for w in name.split())
+
+
+official = {p["id"]: p for p in official_projects()}
+by_id = {o["id"]: o for o in out}
+for eid, oids in SAME.items():
+    o = by_id[eid]
+    o["official"] = [dict(id=i, name=official[i]["name"],
+                          in_service=official[i].get("need_date") or official[i].get("in_service"),
+                          start=official[i].get("start") or None) for i in oids]
+    starts = [x["start"] for x in o["official"] if x["start"]]
+    if o["utility"] == "GPC" and starts and not o.get("start_published"):
+        pub = date.fromisoformat(min(starts))
+        est = date.fromisoformat(o["start"])
+        if pub > est:  # the plan says work begins later than our estimate
+            o["start"] = pub.isoformat()
+        o["project_start"] = pub.isoformat()
+taken = {i for v in SAME.values() for i in v}
+
+loc = Locator((p["name"], p["state"], p["zone"]) for p in official.values())
+# A hand-placed project whose official record places every end point with high
+# confidence (OSM substation with a unique name, or the challenge reference) moves there.
+for eid, oids in SAME.items():
+    if len(oids) != 1:
+        continue
+    r = official[oids[0]]
+    pts = [loc.point(e, r["state"], r["zone"]) for e in endpoints(r["name"])]
+    if pts and all(x and x[3] == "high" for x in pts):
+        o = by_id[eid]
+        coords = []
+        for x in pts:
+            if [x[0], x[1]] not in coords:
+                coords.append([x[0], x[1]])
+        if len(coords) >= len(o["coords"]):
+            o["coords"], o["loc"] = coords, "high"
+            o["located"] = [dict(name=e, method=x[2], confidence=x[3], note=x[4]) for e, x in zip(endpoints(r["name"]), pts)]
+unplaced = []
+for oid, r in official.items():
+    if oid in taken:
+        continue
+    gpc = oid.startswith("IRP-")
+    pts = [loc.point(e, r["state"], r["zone"]) for e in endpoints(r["name"])]
+    got = [x for x in pts if x]
+    if not got:
+        unplaced.append(dict(id=oid, name=r["name"], endpoints=endpoints(r["name"])))
+        continue
+    desc = r["description"]
+    kv = kv_of(r["name"]) or kv_of(desc) or 115
+    miles = float(r["miles"]) if r.get("miles") else None
+    # End points much farther apart than the line the plan describes mean one of them is a namesake:
+    # keep the more certain one.
+    span = max((haversine(a[:2], b[:2]) for a in got for b in got), default=0)
+    if span > max(25, 4 * 1.609 * (miles or 25)):
+        rank = {"high": 0, "medium": 1, "low": 2}
+        got = sorted(got, key=lambda x: rank[x[3]])[:1]
+        pts = [x if x in got else None for x in pts]
+    confs = {x[3] for x in got}
+    lvl = "low" if "low" in confs or len(got) < len(pts) else ("med" if "medium" in confs else "high")
+    coords = []
+    for x in got:
+        if [x[0], x[1]] not in coords:
+            coords.append([x[0], x[1]])
+    t = type_of(r["name"], desc, len(coords))
+    end = date.fromisoformat(r["need_date"] if gpc else r["in_service"])
+    est = minus_months(end, est_months(t, kv, miles))
+    pub = date.fromisoformat(r["start"]) if gpc and r.get("start") else None
+    note = None
+    if pub and pub >= end:  # a few IRP pages list a start after the need date
+        note, pub = f"The plan lists a start date ({r['start']}) after the need date, so the start is estimated.", None
+    start = max(est, pub) if pub else est
+    o = dict(id=oid, utility="GPC" if gpc else "DESC", owner=(("GPC" if r["sponsor"] == "SAV" else r["sponsor"]) if gpc else "DESC"),
+             name=title(r["name"]) if gpc else r["name"], official_name=r["name"], desc=desc, kv=kv, miles=miles, type=t,
+             in_service=end.isoformat(), start=start.isoformat(),
+             date_precision="day", cost=(int(r["cost"]) if not gpc and r.get("cost") else None),
+             coords=coords, loc=lvl, source=IRP_PDF if gpc else DESC_PDF,
+             page=f"PDF p.{r['pdf_page']}, TEAMS {r['teams']}, zone {r['zone']}" if gpc else f"project {r['item']} of 44, ID {r['project_id']}",
+             located=[dict(name=e, method=x[2], confidence=x[3], note=x[4]) if x else dict(name=e, method="not found")
+                      for e, x in zip(endpoints(r["name"]), pts)])
+    if pub:
+        o["project_start"] = pub.isoformat()
+    if note:
+        o["date_note"] = note
+    if end < TODAY:
+        o["past_in_service"] = True
+    if not gpc and r.get("status"):
+        o["status"] = r["status"]
+    if gpc and r.get("change_ten_year_plan"):
+        o["plan_change"] = r["change_ten_year_plan"]
+    out.append(o)
+json.dump(unplaced, open(pathlib.Path(__file__).resolve().parent.parent / "data" / "official" / "unplaced.json", "w"), indent=1)
+print(len(out), "projects so far;", len(unplaced), "official projects could not be placed (data/official/unplaced.json)")
+
 for i, (n, u, co, src) in enumerate(EXISTING, 1):
     out.append(dict(id=f"EX-{i:02d}", utility=u, existing=True, name=n, coords=[list(c) for c in co], source=src))
 json.dump(out, open(pathlib.Path(__file__).resolve().parent.parent / "data" / "projects.json", "w"), indent=1)

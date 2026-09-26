@@ -676,7 +676,7 @@ function openBrief(x0) {
       ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
     ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard${c.yard.near ? " at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
-    <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
+    <p class="b-foot">Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   $("#brief").hidden = false;
   $("#briefClose").focus();
 }

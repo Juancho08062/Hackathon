@@ -18,9 +18,25 @@
     -80.176
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 1"
+  "page": "item 1",
+  "official": [
+   {
+    "id": "DESCP-28",
+    "name": "Summerville 115kV Loop: Rebuild",
+    "in_service": "2024-12-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Summerville",
+    "method": "manual",
+    "confidence": "high",
+    "note": "Summerville SC, DESC substation area"
+   }
+  ]
  },
  {
   "id": "DESC-02",
@@ -66,7 +82,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 3"
+  "page": "item 3",
+  "official": [
+   {
+    "id": "DESCP-33",
+    "name": "Scout 230 kV Sub and Fold-in: Construct",
+    "in_service": "2026-03-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-04",
@@ -89,7 +113,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 4"
+  "page": "item 4",
+  "official": [
+   {
+    "id": "DESCP-40",
+    "name": "Eastover - Sumter 115kV DEP Tie: Rebuild with 1272 ACSR",
+    "in_service": "2026-05-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-05",
@@ -116,7 +148,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 5"
+  "page": "item 5",
+  "official": [
+   {
+    "id": "DESCP-32",
+    "name": "Batesburg - Saluda County 115kV: Rebuild",
+    "in_service": "2025-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-06",
@@ -160,8 +200,8 @@
   "cost": 15948620,
   "coords": [
    [
-    33.435,
-    -81.923
+    33.43287,
+    -81.911081
    ],
    [
     33.53,
@@ -170,7 +210,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 7"
+  "page": "item 7",
+  "official": [
+   {
+    "id": "DESCP-35",
+    "name": "Urquhart - Toolebeck 115kV line: Rebuild",
+    "in_service": "2026-08-12",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-08",
@@ -197,7 +245,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 8"
+  "page": "item 8",
+  "official": [
+   {
+    "id": "DESCP-34",
+    "name": "Dawson 230kV Sub and Fold-in: Construct and Rebuild",
+    "in_service": "2025-10-01",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-09",
@@ -214,17 +270,39 @@
   "cost": 40858628,
   "coords": [
    [
-    32.93,
-    -79.83
+    32.941402,
+    -79.842276
    ],
    [
-    32.86,
-    -79.8
+    32.859937,
+    -79.788441
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 9"
+  "page": "item 9",
+  "official": [
+   {
+    "id": "DESCP-04",
+    "name": "Cainhoy - Hamlin 115kV: Rebuild Line and Cainhoy - Hamlin 115 kV #2: Construct New 115 kV Line",
+    "in_service": "2025-12-01",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Cainhoy",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Cainhoy Substation (w229116275)"
+   },
+   {
+    "name": "Hamlin",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Hamlin Substation (w229116306)"
+   }
+  ]
  },
  {
   "id": "DESC-10",
@@ -251,7 +329,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 10"
+  "page": "item 10",
+  "official": [
+   {
+    "id": "DESCP-30",
+    "name": "Coit - Gills Creek 115kV: Construct",
+    "in_service": "2024-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-11",
@@ -268,13 +354,29 @@
   "cost": 11630257,
   "coords": [
    [
-    32.3,
-    -80.93
+    32.333758,
+    -81.032495
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 11"
+  "page": "item 11",
+  "official": [
+   {
+    "id": "DESCP-03",
+    "name": "Okatie 230-115kV Substation, Jasper - Yemassee 230kV #1 Fold-in",
+    "in_service": "2024-12-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Okatie Substation",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ]
  },
  {
   "id": "DESC-12",
@@ -291,17 +393,39 @@
   "cost": 19280474,
   "coords": [
    [
-    32.3,
-    -81.08
+    32.35912,
+    -81.1246
    ],
    [
-    32.3,
-    -80.93
+    32.333758,
+    -81.032495
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 12"
+  "page": "item 12",
+  "official": [
+   {
+    "id": "DESCP-23",
+    "name": "Jasper - Okatie 230 kV #2: Construct",
+    "in_service": "2025-12-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Jasper",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "Okatie",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ]
  },
  {
   "id": "DESC-13",
@@ -318,8 +442,8 @@
   "cost": 41389047,
   "coords": [
    [
-    32.3,
-    -80.93
+    32.333758,
+    -81.032495
    ],
    [
     32.25,
@@ -328,7 +452,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 13"
+  "page": "item 13",
+  "official": [
+   {
+    "id": "DESCP-22",
+    "name": "Riverport Tap: Construct Tap",
+    "in_service": "2025-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-14",
@@ -405,7 +537,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 16"
+  "page": "item 16",
+  "official": [
+   {
+    "id": "DESCP-39",
+    "name": "Church Creek - Faber Place - Charleston Transmission: Add 230kV Line",
+    "in_service": "2027-05-01",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-17",
@@ -432,7 +572,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 17"
+  "page": "item 17",
+  "official": [
+   {
+    "id": "DESCP-21",
+    "name": "Yemassee- Ritter 230kV #1 & #2: Construct SPDC with B-1272",
+    "in_service": "2026-06-01",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-18",
@@ -476,17 +624,39 @@
   "cost": 4569331,
   "coords": [
    [
-    33.48,
-    -80.49
+    33.199388,
+    -80.592009
    ],
    [
-    33.6,
-    -80.4
+    33.897661,
+    -80.323976
    ]
   ],
-  "loc": "low",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 19"
+  "page": "item 19",
+  "official": [
+   {
+    "id": "DESCP-29",
+    "name": "St George - Sumter 230kV Tie: Rebuild Line from Santee Substation - Duke/Progress Energy Tie",
+    "in_service": "2025-12-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "St George",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Saint George Switching Station (w1069480257)"
+   },
+   {
+    "name": "Sumter",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Sumter Substation (w185032893)"
+   }
+  ]
  },
  {
   "id": "DESC-20",
@@ -503,12 +673,12 @@
   "cost": 10534285,
   "coords": [
    [
-    33.72,
-    -82.21
+    33.65682,
+    -82.159478
    ],
    [
-    33.65,
-    -82.13
+    33.736288,
+    -82.201504
    ]
   ],
   "loc": "low",
@@ -540,7 +710,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 21"
+  "page": "item 21",
+  "official": [
+   {
+    "id": "DESCP-06",
+    "name": "Burton-St Helena 115kV: Rebuild Burton-Frogmore Transmission Section",
+    "in_service": "2024-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-22",
@@ -557,13 +735,29 @@
   "cost": 7540000,
   "coords": [
    [
-    33.65,
-    -81.36
+    33.650112,
+    -81.360566
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 22"
+  "page": "item 22",
+  "official": [
+   {
+    "id": "DESCP-24",
+    "name": "Wagener 115kV Tap: Construct Tap",
+    "in_service": "2025-12-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Wagener Tap",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Wagener Substation (w993540535)"
+   }
+  ]
  },
  {
   "id": "DESC-23",
@@ -580,17 +774,39 @@
   "cost": 8075000,
   "coords": [
    [
-    33.56,
-    -80.71
+    33.563666,
+    -80.708996
    ],
    [
-    33.53,
-    -80.57
+    33.532384,
+    -80.579724
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 23"
+  "page": "item 23",
+  "official": [
+   {
+    "id": "DESCP-41",
+    "name": "Cameron Jct - Elloree 46 kV Rebuild",
+    "in_service": "2026-12-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Cameron Jct",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Cameron Substation (w318318141)"
+   },
+   {
+    "name": "Elloree",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Elloree Substation (w1075509549)"
+   }
+  ]
  },
  {
   "id": "DESC-24",
@@ -640,7 +856,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 25"
+  "page": "item 25",
+  "official": [
+   {
+    "id": "DESCP-42",
+    "name": "Elloree - Santee City 46 kV: Rebuild",
+    "in_service": "2027-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-26",
@@ -657,8 +881,8 @@
   "cost": 3000000,
   "coords": [
    [
-    33.435,
-    -81.923
+    33.43287,
+    -81.911081
    ],
    [
     33.47,
@@ -667,7 +891,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 26"
+  "page": "item 26",
+  "official": [
+   {
+    "id": "DESCP-43",
+    "name": "Urquhart - Aiken PSA 46 kV: Rebuild",
+    "in_service": "2027-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-27",
@@ -794,7 +1026,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 31"
+  "page": "item 31",
+  "official": [
+   {
+    "id": "DESCP-36",
+    "name": "Williams-Summerville 230kV: Upgrade to SPDC B1272 ACSR",
+    "in_service": "2027-05-01",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-32",
@@ -821,7 +1061,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 32"
+  "page": "item 32",
+  "official": [
+   {
+    "id": "DESCP-25",
+    "name": "Church Creek - Ritter 230kV - Replace 38 Large Angles and Dead Ends",
+    "in_service": "2024-06-01",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-33",
@@ -861,13 +1109,29 @@
   "cost": 2750000,
   "coords": [
    [
-    33.21,
-    -80.45
+    33.209907,
+    -80.451166
    ]
   ],
-  "loc": "med",
+  "loc": "high",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 34"
+  "page": "item 34",
+  "official": [
+   {
+    "id": "DESCP-18",
+    "name": "Harleyville 115KV Transmission Tap - Construct (1.4 miles)",
+    "in_service": "2027-03-31",
+    "start": null
+   }
+  ],
+  "located": [
+   {
+    "name": "Harleyville Transmission Tap",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Harleyville Substation (w1075801506)"
+   }
+  ]
  },
  {
   "id": "DESC-35",
@@ -921,7 +1185,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 36"
+  "page": "item 36",
+  "official": [
+   {
+    "id": "DESCP-08",
+    "name": "VCS1-Denny Terrace 230kV & VCS1-Pineland 230kV: Rebuild Single Circuit Sections",
+    "in_service": "2026-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-37",
@@ -990,7 +1262,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 39"
+  "page": "item 39",
+  "official": [
+   {
+    "id": "DESCP-17",
+    "name": "Williams St Sub: Replace Sw House & Relays, AM Williams Sub: Replace Sw House, and McMeekin Sub: Add Sw House",
+    "in_service": "2028-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-40",
@@ -1017,7 +1297,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 40"
+  "page": "item 40",
+  "official": [
+   {
+    "id": "DESCP-44",
+    "name": "Cameron Jct - Cameron - St Matthews 46 kV Rebuild",
+    "in_service": "2028-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-41",
@@ -1034,12 +1322,12 @@
   "cost": 5376418,
   "coords": [
    [
-    32.3,
-    -80.93
+    32.333758,
+    -81.032495
    ],
    [
-    32.357,
-    -81.169
+    32.352116,
+    -81.175112
    ]
   ],
   "loc": "med",
@@ -1117,7 +1405,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 44"
+  "page": "item 44",
+  "official": [
+   {
+    "id": "DESCP-20",
+    "name": "Canadys-Ritter 115KV-Rebld SPDC 230/115KV 1272 (Approx 18 Miles)",
+    "in_service": "2026-06-01",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-45",
@@ -1144,7 +1440,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 45"
+  "page": "item 45",
+  "official": [
+   {
+    "id": "DESCP-09",
+    "name": "Wateree-Killian 230kV: Rebuild",
+    "in_service": "2028-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-46",
@@ -1211,12 +1515,12 @@
   "cost": 19800000,
   "coords": [
    [
-    33.72,
-    -82.21
+    33.736288,
+    -82.201504
    ],
    [
-    33.91,
-    -82.29
+    33.906536,
+    -82.292804
    ]
   ],
   "loc": "med",
@@ -1238,12 +1542,12 @@
   "cost": 18200000,
   "coords": [
    [
-    33.56,
-    -82.05
+    33.562599,
+    -82.051362
    ],
    [
-    33.56,
-    -81.81
+    33.583437,
+    -81.804506
    ]
   ],
   "loc": "med",
@@ -1298,7 +1602,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 51"
+  "page": "item 51",
+  "official": [
+   {
+    "id": "DESCP-02",
+    "name": "Union Pier 115-13.8 kV Sub: Tap",
+    "in_service": "2027-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-52",
@@ -1325,7 +1637,15 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 52"
+  "page": "item 52",
+  "official": [
+   {
+    "id": "DESCP-12",
+    "name": "Faber Place-Bayfront 115kV: Rebuild North Bridge Terrace to Bayfront Section",
+    "in_service": "2028-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "DESC-53",
@@ -1379,7 +1699,15 @@
   ],
   "loc": "low",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 54"
+  "page": "item 54",
+  "official": [
+   {
+    "id": "DESCP-26",
+    "name": "VCS2-Ward 230kV: Rebuild Line",
+    "in_service": "2029-12-31",
+    "start": null
+   }
+  ]
  },
  {
   "id": "GA-01",
@@ -1406,7 +1734,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "128-129"
+  "page": "128-129",
+  "official": [
+   {
+    "id": "IRP-19358",
+    "name": "GTC: EAST MOULTRIE - HIGHWAY 112 230 KV LINE",
+    "in_service": "2027-06-01",
+    "start": "2022-06-01"
+   }
+  ],
+  "project_start": "2022-06-01"
  },
  {
   "id": "GA-02",
@@ -1429,7 +1766,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "130"
+  "page": "130",
+  "official": [
+   {
+    "id": "IRP-09662",
+    "name": "GTC: EAST WALTON 500/230KV PROJECT",
+    "in_service": "2027-06-01",
+    "start": "2023-06-01"
+   }
+  ],
+  "project_start": "2023-06-01"
  },
  {
   "id": "GA-03",
@@ -1452,7 +1798,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "132-133"
+  "page": "132-133",
+  "official": [
+   {
+    "id": "IRP-20717",
+    "name": "CC - TOMOCHICHI 500/230KV SOLUTION (CC NETWORK IMPROVEMENTS)",
+    "in_service": "2027-07-15",
+    "start": "2024-06-01"
+   }
+  ],
+  "project_start": "2024-06-01"
  },
  {
   "id": "GA-04",
@@ -1521,7 +1876,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "136"
+  "page": "136",
+  "official": [
+   {
+    "id": "IRP-20797",
+    "name": "CC - EAST VILLA RICA AREA SWITCHING STATION (CC IMPROVEMENT)",
+    "in_service": "2028-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-07",
@@ -1571,7 +1935,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "141"
+  "page": "141",
+  "official": [
+   {
+    "id": "IRP-19950",
+    "name": "GTC: DRESDEN - TALBOT 500KV LINE",
+    "in_service": "2029-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-09",
@@ -1598,7 +1971,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "141-142"
+  "page": "141-142",
+  "official": [
+   {
+    "id": "IRP-21073",
+    "name": "GTC: BIG SMARR - TOMOCHICHI 500KV",
+    "in_service": "2030-06-01",
+    "start": "2024-12-01"
+   }
+  ],
+  "project_start": "2024-12-01"
  },
  {
   "id": "GA-10",
@@ -1625,7 +2007,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "152-153"
+  "page": "152-153",
+  "official": [
+   {
+    "id": "IRP-21113",
+    "name": "GTC: HARTWELL ENERGY - MIDDLE FORK 230KV LINE",
+    "in_service": "2030-06-01",
+    "start": "2027-06-01"
+   }
+  ],
+  "project_start": "2027-06-01"
  },
  {
   "id": "GA-11",
@@ -1656,7 +2047,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "153"
+  "page": "153",
+  "official": [
+   {
+    "id": "IRP-21077",
+    "name": "GTC: ROCKVILLE - TIGER CREEK -WARTHEN 500KV LINES",
+    "in_service": "2030-06-01",
+    "start": "2024-12-01"
+   }
+  ],
+  "project_start": "2024-12-01"
  },
  {
   "id": "GA-12",
@@ -1687,7 +2087,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "155"
+  "page": "155",
+  "official": [
+   {
+    "id": "IRP-21118",
+    "name": "MEAG: ATHENA - WARRENTON 230KV CONVERSION",
+    "in_service": "2030-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-13",
@@ -1714,7 +2123,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "156"
+  "page": "156",
+  "official": [
+   {
+    "id": "IRP-21116",
+    "name": "GOSHEN AREA STRATEGIC SOLUTION",
+    "in_service": "2030-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-14",
@@ -1737,7 +2155,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "159"
+  "page": "159",
+  "official": [
+   {
+    "id": "IRP-21099",
+    "name": "MEAG: PIO NONO 230/115KV AREA SOLUTION",
+    "in_service": "2031-06-01",
+    "start": "2025-01-01"
+   }
+  ],
+  "project_start": "2025-01-01"
  },
  {
   "id": "GA-15",
@@ -1764,7 +2191,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "161"
+  "page": "161",
+  "official": [
+   {
+    "id": "IRP-20756",
+    "name": "HATCH - WADLEY 500 KV LINE STRATEGIC PROJECT",
+    "in_service": "2031-06-01",
+    "start": "2024-07-03"
+   }
+  ],
+  "project_start": "2024-07-03"
  },
  {
   "id": "GA-16",
@@ -1791,7 +2227,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
-  "page": "162"
+  "page": "162",
+  "official": [
+   {
+    "id": "IRP-09661",
+    "name": "MCGRAU FORD - MIDDLE FORK 500KV LINE PROJECT",
+    "in_service": "2033-06-01",
+    "start": "2026-06-01"
+   }
+  ],
+  "project_start": "2026-06-01"
  },
  {
   "id": "GA-17",
@@ -1841,7 +2286,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-21137",
+    "name": "GTC: CONYERS - CORNISH MOUNTAIN 115KV LINE UPGRADE",
+    "in_service": "2026-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-19",
@@ -1858,13 +2312,30 @@
   "cost": null,
   "coords": [
    [
-    33.53,
-    -85.06
+    33.351115,
+    -84.905954
    ]
   ],
-  "loc": "low",
+  "loc": "high",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20273",
+    "name": "GTC: DRESDEN 500KV BUS EXPANSION",
+    "in_service": "2026-12-01",
+    "start": "2024-12-01"
+   }
+  ],
+  "project_start": "2024-12-01",
+  "located": [
+   {
+    "name": "DRESDEN",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dresden Substation (w163891152)"
+   }
+  ]
  },
  {
   "id": "GA-20",
@@ -1887,7 +2358,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20002",
+    "name": "GTC: GORDON - SANDERSVILLE #1 115KV LINE REBUILD",
+    "in_service": "2026-12-01",
+    "start": "2023-02-01"
+   }
+  ],
+  "project_start": "2023-02-01"
  },
  {
   "id": "GA-21",
@@ -1914,7 +2394,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-19334",
+    "name": "GTC: LAGRANGE - NORTH OPELIKA 230 KV",
+    "in_service": "2026-06-01",
+    "start": "2023-06-01"
+   }
+  ],
+  "project_start": "2023-06-01"
  },
  {
   "id": "GA-22",
@@ -1937,7 +2426,22 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-19999",
+    "name": "GTC: ROBINS SPRING BUS REPLACEMENT",
+    "in_service": "2026-06-01",
+    "start": "2023-06-01"
+   },
+   {
+    "id": "IRP-20001",
+    "name": "GTC: ROBINS SPRING CAPACITOR BANK INSTALLATION",
+    "in_service": "2026-06-01",
+    "start": "2023-01-01"
+   }
+  ],
+  "project_start": "2023-01-01"
  },
  {
   "id": "GA-23",
@@ -1964,7 +2468,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-18573",
+    "name": "GRID - ARKWRIGHT - LLOYD SHOALS 115KV",
+    "in_service": "2027-07-30",
+    "start": "2021-06-01"
+   }
+  ],
+  "project_start": "2021-06-01"
  },
  {
   "id": "GA-24",
@@ -1987,7 +2500,22 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20858",
+    "name": "GTC: ADAMSVILLE - BUZZARD ROOST 230KV REBUILD",
+    "in_service": "2027-06-01",
+    "start": "2025-06-01"
+   },
+   {
+    "id": "IRP-19597",
+    "name": "ADAMSVILLE - BUZZARD ROOST 230KV REBUILD AND JUMPER UPGRADE",
+    "in_service": "2026-06-01",
+    "start": "2024-06-01"
+   }
+  ],
+  "project_start": "2024-06-01"
  },
  {
   "id": "GA-25",
@@ -2010,7 +2538,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20776",
+    "name": "GTC: DOUGLASVILLE - VILLA RICA 230KV REBUILD (CC IMPROVEMENT)",
+    "in_service": "2027-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-26",
@@ -2037,7 +2574,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20591",
+    "name": "GTC: EATONTON PRIMARY (035591) - LICK CREEK 115KV REBUILD",
+    "in_service": "2027-12-01",
+    "start": "2023-10-01"
+   }
+  ],
+  "project_start": "2023-10-01"
  },
  {
   "id": "GA-27",
@@ -2091,7 +2637,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-19635",
+    "name": "GTC: HICKORY LEVEL - VILLA RICA 230KV LINE RECONDUCTOR",
+    "in_service": "2027-05-01",
+    "start": "2024-05-01"
+   }
+  ],
+  "project_start": "2024-05-01"
  },
  {
   "id": "GA-29",
@@ -2118,7 +2673,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20020",
+    "name": "GTC: SOUTH HAZLEHURST - NEW LACY 230KV LINE",
+    "in_service": "2027-06-01",
+    "start": "2024-01-15"
+   }
+  ],
+  "project_start": "2024-01-15"
  },
  {
   "id": "GA-30",
@@ -2141,7 +2705,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-18832",
+    "name": "MEAG: FORTSON 230KV SUBSTATION MODERNIZATION",
+    "in_service": "2027-01-13",
+    "start": "2025-01-01"
+   }
+  ],
+  "project_start": "2025-01-01"
  },
  {
   "id": "GA-31",
@@ -2168,7 +2741,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20264",
+    "name": "MEAG: RAY PLACE RD - WARRENTON PRIMARY",
+    "in_service": "2027-06-01",
+    "start": "2026-01-01"
+   }
+  ],
+  "project_start": "2026-01-01"
  },
  {
   "id": "GA-32",
@@ -2195,7 +2777,16 @@
   ],
   "loc": "low",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20503",
+    "name": "GTC: BARNEYVILLE - EAST MOULTRIE 115KV NEW LINE",
+    "in_service": "2028-06-01",
+    "start": "2025-06-01"
+   }
+  ],
+  "project_start": "2025-06-01"
  },
  {
   "id": "GA-33",
@@ -2218,7 +2809,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20873",
+    "name": "GTC: BONAIRE PRIMARY 500/230KV XFMR REPLCMNT & RELAY MOD",
+    "in_service": "2028-06-01",
+    "start": "2024-03-14"
+   }
+  ],
+  "project_start": "2024-03-14"
  },
  {
   "id": "GA-34",
@@ -2245,7 +2845,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-19992",
+    "name": "GTC: BOSTWICK - EAST SOCIAL CIRCLE 230KV RECONDUCTOR",
+    "in_service": "2028-06-01",
+    "start": "2024-12-31"
+   }
+  ],
+  "project_start": "2024-12-31"
  },
  {
   "id": "GA-35",
@@ -2295,7 +2904,16 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "official": [
+   {
+    "id": "IRP-20586",
+    "name": "GTC: NORTH DUBLIN 230/115KV TRANSFORMERS AND BUS-TIE BREAKER",
+    "in_service": "2028-12-01",
+    "start": "2023-11-01"
+   }
+  ],
+  "project_start": "2023-11-01"
  },
  {
   "id": "GA-37",
@@ -2365,13 +2983,5247 @@
   "cost": null,
   "coords": [
    [
-    32.357,
-    -81.169
+    32.356819,
+    -81.170346
    ]
   ],
   "loc": "med",
   "source": "https://www.gem.wiki/McIntosh_Combined_Cycle_Facility",
   "page": ""
+ },
+ {
+  "id": "DESCP-01",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Queensboro - Ft Johnson 115 kV & Queensboro-Bayfront 115kV (Queensboro-James Island Sect)",
+  "official_name": "Queensboro - Ft Johnson 115 kV & Queensboro-Bayfront 115kV (Queensboro-James Island Sect)",
+  "desc": "Replace the Queensboro - Ft Johnson 115 kV Line and structures as they have reached the end of life.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2023-12-31",
+  "start": "2022-12-01",
+  "date_precision": "day",
+  "cost": 5404301,
+  "coords": [
+   [
+    32.722793,
+    -79.967332
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 1 of 44, ID 6807 B",
+  "located": [
+   {
+    "name": "Queensboro",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "Ft Johnson",
+    "method": "not found"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-05",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Eastover - Square D 115kV: Rebuild",
+  "official_name": "Eastover - Square D 115kV: Rebuild",
+  "desc": "Replace wooden H-Frame structures with Self Supporting Steel Structures and restring with 1272 ACSR conductor.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2024-06-01",
+  "start": "2023-06-01",
+  "date_precision": "day",
+  "cost": 11700000,
+  "coords": [
+   [
+    33.877115,
+    -80.692259
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 5 of 44, ID 6808 J",
+  "located": [
+   {
+    "name": "Eastover",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Eastover (n154100234)"
+   },
+   {
+    "name": "Square D",
+    "method": "not found"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-07",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Burton-St Helena 115kV: Frogmore Distribution - St Helena",
+  "official_name": "Burton-St Helena 115kV: Frogmore Distribution - St Helena",
+  "desc": "Replace wooden structures with Self Supporting Steel Structures and upgrade to 795 ACSR for the Frogmore Distribution Tap - St. Helena section.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-12-31",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": 6925000,
+  "coords": [
+   [
+    32.436488,
+    -80.721016
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 7 of 44, ID 6808 L",
+  "located": [
+   {
+    "name": "Burton",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Burton Substation (w185362029)"
+   },
+   {
+    "name": "St Helena",
+    "method": "not found"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-10",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Okatie-Bluffton 115kV: Rebuild",
+  "official_name": "Okatie-Bluffton 115kV: Rebuild",
+  "desc": "Replace wooden H-Frame structures with Self Supporting Steel Structures and upgrade conductor to standard 1272 ACSR.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": 40660000,
+  "coords": [
+   [
+    32.333758,
+    -81.032495
+   ],
+   [
+    32.235027,
+    -80.853384
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 10 of 44, ID 6808 S",
+  "located": [
+   {
+    "name": "Okatie",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "Bluffton",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-14",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Stevens Creek - Hooks 115kV/LR Plumb Branch 46kV Rebuilds",
+  "official_name": "Stevens Creek - Hooks 115kV/LR Plumb Branch 46kV Rebuilds",
+  "desc": "9.5 miles. Scope includes rebuilding the 115 and 46 kV lines in this corridor SPDC.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2024-12-31",
+  "start": "2023-12-01",
+  "date_precision": "day",
+  "cost": 11745543,
+  "coords": [
+   [
+    33.562599,
+    -82.051362
+   ],
+   [
+    33.65682,
+    -82.159478
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 14 of 44, ID 6809 E",
+  "located": [
+   {
+    "name": "Stevens Creek",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "Hooks",
+    "method": "manual",
+    "confidence": "high",
+    "note": "Clarks Hill SC, at the GPC-SCE&G tie point OSM tags as w1074904615"
+   },
+   {
+    "name": "LR Plumb Branch Rebuilds",
+    "method": "not found"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-15",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Stevens Creek - Hooks 115kV/LR Plumb Branch 46kV",
+  "official_name": "Stevens Creek - Hooks 115kV/LR Plumb Branch 46kV",
+  "desc": "Upgrade 6.5 miles of aging conductor with 1272 ACSR and rebuild with SPDC.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2025-12-31",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": 7800000,
+  "coords": [
+   [
+    33.562599,
+    -82.051362
+   ],
+   [
+    33.65682,
+    -82.159478
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 15 of 44, ID 6809 G",
+  "located": [
+   {
+    "name": "Stevens Creek",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "Hooks",
+    "method": "manual",
+    "confidence": "high",
+    "note": "Clarks Hill SC, at the GPC-SCE&G tie point OSM tags as w1074904615"
+   },
+   {
+    "name": "LR Plumb Branch",
+    "method": "not found"
+   }
+  ],
+  "past_in_service": true,
+  "status": "Planned"
+ },
+ {
+  "id": "DESCP-19",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Summerville: Replace and Spare 230-115kV 336MVA Auto Bank",
+  "official_name": "Summerville: Replace and Spare 230-115kV 336MVA Auto Bank",
+  "desc": "Purchase a spare 230/115kV, 336MVA Autobank for the Southern Region to be stored at Summerville 230kV Sub. Include a pad, AC for heaters, and possibly a pit for oil containment.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2024-12-31",
+  "start": "2023-12-01",
+  "date_precision": "day",
+  "cost": 3982052,
+  "coords": [
+   [
+    33.018,
+    -80.176
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 19 of 44, ID 05004 P",
+  "located": [
+   {
+    "name": "Summerville",
+    "method": "manual",
+    "confidence": "high",
+    "note": "Summerville SC, DESC substation area"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-31",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Hooks - Thurmond 115kV Tie: Rebuild",
+  "official_name": "Hooks - Thurmond 115kV Tie: Rebuild",
+  "desc": "Rebuilding section of line between Hooks and Thurmond. Approximately 2.3 miles. The line will be rebuilt on existing R/W using steel poles, 115 kV insulation, and 1272 ACSR conductor.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2024-12-31",
+  "start": "2023-12-01",
+  "date_precision": "day",
+  "cost": 2200080,
+  "coords": [
+   [
+    33.65682,
+    -82.159478
+   ],
+   [
+    33.660127,
+    -82.195931
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 31 of 44, ID 6810 A",
+  "located": [
+   {
+    "name": "Hooks",
+    "method": "manual",
+    "confidence": "high",
+    "note": "Clarks Hill SC, at the GPC-SCE&G tie point OSM tags as w1074904615"
+   },
+   {
+    "name": "Thurmond",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "past_in_service": true,
+  "status": "In Progress"
+ },
+ {
+  "id": "DESCP-37",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Cainhoy 115 kV Tap: Construct",
+  "official_name": "Cainhoy 115 kV Tap: Construct",
+  "desc": "Construct a 115 kV tap from Cainhoy to Clements Ferry. Approximately 2.8 miles. Construct terminal at Cainhoy.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 21850000,
+  "coords": [
+   [
+    32.941402,
+    -79.842276
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 37 of 44, ID 0147 C, K",
+  "located": [
+   {
+    "name": "Cainhoy Tap",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Cainhoy Substation (w229116275)"
+   }
+  ],
+  "status": "Planned"
+ },
+ {
+  "id": "DESCP-38",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Jack Primus 115 kV Tap: Construct",
+  "official_name": "Jack Primus 115 kV Tap: Construct",
+  "desc": "Construct a 115 kV tap from Jack Primus to Clements Ferry. Approximately 2.2 miles. Construct terminals at Jack Primus.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 18000000,
+  "coords": [
+   [
+    32.919384,
+    -79.904495
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: DESC 2024-2028 $2M and above project descriptions (SCRTP)",
+  "page": "project 38 of 44, ID 0147 B, J",
+  "located": [
+   {
+    "name": "Jack Primus Tap",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Jack Primus Substation (w1097237376)"
+   }
+  ],
+  "status": "Planned"
+ },
+ {
+  "id": "IRP-19523",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: CC - Hyundai Motors Savannah Aka. Project Ea",
+  "official_name": "SAV: CC - HYUNDAI MOTORS SAVANNAH AKA. PROJECT EA",
+  "desc": "Construct a new Hyundai 230kV substation with an eight element 230kV ring bus and four 230/25kV banks. Construct a new Newton Rd 230kV substation with a five element 230kV ring bus and loop through the Little Ogeechee - Meldrim Black and White 230kV lines. Build two new 230kV lines connecting from Hyundai - Newton Rd (12 miles) and Hyundai - Meldrim (10 miles). At Meldrim, add a breaker to accommodate for the new Hyundai line. Install a 115/25kV bank at Interstate Centre and build a new 115kV line from Interstate Centre - Hyundai (2.3 miles) for bridge power.",
+  "kv": 230,
+  "miles": 12.0,
+  "type": "substation",
+  "in_service": "2025-01-01",
+  "start": "2024-01-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.14,
+    -81.4
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 19523, zone 219",
+  "located": [
+   {
+    "name": "HYUNDAI MOTORS SAVANNAH",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Hyundai Metaplant, Ellabell GA"
+   }
+  ],
+  "project_start": "2022-06-01",
+  "past_in_service": true,
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-18492",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Mitchell - North Tifton 230kV Reconductor",
+  "official_name": "MITCHELL - NORTH TIFTON 230KV RECONDUCTOR",
+  "desc": "Rebuild 35.21 miles of the Mitchell - North Tifton 230kV line from 100C 795 ACSR to 100C 1351 ACSR.",
+  "kv": 230,
+  "miles": 35.21,
+  "type": "rebuild",
+  "in_service": "2025-05-01",
+  "start": "2023-02-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.447121,
+    -84.133843
+   ],
+   [
+    31.478089,
+    -83.54913
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 18492, zone 216",
+  "located": [
+   {
+    "name": "MITCHELL",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "NORTH TIFTON",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "project_start": "2021-12-31",
+  "past_in_service": true,
+  "plan_change": "Project advanced in 2025 Project delayed from 2024 to 2025"
+ },
+ {
+  "id": "IRP-19187",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Grid - Bremen - Crooked Creek (APC) 115 Kv Project",
+  "official_name": "GRID - BREMEN - CROOKED CREEK (APC) 115 KV PROJECT",
+  "desc": "Rebuild from Bremen to Indian Creek Road, on the Bremen - Crooked Creek 115kV line (14 miles), using 795 ACSR conductor at 100C.",
+  "kv": 115,
+  "miles": 14.0,
+  "type": "substation",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.709192,
+    -85.142716
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 19187, zone 211",
+  "located": [
+   {
+    "name": "BREMEN",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Bremen Primary Substation (w9307582); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "CROOKED CREEK (APC)",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2021-09-01",
+  "past_in_service": true,
+  "plan_change": "Project delayed from 2024 to 2025 New Project"
+ },
+ {
+  "id": "IRP-18153",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Bonaire Pri- Echeconnee 115 Kv Partial Rebuild",
+  "official_name": "GTC: BONAIRE PRI- ECHECONNEE 115 KV PARTIAL REBUILD",
+  "desc": "Rebuild 2.3 miles of the Bonaire Primary - Echeconnee 115kV line with 100C ACSR 795 conductor.",
+  "kv": 115,
+  "miles": 2.3,
+  "type": "rebuild",
+  "in_service": "2025-06-01",
+  "start": "2024-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.564795,
+    -83.600023
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 18153, zone 214",
+  "located": [
+   {
+    "name": "BONAIRE PRI",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Bonaire Primary Substation (w160308063); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "ECHECONNEE",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2023-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change Project advanced from 2030 to 2025"
+ },
+ {
+  "id": "IRP-20590",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Eatonton Primary - Lick Creek 115kV Line Switch Replacement",
+  "official_name": "GTC: EATONTON PRIMARY - LICK CREEK 115KV LINE SWITCH REPLACEMENT",
+  "desc": "Replace a 1200A RLB line switch on the Eatonton - Lake Oconee 115kV line with a with motor operator and SCADA controls. This switch is located on GTC's Eatonton Primary - Lick Creek 115kV section of the Eatonton Primary - Lake Oconee 115kV Line.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.304481,
+    -83.402519
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 20590, zone 214",
+  "located": [
+   {
+    "name": "EATONTON PRIMARY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Eatonton Substation (w171527955)"
+   },
+   {
+    "name": "LICK CREEK",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2023-12-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-11821",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Jesup - Ludowici Primary 115kV Rebuild",
+  "official_name": "JESUP - LUDOWICI PRIMARY 115KV REBUILD",
+  "desc": "Rebuild approximately 7.5 miles of the Jesup - North Jesup - Rayonier section of the Jesup - Ludowici Primary 115kV line from 100C 336.4 ACSR Linnet conductor to 100C 795 ACSR Drake conductor.",
+  "kv": 115,
+  "miles": 7.5,
+  "type": "rebuild",
+  "in_service": "2025-06-01",
+  "start": "2024-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.603106,
+    -81.924947
+   ],
+   [
+    31.721597,
+    -81.743703
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 11821, zone 218",
+  "located": [
+   {
+    "name": "JESUP",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "LUDOWICI PRIMARY",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "project_start": "2023-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change Project delayed from 2024 to 2025"
+ },
+ {
+  "id": "IRP-13787",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Aultman Road - Bonaire Primary 115 Kv Rebuild",
+  "official_name": "MEAG: AULTMAN ROAD - BONAIRE PRIMARY 115 KV REBUILD",
+  "desc": "MEAG: Rebuild approximately 1.99 miles of Sleepy Hollow - Peach Blossom 115kV section of the Aultman Road - Bonaire Primary 115kV line from 100C 336 ACSR to 100C 795 ACSR. GTC: Replace the jumpers at Sleepy Hollow with 1590 AAC.",
+  "kv": 115,
+  "miles": 1.99,
+  "type": "rebuild",
+  "in_service": "2025-06-01",
+  "start": "2024-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.564795,
+    -83.600023
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 13787, zone 214",
+  "located": [
+   {
+    "name": "AULTMAN ROAD",
+    "method": "not found"
+   },
+   {
+    "name": "BONAIRE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Bonaire Primary Substation (w160308063); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2023-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20464",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Norcross 230kV Bus 1-3 Series Bus Tie Breaker Installation",
+  "official_name": "NORCROSS 230KV BUS 1-3 SERIES BUS TIE BREAKER INSTALLATION",
+  "desc": "Install a bus tie breaker in series with existing bus tie breaker between 230kV Bus 1 and Bus 3 at Norcross.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.932557,
+    -84.21343
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.177, TEAMS 20464, zone 202",
+  "located": [
+   {
+    "name": "NORCROSS",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Norcross Substation (w159758307)"
+   }
+  ],
+  "project_start": "2023-11-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-19631",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Pine Grove Primary 115 Kv Dual Stage Capacitor Bank",
+  "official_name": "PINE GROVE PRIMARY 115 KV DUAL STAGE CAPACITOR BANK",
+  "desc": "Install a Dual Stage 30MVAR capacitor bank at Pine Grove Primary.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.881649,
+    -83.227987
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 19631, zone 216",
+  "located": [
+   {
+    "name": "PINE GROVE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Pine Grove Primary Substation (w174399121)"
+   }
+  ],
+  "project_start": "2023-11-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20067",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Deptford - Magnolia 115kV Reconductor",
+  "official_name": "SAV: DEPTFORD - MAGNOLIA 115KV RECONDUCTOR",
+  "desc": "Reconductor the Deptford - Magnolia 115kV line (approximately 5 miles) using 973.1 C7 ACCS (Everglades) conductor and upgrade the Deptford main bus.",
+  "kv": 115,
+  "miles": 5.0,
+  "type": "rebuild",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.066828,
+    -81.048384
+   ],
+   [
+    32.022687,
+    -81.086181
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 20067, zone 219",
+  "located": [
+   {
+    "name": "DEPTFORD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Deptford Substation (w122007500)"
+   },
+   {
+    "name": "MAGNOLIA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Magnolia Substation (w121857248)"
+   }
+  ],
+  "project_start": "2023-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20431",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Villa Rica Low Side Breaker",
+  "official_name": "VILLA RICA LOW SIDE BREAKER",
+  "desc": "Replace a low side breaker at Villa Rica with a 4000A breaker.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-06-01",
+  "start": "2024-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.741022,
+    -84.854865
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 20431, zone 211",
+  "located": [
+   {
+    "name": "VILLA RICA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Villa Rica Substation (w159758304)"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "past_in_service": true,
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-18774",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Heard County - Tenaska 500kV (Second Line)",
+  "official_name": "GTC: HEARD COUNTY - TENASKA 500KV (SECOND LINE)",
+  "desc": "GTC: Build a second Heard County - Tenaska 500kV line, 0.8 miles, with 100C (3) 1113 ACSR Bluejay conductors. Add a 500kV breaker at Heard County. GPC: Add a 500kV breaker at Tenaska.",
+  "kv": 500,
+  "miles": 0.8,
+  "type": "new_line",
+  "in_service": "2025-12-01",
+  "start": "2022-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.358678,
+    -84.994222
+   ],
+   [
+    33.351627,
+    -84.99809
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 18774, zone 213",
+  "located": [
+   {
+    "name": "HEARD COUNTY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Heard County Substation (w163891193)"
+   },
+   {
+    "name": "TENASKA (",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Tenaska Georgia Substation (w163891161); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2021-12-01",
+  "past_in_service": true,
+  "plan_change": "Project delayed from 2024 to 2025 Project delayed from 2024 to 2025"
+ },
+ {
+  "id": "IRP-20326",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Anthony Shoals Statcom System",
+  "official_name": "ANTHONY SHOALS STATCOM SYSTEM",
+  "desc": "Install a + 150 / - 150 MVAR turnkey STATCOM system at Anthony Shoals 230kV substation.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-12-31",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.001832,
+    -82.636279
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 20326, zone 212",
+  "located": [
+   {
+    "name": "ANTHONY SHOALS",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Anthony Shoals Substation (w171540506)"
+   }
+  ],
+  "project_start": "2023-08-04",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20175",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "CC - Project Chronos- Sk/hyundai",
+  "official_name": "CC - PROJECT CHRONOS- SK/HYUNDAI",
+  "desc": "GPC will build a 230/25kV station named Two Run Ranch and loop it into the Cartersville - Pinson 230kV line to serve SK Battery/Hyundai and new load in the area.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-12-31",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.239246,
+    -83.480155
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 20175, zone 211",
+  "located": [
+   {
+    "name": "SK",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "SK Battery Substation (w1066858908)"
+   },
+   {
+    "name": "HYUNDAI",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2023-07-31",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20010",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Anthony Shoals - Washington 115 Kv Line Rebuild",
+  "official_name": "GTC: ANTHONY SHOALS - WASHINGTON 115 KV LINE REBUILD",
+  "desc": "Rebuild 21 miles of the Double Branches Junction - Washington 115kV line section with 100C 795 ACSR conductor or higher rated conductor.",
+  "kv": 115,
+  "miles": 21.0,
+  "type": "rebuild",
+  "in_service": "2025-12-31",
+  "start": "2024-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.001832,
+    -82.636279
+   ],
+   [
+    33.706504,
+    -82.753196
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 20010, zone 215",
+  "located": [
+   {
+    "name": "ANTHONY SHOALS",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Anthony Shoals Substation (w171540506)"
+   },
+   {
+    "name": "WASHINGTON",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Washington Substation #2 (w490789707); 3 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-17075",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Little Ogeechee 230- 115kV: Relay Modernization",
+  "official_name": "SAV: LITTLE OGEECHEE 230- 115KV: RELAY MODERNIZATION",
+  "desc": "Relay modernization with conversion of the 230kV ring bus to BAAH topology and addition of BAAH rung for Big Ogeechee - Little Ogeechee (Red) 230kV Line. Rebuild 115kV straight bus to BAAH design.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2025-12-31",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.995,
+    -81.225
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.178, TEAMS 17075, zone 219",
+  "located": [
+   {
+    "name": "LITTLE OGEECHEE",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Little Ogeechee River, south Savannah GA"
+   }
+  ],
+  "project_start": "2022-06-01",
+  "past_in_service": true,
+  "plan_change": "Project delayed in 2025 New Project"
+ },
+ {
+  "id": "IRP-18960",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Blankets Creek - Woodstock 115kV Line Rebuild",
+  "official_name": "BLANKETS CREEK - WOODSTOCK 115KV LINE REBUILD",
+  "desc": "Rebuild the entire Blankets Creek - Woodstock 115kV line, approximately 7.1 miles, with 200C 795 ACSS conductor.",
+  "kv": 115,
+  "miles": 7.1,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.185757,
+    -84.508012
+   ],
+   [
+    34.08527,
+    -84.513456
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.179, TEAMS 18960, zone 201",
+  "located": [
+   {
+    "name": "BLANKETS CREEK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Blankets Creek Substation (w178249108)"
+   },
+   {
+    "name": "WOODSTOCK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Woodstock Substation (w177931262)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change No Change"
+ },
+ {
+  "id": "IRP-20491",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "East Point Relay Modernization",
+  "official_name": "EAST POINT RELAY MODERNIZATION",
+  "desc": "Upgrade protection on 230kV buses, 115kV buses, and 230/115kV auto transformer at the East Point station. Add adequate monitoring on DC supply.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.67635,
+    -84.462966
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.179, TEAMS 20491, zone 208",
+  "located": [
+   {
+    "name": "EAST POINT",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Point Primary Substation (r14128477)"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-16007",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Fenwick Street - Sand Bar Ferry 115kV (Reconductor/rebuild)",
+  "official_name": "FENWICK STREET - SAND BAR FERRY 115KV (RECONDUCTOR/REBUILD)",
+  "desc": "Reconductor approximately 2.72 miles of transmission line from Fenwick St to East Augusta Jct. with 100C 1351 ACSR conductor.",
+  "kv": 115,
+  "miles": 2.72,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.4655,
+    -81.969
+   ],
+   [
+    33.43,
+    -81.933
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.179, TEAMS 16007, zone 215",
+  "located": [
+   {
+    "name": "FENWICK STREET",
+    "method": "manual",
+    "confidence": "low",
+    "note": "downtown Augusta GA"
+   },
+   {
+    "name": "SAND BAR FERRY (",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Sand Bar Ferry Rd, east Augusta GA"
+   }
+  ],
+  "project_start": "2022-09-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-19618",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Gordon-n Dublin 115kV (Gordon-engl McI J) Rebuild",
+  "official_name": "GORDON-N DUBLIN 115KV (GORDON-ENGL MCI J) REBUILD",
+  "desc": "Rebuild the Gordon - Engelhard McIntyre J of the Gordon - North Dublin 115kV line from 100C 336.4 ACSR (2.81 miles) Linnet and 75C 4/0 F Copper/CW (3.18 miles) to 200C ACSS 795 conductor.",
+  "kv": 115,
+  "miles": 2.81,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.882471,
+    -83.316914
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.179, TEAMS 19618, zone 214",
+  "located": [
+   {
+    "name": "GORDON",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Gordon Substation (w170991651)"
+   },
+   {
+    "name": "N DUBLIN (GORDON",
+    "method": "not found"
+   },
+   {
+    "name": "ENGL MCI J)",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2023-10-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-21139",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Grady - Morrow (White) 115kV Rebuild",
+  "official_name": "GRADY - MORROW (WHITE) 115KV REBUILD",
+  "desc": "Replace 0.72 miles of conductor from Moreland Way to Morrow including the bus and jumper at Moreland Way with 1351.5 Martin/ACSS 54/19 conductor.",
+  "kv": 115,
+  "miles": 0.72,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.605931,
+    -84.333462
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.179, TEAMS 21139, zone 206",
+  "located": [
+   {
+    "name": "GRADY",
+    "method": "not found"
+   },
+   {
+    "name": "MORROW (WHITE)",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Morrow Substation (w171479107)"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "past_in_service": true,
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-19706",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Grid - Gainesville #2 Equipment Replacement",
+  "official_name": "GRID - GAINESVILLE #2 EQUIPMENT REPLACEMENT",
+  "desc": "GPC: Replace the two 230/115kV auto transformers (Bank C and D) at Gainesville #2 with 400MVA. Project was originally maintenance driven but now compliance driven.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.263022,
+    -83.809673
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.179, TEAMS 19706, zone 212",
+  "located": [
+   {
+    "name": "GAINESVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Gainesville Substation #2 (w179716524); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2024-12-31",
+  "past_in_service": true,
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20490",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Klondike Relay Modernization",
+  "official_name": "KLONDIKE RELAY MODERNIZATION",
+  "desc": "Upgrade protection on 230kV buses at the Klondike station. Add adequate monitoring on DC supply.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.636977,
+    -84.124487
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20490, zone 206",
+  "located": [
+   {
+    "name": "KLONDIKE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Klondike Substation (w159784541)"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-19598",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Dresden - Lagrange Primary 230kV Upgrade & Jumpers",
+  "official_name": "MEAG: DRESDEN - LAGRANGE PRIMARY 230KV UPGRADE & JUMPERS",
+  "desc": "MEAG will re-sag the Dresden - LaGrange Primary 230kV line to 125C. Replace the jumpers at Dresden and LaGrange with (2) 1590 AAC jumpers.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.351115,
+    -84.905954
+   ],
+   [
+    33.030532,
+    -85.029884
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 19598, zone 213",
+  "located": [
+   {
+    "name": "DRESDEN",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dresden Substation (w163891152)"
+   },
+   {
+    "name": "LAGRANGE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "LaGrange Substation #12 (w1021051769); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20270",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Ray Place Rd - Washington #3",
+  "official_name": "MEAG: RAY PLACE RD - WASHINGTON #3",
+  "desc": "Rebuild the Ray Place Rd - Washington 115kV line with 100C 795 ACSR conductor (total 17.4 Miles) between Ray Place Rd and Washington 2. Replace Jumpers and bus at Washington 2.",
+  "kv": 115,
+  "miles": 17.4,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.468258,
+    -82.819772
+   ],
+   [
+    33.706504,
+    -82.753196
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20270, zone 215",
+  "located": [
+   {
+    "name": "RAY PLACE RD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Ray Place Road Switching Station (w1085484843)"
+   },
+   {
+    "name": "WASHINGTON",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Washington Substation #2 (w490789707); 3 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20271",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Ray Place Rd - Washington (Washington - Washington 3)",
+  "official_name": "MEAG: RAY PLACE RD - WASHINGTON (WASHINGTON - WASHINGTON 3)",
+  "desc": "MEAG will rebuild the Ray Place Rd - Washington 115kV line with 100C 1351 ACSR conductor (total 1.2 Miles) between Washington and Washington 3. Replace jumpers at Washington.",
+  "kv": 115,
+  "miles": 1.2,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.468258,
+    -82.819772
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20271, zone 215",
+  "located": [
+   {
+    "name": "RAY PLACE RD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Ray Place Road Switching Station (w1085484843)"
+   },
+   {
+    "name": "WASHINGTON (WASHINGTON",
+    "method": "not found"
+   },
+   {
+    "name": "WASHINGTON 3)",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20300",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Morrow 115kV Relay Upgrade",
+  "official_name": "MORROW 115KV RELAY UPGRADE",
+  "desc": "Upgrade protection scheme on all three 115kV buses at Morrow.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.605931,
+    -84.333462
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20300, zone 208",
+  "located": [
+   {
+    "name": "MORROW",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Morrow Substation (w171479107)"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20066",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Boulevard - Deptford 115kV Reconductor",
+  "official_name": "SAV: BOULEVARD - DEPTFORD 115KV RECONDUCTOR",
+  "desc": "Reconductor the Boulevard - Deptford 115kV line (approximately 8 miles) using 973.1 C7 ACCS (Everglades) conductor. Upgrade main bus and jumpers at Bolton substation from 90C 1590 AAC Coreopsis to 90C (2)1590 AAC Coreopsis or higher rated equipment.",
+  "kv": 115,
+  "miles": 8.0,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.041231,
+    -81.144464
+   ],
+   [
+    32.066828,
+    -81.048384
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20066, zone 219",
+  "located": [
+   {
+    "name": "BOULEVARD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Boulevard Substation (w381797798)"
+   },
+   {
+    "name": "DEPTFORD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Deptford Substation (w122007500)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-19966",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: CC - Big Ogeechee 500/230kV (CC Network Improvements)",
+  "official_name": "SAV: CC - BIG OGEECHEE 500/230KV (CC NETWORK IMPROVEMENTS)",
+  "desc": "Construct a new substation near Little Ogeechee, adjacent to the 500kV and 230kV shared right of way for McCall Road - Thalmann 500kV and the Little Ogeechee - Meldrim 230kV Black and White lines. The new substation will loop in the existing McCall Road - Thalmann 500kV line, the existing Little Ogeechee - Meldrim 230kV lines, and accommodate a new 1344MVA 500/230kV auto transformers with an additional 230kV connection to Little Ogeechee.",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2024-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.1,
+    -81.38
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 19966, zone 219",
+  "located": [
+   {
+    "name": "BIG OGEECHEE (CC",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Big Ogeechee area, Bryan County GA"
+   }
+  ],
+  "project_start": "2023-06-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20277",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: McIntosh - Purrysburg 230kV Reactors",
+  "official_name": "SAV: MCINTOSH - PURRYSBURG 230KV REACTORS",
+  "desc": "Install reactors on the McIntosh - Purrysburg (Black and White) 230kV tie lines at McIntosh. Rebuild 0.1 miles (GPC portion) for both lines to (2) 200C 1351 ACSS conductor.",
+  "kv": 230,
+  "miles": 0.1,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.352116,
+    -81.175112
+   ],
+   [
+    32.318,
+    -81.117
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20277, zone 219",
+  "located": [
+   {
+    "name": "MCINTOSH",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "PURRYSBURG",
+    "method": "manual",
+    "confidence": "high",
+    "note": "Purrysburg, Jasper County SC"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20489",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Scottdale Relay Modernization",
+  "official_name": "SCOTTDALE RELAY MODERNIZATION",
+  "desc": "Upgrade protection on 230kV bus and 230/115kV auto transformers at the Scottdale station. Add adequate monitoring on DC supply.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.789827,
+    -84.264089
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 20489, zone 206",
+  "located": [
+   {
+    "name": "SCOTTDALE",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Scottdale (n153969561)"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "past_in_service": true,
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-17900",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Union City - Yates 230 Kv White Line Rebuild",
+  "official_name": "UNION CITY - YATES 230 KV WHITE LINE REBUILD",
+  "desc": "Rebuild 23.4 miles of the Union City - Yates 230kV White line with bundled 1351 ACSS Martin conductor at 200C.",
+  "kv": 230,
+  "miles": 23.4,
+  "type": "rebuild",
+  "in_service": "2026-04-01",
+  "start": "2024-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.587056,
+    -84.54243
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.180, TEAMS 17900, zone 208",
+  "located": [
+   {
+    "name": "UNION CITY",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Union City (n154110018)"
+   },
+   {
+    "name": "YATES WHITE",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2023-06-01",
+  "past_in_service": true,
+  "plan_change": "Delayed in 2026. New Project"
+ },
+ {
+  "id": "IRP-20691",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Union City - Yates 230kV (White) Switch And Trap Replacement",
+  "official_name": "UNION CITY - YATES 230KV (WHITE) SWITCH AND TRAP REPLACEMENT",
+  "desc": "Replace the limiting elements at Union City and Yates substations along the Union City - Yates 230kV (White) line.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.587056,
+    -84.54243
+   ],
+   [
+    33.457634,
+    -84.896958
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.181, TEAMS 20691, zone 208",
+  "located": [
+   {
+    "name": "UNION CITY",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Union City (n154110018)"
+   },
+   {
+    "name": "YATES (WHITE)",
+    "method": "osm_plant",
+    "confidence": "high",
+    "note": "Plant Yates (w1024438670)"
+   }
+  ],
+  "project_start": "2024-05-15",
+  "past_in_service": true,
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20668",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Dresden Line Protective Relaying",
+  "official_name": "DRESDEN LINE PROTECTIVE RELAYING",
+  "desc": "On the O'Hara - Wansley 500kV line, replace the protective relay panels associated with the 500kV line terminal facing Dresden, at both O'Hara and Wansley.",
+  "kv": 500,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-12-01",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.351115,
+    -84.905954
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.181, TEAMS 20668, zone 208",
+  "located": [
+   {
+    "name": "DRESDEN",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dresden Substation (w163891152)"
+   }
+  ],
+  "project_start": "2024-12-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20874",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Barnesville Primary- Barnesville #1 115kV Reconductor",
+  "official_name": "GTC: BARNESVILLE PRIMARY- BARNESVILLE #1 115KV RECONDUCTOR",
+  "desc": "Rebuild approximately 4.53 miles of the Barnesville Primary - Barnesville #1 segment on the Barnesville Primary - Lamar County Industrial 115kV line.",
+  "kv": 115,
+  "miles": 4.53,
+  "type": "rebuild",
+  "in_service": "2026-12-01",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.032069,
+    -84.201258
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.181, TEAMS 20874, zone 213",
+  "located": [
+   {
+    "name": "BARNESVILLE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Barnesville Primary Substation (w564834100); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "BARNESVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Barnesville Primary Substation (w564834100); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-19363",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Morrow - Mountain View 115 Kv Rebuild",
+  "official_name": "MORROW - MOUNTAIN VIEW 115 KV REBUILD",
+  "desc": "Rebuild the Mountain View - Barnett Road section of the Morrow - Mountain View 115kV line with 200C 1351 ACSS Martin conductor.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-12-31",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.605931,
+    -84.333462
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.181, TEAMS 19363, zone 208",
+  "located": [
+   {
+    "name": "MORROW",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Morrow Substation (w171479107)"
+   },
+   {
+    "name": "MOUNTAIN VIEW",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-19601",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Morrow - Yates Common 115kV Line Upgrade",
+  "official_name": "MORROW - YATES COMMON 115KV LINE UPGRADE",
+  "desc": "On the Fife - Fairburn SW - Owens Corning Tap sections of the Morrow - Yates Common 115kV line, rebuild approximately 5.8 miles of 50C 477 ACSR with 210C 1334 T13 ACCR Martin or 200C 1351.0 ACSS Martin.",
+  "kv": 115,
+  "miles": 5.8,
+  "type": "rebuild",
+  "in_service": "2027-05-01",
+  "start": "2026-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.605931,
+    -84.333462
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.181, TEAMS 19601, zone 208",
+  "located": [
+   {
+    "name": "MORROW",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Morrow Substation (w171479107)"
+   },
+   {
+    "name": "YATES COMMON",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2024-05-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-15879",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Possum Branch - Yates Common 115kV Rebuild (Yates To Clem)",
+  "official_name": "POSSUM BRANCH - YATES COMMON 115KV REBUILD (YATES TO CLEM)",
+  "desc": "Rebuild 11.2 miles of 100C 477 ACSR with 200C 1334 T13 ACCR Martin or 200C 1351.0 ACSS between Yates Common to Oak Mountain. Replace limiting elements along the line.",
+  "kv": 115,
+  "miles": 11.2,
+  "type": "rebuild",
+  "in_service": "2027-05-01",
+  "start": "2026-02-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.461641,
+    -84.904198
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.181, TEAMS 15879, zone 211",
+  "located": [
+   {
+    "name": "POSSUM BRANCH",
+    "method": "not found"
+   },
+   {
+    "name": "YATES COMMON",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Yates Common Substation (w652943491)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20781",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "CC - Summer Lake - Villa Rica 230kV Rebuild (CC Improvmnt)",
+  "official_name": "CC - SUMMER LAKE - VILLA RICA 230KV REBUILD (CC IMPROVMNT)",
+  "desc": "Rebuild the 2.5 mile section from Villa Rica to the new East Villa Rica Switching station on the Summer Lake - Villa Rica 230kV line with bundled 200C 1351 ACSS Martin.",
+  "kv": 230,
+  "miles": 2.5,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.741022,
+    -84.854865
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.182, TEAMS 20781, zone 201",
+  "located": [
+   {
+    "name": "SUMMER LAKE",
+    "method": "not found"
+   },
+   {
+    "name": "VILLA RICA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Villa Rica Substation (w159758304)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20234",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Doyle - LG&E Monroe 230kV - Jacks Creek Loop In",
+  "official_name": "DOYLE - LG&E MONROE 230KV - JACKS CREEK LOOP IN",
+  "desc": "Loop in and out the new Jack's Creek 230kV switching station into the Doyle - LG&E Monroe 230kV line. This is coordinated with the East Walton Project (TEAMS #09662).",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-06-01",
+  "start": "2027-01-03",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.837924,
+    -83.698786
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.182, TEAMS 20234, zone 212",
+  "located": [
+   {
+    "name": "DOYLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Doyle Substation (w176906118)"
+   },
+   {
+    "name": "LG&E MONROE",
+    "method": "not found"
+   },
+   {
+    "name": "JACKS CREEK",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2027-01-03",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20778",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Doyle - Winder Primary 230kV Line Jumper Replacement",
+  "official_name": "GTC: DOYLE - WINDER PRIMARY 230KV LINE JUMPER REPLACEMENT",
+  "desc": "Replace the limiting AAC 1033 jumper with AAC 1590 at Doyle on the Doyle - Winder Primary 230kV line.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.837924,
+    -83.698786
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.182, TEAMS 20778, zone 212",
+  "located": [
+   {
+    "name": "DOYLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Doyle Substation (w176906118)"
+   },
+   {
+    "name": "WINDER PRIMARY",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-12-31",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-18668",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Jesup - Offerman 115kV Rebuild",
+  "official_name": "JESUP - OFFERMAN 115KV REBUILD",
+  "desc": "Rebuild 20 miles of 100C 4/0 ACSR Penguin conductor along the Jesup - Offerman 115kV line, with 100C 795 ACSR Drake conductor.",
+  "kv": 115,
+  "miles": 20.0,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2025-10-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.603106,
+    -81.924947
+   ],
+   [
+    31.423072,
+    -82.143662
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.182, TEAMS 18668, zone 218",
+  "located": [
+   {
+    "name": "JESUP",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "OFFERMAN",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Offerman Substation (w52069715)"
+   }
+  ],
+  "project_start": "2021-04-06",
+  "plan_change": "No Change Project delayed from 2024 to 2027"
+ },
+ {
+  "id": "IRP-10143",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Lawrenceville - Winder 115kV Line Rebuild",
+  "official_name": "LAWRENCEVILLE - WINDER 115KV LINE REBUILD",
+  "desc": "Rebuild approximately 1.2 miles of 100C 636 ACSR conductor from Johns Manville to Winder Primary with 200C 795 ACSS conductor.",
+  "kv": 115,
+  "miles": 1.2,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-10-15",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.958149,
+    -84.019879
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 10143, zone 202",
+  "located": [
+   {
+    "name": "LAWRENCEVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Lawrenceville Substation #1 (w985152731); 4 candidates, nearest the zone"
+   },
+   {
+    "name": "WINDER",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2026-10-15",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-10481",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Lawrenceville - Winder Primary 230kV Line Rebuild",
+  "official_name": "LAWRENCEVILLE - WINDER PRIMARY 230KV LINE REBUILD",
+  "desc": "Rebuild the entire Lawrenceville - Winder Primary 230kV line, approximately 15.4 miles, using 200C 1351 ACSS \"Martin\" conductor.",
+  "kv": 230,
+  "miles": 15.4,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-01-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.958149,
+    -84.019879
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 10481, zone 202",
+  "located": [
+   {
+    "name": "LAWRENCEVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Lawrenceville Substation #1 (w985152731); 4 candidates, nearest the zone"
+   },
+   {
+    "name": "WINDER PRIMARY",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "plan_change": "Project advanced from 2029 to 2027 New Project"
+ },
+ {
+  "id": "IRP-19248",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Sandersville #1 - Wadley Pri. 115kV Rebuild/reconductor",
+  "official_name": "SANDERSVILLE #1 - WADLEY PRI. 115KV REBUILD/RECONDUCTOR",
+  "desc": "Rebuild approximately 24.3 miles of the Sandersville #1 - Wadley Primary 115kV line from 100C 336 ACSR Linnet conductor to 100C 1351 ACSR Drake conductor. Replace limiting elements in substations along the line.",
+  "kv": 115,
+  "miles": 24.3,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2025-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.001821,
+    -82.832729
+   ],
+   [
+    32.884657,
+    -82.415872
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 19248, zone 214",
+  "located": [
+   {
+    "name": "SANDERSVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Sandersville Substation #6 (w484518626); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "WADLEY PRI.",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Wadley Substation (w1005940922); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2022-02-15",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20785",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Goshen (SAV) - Kraft 115kV Line Rebuild",
+  "official_name": "SAV: GOSHEN (SAV) - KRAFT 115KV LINE REBUILD",
+  "desc": "Rebuild 9.3 miles of Goshen - Kraft 115kV line from Kraft - Godley J - Rice Hope from 100C 795 ACSR Drake to 200C 1351 ACSS Martin.",
+  "kv": 115,
+  "miles": 9.3,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.248701,
+    -81.209472
+   ],
+   [
+    32.148135,
+    -81.145983
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 20785, zone 219",
+  "located": [
+   {
+    "name": "GOSHEN (SAV)",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx: Goshen (SAV)"
+   },
+   {
+    "name": "KRAFT",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Kraft Substation (w121986375)"
+   }
+  ],
+  "project_start": "2024-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20065",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Goshen (SAV) - McIntosh 115kV Line Rebuild",
+  "official_name": "SAV: GOSHEN (SAV) - MCINTOSH 115KV LINE REBUILD",
+  "desc": "Rebuild the Goshen (Savannah) - Georgia Pacific (Rincon) section, approximately 6.7 miles, of the Goshen (Sav) - McIntosh 115kV line using 100C 795 ACSR Drake conductor.",
+  "kv": 115,
+  "miles": 6.7,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.248701,
+    -81.209472
+   ],
+   [
+    32.352116,
+    -81.175112
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 20065, zone 219",
+  "located": [
+   {
+    "name": "GOSHEN (SAV)",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx: Goshen (SAV)"
+   },
+   {
+    "name": "MCINTOSH",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-17977",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Athena - East Watkinsville 115 Kv (Rebuild)",
+  "official_name": "ATHENA - EAST WATKINSVILLE 115 KV (REBUILD)",
+  "desc": "Rebuild 8.47 miles of the University of Georgia - East Watkinsville line sections on the Athena - East Watkinsville 115kV line with 100C ACSR 1033 conductor.",
+  "kv": 115,
+  "miles": 8.47,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-10-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.976403,
+    -83.346119
+   ],
+   [
+    33.860546,
+    -83.384765
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 17977, zone 212",
+  "located": [
+   {
+    "name": "ATHENA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Athena Substation (w171540528)"
+   },
+   {
+    "name": "EAST WATKINSVILLE (",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Watkinsville Substation (w171540512)"
+   }
+  ],
+  "project_start": "2024-08-01",
+  "plan_change": "Delayed from 2026 to 2027 New Project"
+ },
+ {
+  "id": "IRP-19997",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Aultman Road-perry 115kV Line Rebuild",
+  "official_name": "AULTMAN ROAD-PERRY 115KV LINE REBUILD",
+  "desc": "Rebuild the PPG J2 - Langston Road line section of the Aultman Road - Perry 115kV line from 100C 336 ACSR Linnet conductor to 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.455381,
+    -83.702021
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 19997, zone 214",
+  "located": [
+   {
+    "name": "AULTMAN ROAD",
+    "method": "not found"
+   },
+   {
+    "name": "PERRY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Perry Primary Substation (w177850740)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20774",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "CC - Villa Rica Upgrades (CC Network Improvements)",
+  "official_name": "CC - VILLA RICA UPGRADES (CC NETWORK IMPROVEMENTS)",
+  "desc": "Loop in the Bowen - Union City line into Villa Rica 500kV bus and add a second 2016 MVA 500/230kV auto transformer. Convert the 230kV side to a 10 element breaker and a half scheme.",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.741022,
+    -84.854865
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.183, TEAMS 20774, zone 211",
+  "located": [
+   {
+    "name": "VILLA RICA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Villa Rica Substation (w159758304)"
+   }
+  ],
+  "project_start": "2026-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21048",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Fitzgerald - Pitts 115 Kv Line Rebuild",
+  "official_name": "FITZGERALD - PITTS 115 KV LINE REBUILD",
+  "desc": "Rebuild approximately 26.14 miles of the Fitzgerald - Pitts 115kV line with 200C 1351 ACSS.",
+  "kv": 115,
+  "miles": 26.14,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2026-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.729335,
+    -83.292411
+   ],
+   [
+    31.944621,
+    -83.540721
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 21048, zone 214",
+  "located": [
+   {
+    "name": "FITZGERALD",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Fitzgerald Substation (w617660021)"
+   },
+   {
+    "name": "PITTS",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Pitts (n153845164)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-08458",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Barnesville - South Griffin 230kV Project",
+  "official_name": "GTC: BARNESVILLE - SOUTH GRIFFIN 230KV PROJECT",
+  "desc": "Construct 19 miles of 230kV circuit, on existing ROW, using200C 1351 ACSS conductor from South Griffin 230/115kV substation to the Barnesville 230/69kV substation.",
+  "kv": 230,
+  "miles": 19.0,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.032069,
+    -84.201258
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 08458, zone 213",
+  "located": [
+   {
+    "name": "BARNESVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Barnesville Primary Substation (w564834100); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "SOUTH GRIFFIN",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2026-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-19629",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Brumbley Creek - South Bainbridge 115kV Rebuild",
+  "official_name": "MEAG: BRUMBLEY CREEK - SOUTH BAINBRIDGE 115KV REBUILD",
+  "desc": "Rebuild 2.1 miles segment from line tap into Roddenbery Station on the South Bainbridge - Thomasville 115kV line from 50C ACSR TW 762.8 to 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": 2.1,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.839608,
+    -84.488921
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 19629, zone 216",
+  "located": [
+   {
+    "name": "BRUMBLEY CREEK",
+    "method": "not found"
+   },
+   {
+    "name": "SOUTH BAINBRIDGE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "South Bainbridge Substation (w165831924)"
+   }
+  ],
+  "project_start": "2024-01-01",
+  "plan_change": "Project delayed from 2025 to 2028 New Project"
+ },
+ {
+  "id": "IRP-19630",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Thomasville 230/115kV Autobank Replacement",
+  "official_name": "MEAG: THOMASVILLE 230/115KV AUTOBANK REPLACEMENT",
+  "desc": "Replace the 140MVA 230/115kV auto transformer #4 at Thomasville substation.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.90852,
+    -84.005031
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 19630, zone 216",
+  "located": [
+   {
+    "name": "THOMASVILLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Thomasville Substation (w172096005)"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "Project advanced from 2029 to 2028 New Project"
+ },
+ {
+  "id": "IRP-20482",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Pittman Road - West Point Dam (USA) 115kV Rebuild",
+  "official_name": "PITTMAN ROAD - WEST POINT DAM (USA) 115KV REBUILD",
+  "desc": "Rebuild 3 miles from the Pittman Road 115kV station to the West Point Dam (USA) 115kV station with 100C 1351 ACSS Martin conductor. Replace AAC 750 jumper at Pittman Road 115kV with (2) 1590 AAC.",
+  "kv": 115,
+  "miles": 3.0,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.918762,
+    -85.188822
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 20482, zone 213",
+  "located": [
+   {
+    "name": "PITTMAN ROAD",
+    "method": "not found"
+   },
+   {
+    "name": "WEST POINT DAM (USA)",
+    "method": "osm_plant",
+    "confidence": "medium",
+    "note": "West Point Dam (w1058469136); 3 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "Project advanced from 2031 to 2028 New Project"
+ },
+ {
+  "id": "IRP-20656",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Plant Yates Breaker And Half Station",
+  "official_name": "PLANT YATES BREAKER AND HALF STATION",
+  "desc": "Rebuild the Yates 6 & 7 substation to a Breaker and a Half configuration.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.457634,
+    -84.896958
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 20656, zone 208",
+  "located": [
+   {
+    "name": "PLANT YATES",
+    "method": "osm_plant",
+    "confidence": "high",
+    "note": "Plant Yates (w1024438670)"
+   }
+  ],
+  "project_start": "2024-05-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20783",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Coleman - Dean Forest 115kV Line Rebuild",
+  "official_name": "SAV: COLEMAN - DEAN FOREST 115KV LINE REBUILD",
+  "desc": "Rebuild entire line from Coleman to Dean Forest. 6.67 miles of 100C 477 Hawk Conductor with 200C 1351 ACSS Martin conductor.",
+  "kv": 115,
+  "miles": 6.67,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.10772,
+    -81.226912
+   ],
+   [
+    32.08351,
+    -81.188722
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 20783, zone 219",
+  "located": [
+   {
+    "name": "COLEMAN",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Coleman Substation (w608270486); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "DEAN FOREST",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dean Forest Substation (w121674829)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20407",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Magnolia - Truman Parkway 115kV Rebuild",
+  "official_name": "SAV: MAGNOLIA - TRUMAN PARKWAY 115KV REBUILD",
+  "desc": "Rebuild 3 miles of the Magnolia - Truman Parkway 115kV from 75C 927 ACAR to 200C 1351 ACSS Martin conductor or higher rated conductor. Upgrade 1200A switches at Magnolia substation to 2000A switches and jumpers at Truman Parkway.",
+  "kv": 115,
+  "miles": 3.0,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.022687,
+    -81.086181
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 20407, zone 219",
+  "located": [
+   {
+    "name": "MAGNOLIA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Magnolia Substation (w121857248)"
+   },
+   {
+    "name": "TRUMAN PARKWAY",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "No Changes New Project"
+ },
+ {
+  "id": "IRP-20768",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "South Macon 115kV Buses 1 & 2 Replacement",
+  "official_name": "SOUTH MACON 115KV BUSES 1 & 2 REPLACEMENT",
+  "desc": "Replace the 115kV buses 1 and 2 at South Macon with (2) 1590 AAC.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.820349,
+    -83.626198
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 20768, zone 214",
+  "located": [
+   {
+    "name": "SOUTH MACON",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "South Macon Substation (w170991653)"
+   }
+  ],
+  "project_start": "2025-01-15",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20274",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Union City - Yates 230kV (Black) Line Rebuild",
+  "official_name": "UNION CITY - YATES 230KV (BLACK) LINE REBUILD",
+  "desc": "Rebuild the Union City - Yates 230kV Black line with bundled 200C 1351 ACSS Martin conductor. Replace limiting elements at Union City, Fairburn #1 and Line Creek substations.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.587056,
+    -84.54243
+   ],
+   [
+    33.457634,
+    -84.896958
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.184, TEAMS 20274, zone 208",
+  "located": [
+   {
+    "name": "UNION CITY",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Union City (n154110018)"
+   },
+   {
+    "name": "YATES (BLACK)",
+    "method": "osm_plant",
+    "confidence": "high",
+    "note": "Plant Yates (w1024438670)"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-21062",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Ashley Park-wansley 500kV",
+  "official_name": "ASHLEY PARK-WANSLEY 500KV",
+  "desc": "Construct a 500kV line from Ashley Park to Wansley, approximately 35 miles long.",
+  "kv": 500,
+  "miles": 35.0,
+  "type": "substation",
+  "in_service": "2029-06-01",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.410956,
+    -85.030769
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21062, zone 208",
+  "located": [
+   {
+    "name": "ASHLEY PARK",
+    "method": "not found"
+   },
+   {
+    "name": "WANSLEY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Wansley Substation (w159784571)"
+   }
+  ],
+  "project_start": "2024-12-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-10222",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Blakely Primary - Huckleberry 115kV Rebuild",
+  "official_name": "BLAKELY PRIMARY - HUCKLEBERRY 115KV REBUILD",
+  "desc": "Rebuild the Blakley Primary - Huckleberry 115kV line from 75C 477 ACSR to 200C 1351 ACSS. (13.5 miles) GPC: Replace jumpers at Blakely Primary GTC: Replace jumpers at Blakely and Huckleberry",
+  "kv": 115,
+  "miles": 13.5,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-02-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.371554,
+    -84.90598
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 10222, zone 216",
+  "located": [
+   {
+    "name": "BLAKELY PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Blakely Primary Substation (w270628470); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "HUCKLEBERRY",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-16887",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Butler - Thomaston 230kV Line Conversion",
+  "official_name": "BUTLER - THOMASTON 230KV LINE CONVERSION",
+  "desc": "Rebuild the radial Thomaston - Butler 115kV line to 230kV network operation. Make all necessary upgrades and accommodations at Butler and Thomaston. Convert the Wesley substation from 115kV to 230kV.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.571022,
+    -84.289729
+   ],
+   [
+    32.946564,
+    -84.266479
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 16887, zone 213",
+  "located": [
+   {
+    "name": "BUTLER",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Butler Primary Substation (w170999705)"
+   },
+   {
+    "name": "THOMASTON",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Thomaston #3 Substation (w729075834); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2025-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21142",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Conyers - Klondike 230 Kv Second Line",
+  "official_name": "CONYERS - KLONDIKE 230 KV SECOND LINE",
+  "desc": "Build a new 6.56 mile line from Conyers to Klondike with 200C (2) 1351 ACSS Martin conductor. Build one new 230kV breaker terminal at Conyers and one new 230kV terminal at Klondike.",
+  "kv": 230,
+  "miles": 6.56,
+  "type": "new_line",
+  "in_service": "2029-06-01",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.66761,
+    -84.01769
+   ],
+   [
+    33.636977,
+    -84.124487
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21142, zone 206",
+  "located": [
+   {
+    "name": "CONYERS",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Conyers (n153974943)"
+   },
+   {
+    "name": "KLONDIKE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Klondike Substation (w159784541)"
+   }
+  ],
+  "project_start": "2026-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21138",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Glenwood Springs - Porterdale Primary 230kV Line Switch Repl",
+  "official_name": "GLENWOOD SPRINGS - PORTERDALE PRIMARY 230KV LINE SWITCH REPL",
+  "desc": "Replace the 600A line switch at Porterdale Primary on the Glenwood Springs - Porterdale Primary 230kV Line with 1200A switch.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.575115,
+    -83.893795
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21138, zone 206",
+  "located": [
+   {
+    "name": "GLENWOOD SPRINGS",
+    "method": "not found"
+   },
+   {
+    "name": "PORTERDALE PRIMARY",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Porterdale (n154335377)"
+   }
+  ],
+  "date_note": "The plan lists a start date (2029-06-01) after the need date, so the start is estimated.",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21112",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Barnesville Primary - Thomaston 230kV",
+  "official_name": "GTC: BARNESVILLE PRIMARY - THOMASTON 230KV",
+  "desc": "Rebuild Barnesville Primary - Thomaston 230kV line (13.24 miles) with 100C 1351 ACSS; Replace 1200A switches at Barnesville Primary & Thomaston with 3000A switch; replace associated jumper at both stations.",
+  "kv": 230,
+  "miles": 13.24,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-02-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.032069,
+    -84.201258
+   ],
+   [
+    32.946564,
+    -84.266479
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21112, zone 213",
+  "located": [
+   {
+    "name": "BARNESVILLE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Barnesville Primary Substation (w564834100); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "THOMASTON",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Thomaston #3 Substation (w729075834); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-10814",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Bay Creek 230/115kV Second Auto Transformer",
+  "official_name": "GTC: BAY CREEK 230/115KV SECOND AUTO TRANSFORMER",
+  "desc": "Install a second 230/115kV, 400 MVA auto transformer at the Bay Creek substation.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.86812,
+    -83.882351
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 10814, zone 202",
+  "located": [
+   {
+    "name": "BAY CREEK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Bay Creek Substation (w175826909)"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-21140",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Bonaire Primary - Eastman Primary 115 Kv Line Rebuild",
+  "official_name": "GTC: BONAIRE PRIMARY - EASTMAN PRIMARY 115 KV LINE REBUILD",
+  "desc": "Rebuild 41.08 miles of the Bonaire Primary - Eastman Primary 115kV Line using 200C 1351ACSS Martin and upgrade the bus at Roddy substation.",
+  "kv": 115,
+  "miles": 41.08,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.564795,
+    -83.600023
+   ],
+   [
+    32.213299,
+    -83.161422
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21140, zone 214",
+  "located": [
+   {
+    "name": "BONAIRE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Bonaire Primary Substation (w160308063); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "EASTMAN PRIMARY",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Eastman Primary Substation (w164880657)"
+   }
+  ],
+  "project_start": "2026-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20760",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Hopewell 230/115 Kv Bank A",
+  "official_name": "GTC: HOPEWELL 230/115 KV BANK A",
+  "desc": "Replace the Hopewell 230/115kV auto transformer with a 400 MVA auto transformer.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.174192,
+    -84.283406
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 20760, zone 202",
+  "located": [
+   {
+    "name": "HOPEWELL",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Hopewell Substation (w177931281)"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21123",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Tenaska - Wansley 500kV New Line",
+  "official_name": "GTC: TENASKA - WANSLEY 500KV NEW LINE",
+  "desc": "Construct a 5 mile long 500kV line between Tenaska and Wansley. Make all necessary accommodations at the substations for the line termination.",
+  "kv": 500,
+  "miles": 5.0,
+  "type": "new_line",
+  "in_service": "2029-06-01",
+  "start": "2026-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.351627,
+    -84.99809
+   ],
+   [
+    33.410956,
+    -85.030769
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21123, zone 201",
+  "located": [
+   {
+    "name": "TENASKA",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Tenaska Georgia Substation (w163891161); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "WANSLEY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Wansley Substation (w159784571)"
+   }
+  ],
+  "project_start": "2024-12-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21141",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Lloyd Shoals - Porterdale Primary 115kV Rebuild",
+  "official_name": "LLOYD SHOALS - PORTERDALE PRIMARY 115KV REBUILD",
+  "desc": "Rebuild 15.8 miles of 50C 397.5 ACSR Ibis with 200C 1351 ACSS Martin from Jackson Lake to Lloyd Shoals and Jackson Lake to South. Covington Junction.",
+  "kv": 115,
+  "miles": 15.8,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-01-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.320614,
+    -83.841009
+   ],
+   [
+    33.575115,
+    -83.893795
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.185, TEAMS 21141, zone 206",
+  "located": [
+   {
+    "name": "LLOYD SHOALS",
+    "method": "osm_plant",
+    "confidence": "high",
+    "note": "Lloyd Shoals Dam (w674159021)"
+   },
+   {
+    "name": "PORTERDALE PRIMARY",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Porterdale (n154335377)"
+   }
+  ],
+  "project_start": "2026-03-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-19621",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "McEver Road - Shoal Creek 115kV Rebuild",
+  "official_name": "MCEVER ROAD - SHOAL CREEK 115KV REBUILD",
+  "desc": "Rebuild the 636 ACSR (1 mile) of the McEver Road - College Square section, and 2 - 4/0 copper part (2.05 miles) of the College Square to Lakeside WTP B line section, part of the McEver Road - Shoal Creek 115kV line, using 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": 1.0,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.272883,
+    -83.873801
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 19621, zone 212",
+  "located": [
+   {
+    "name": "MCEVER ROAD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "McEver Road Substation (w1037359821)"
+   },
+   {
+    "name": "SHOAL CREEK",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2024-12-31",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20346",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "McManus - West Brunswick 115kV Rebuild",
+  "official_name": "MCMANUS - WEST BRUNSWICK 115KV REBUILD",
+  "desc": "Rebuild the McManus - West Brunswick 115kV line, approximately 5.7 miles, with 200C 1351 ACSS Martin conductor.",
+  "kv": 115,
+  "miles": 5.7,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.215869,
+    -81.544137
+   ],
+   [
+    31.279909,
+    -81.558657
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 20346, zone 218",
+  "located": [
+   {
+    "name": "MCMANUS",
+    "method": "osm_plant",
+    "confidence": "high",
+    "note": "Plant McManus (w31496730)"
+   },
+   {
+    "name": "WEST BRUNSWICK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "West Brunswick Substation (w174697782)"
+   }
+  ],
+  "project_start": "2026-01-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-17706",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "MEAG: Aultman Road - Fort Valley #1 115 Kv Rebuild",
+  "official_name": "MEAG: AULTMAN ROAD - FORT VALLEY #1 115 KV REBUILD",
+  "desc": "Rebuild approximately 8 miles of the Aultman Road - Fort Valley #1 115kV line with 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": 8.0,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.561358,
+    -83.872258
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 17706, zone 214",
+  "located": [
+   {
+    "name": "AULTMAN ROAD",
+    "method": "not found"
+   },
+   {
+    "name": "FORT VALLEY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Fort Valley Substation (w493048692)"
+   }
+  ],
+  "project_start": "2026-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20757",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Norcross - North Druid Hills 115kV Rebuild",
+  "official_name": "NORCROSS - NORTH DRUID HILLS 115KV REBUILD",
+  "desc": "Rebuild the Norcross - Norcross Junction (674) segment, approximately 3.9 miles, from 100C 477 ACSR Hawk conductor to 200C 1351 ACSS \"Martin\" conductor.",
+  "kv": 115,
+  "miles": 3.9,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.932557,
+    -84.21343
+   ],
+   [
+    33.816771,
+    -84.313257
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 20757, zone 202",
+  "located": [
+   {
+    "name": "NORCROSS",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Norcross Substation (w159758307)"
+   },
+   {
+    "name": "NORTH DRUID HILLS",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of North Druid Hills (n154006223)"
+   }
+  ],
+  "project_start": "2025-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21006",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Boulevard - Magnolia 115 Kv Line Rebuild",
+  "official_name": "SAV: BOULEVARD - MAGNOLIA 115 KV LINE REBUILD",
+  "desc": "Rebuild the entire line from Boulevard to Magnolia (4.56 miles) from 100C 795 ACSR Drake to 200C 1351 ACSS Martin",
+  "kv": 115,
+  "miles": 4.56,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.041231,
+    -81.144464
+   ],
+   [
+    32.022687,
+    -81.086181
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 21006, zone 219",
+  "located": [
+   {
+    "name": "BOULEVARD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Boulevard Substation (w381797798)"
+   },
+   {
+    "name": "MAGNOLIA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Magnolia Substation (w121857248)"
+   }
+  ],
+  "project_start": "2027-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21023",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Dean Forest - Little Ogeechee 230 Kv Rebuild",
+  "official_name": "SAV: DEAN FOREST - LITTLE OGEECHEE 230 KV REBUILD",
+  "desc": "Rebuild the entire line from Little Ogeechee - Salt Creek and Salt Creek - Dean Forest, approximately 8 miles, using 200C 1351 ACSS/Martin. Upgrade jumpers at the Little Ogeechee terminal.",
+  "kv": 230,
+  "miles": 8.0,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.08351,
+    -81.188722
+   ],
+   [
+    31.995,
+    -81.225
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 21023, zone 219",
+  "located": [
+   {
+    "name": "DEAN FOREST",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dean Forest Substation (w121674829)"
+   },
+   {
+    "name": "LITTLE OGEECHEE",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Little Ogeechee River, south Savannah GA"
+   }
+  ],
+  "project_start": "2026-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20989",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Rice Hope New Auto Transformer",
+  "official_name": "SAV: RICE HOPE NEW AUTO TRANSFORMER",
+  "desc": "Install a new 230/115kV 400MVA auto transformer at Rice Hope and loop in the Crossgate - McIntosh 230kV line.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.17,
+    -81.175
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 20989, zone 219",
+  "located": [
+   {
+    "name": "RICE HOPE",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Rice Hope, Port Wentworth GA"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-13628",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "South Bainbridge - Sinai (FPL) 115kV Line Reconductor",
+  "official_name": "SOUTH BAINBRIDGE - SINAI (FPL) 115KV LINE RECONDUCTOR",
+  "desc": "Rebuild the Four Mile tap - Recovery - Sinai (FPL) segment of the Sinai (FPL) - South Bainbridge 115kV line from 100C 336.4 ACSR to 200C 1351 ACSS. 9.8 miles in FPL and 13.75 miles in GPC At Recovery (GTC): Replace 100C 336.4 ACSR string bus with higher rating and jumpers with (1) 1590 AAC At Sinai (FPL): Replace 100C 336.4 ACSR string bus with higher rating",
+  "kv": 115,
+  "miles": 9.8,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.839608,
+    -84.488921
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 13628, zone 216",
+  "located": [
+   {
+    "name": "SOUTH BAINBRIDGE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "South Bainbridge Substation (w165831924)"
+   },
+   {
+    "name": "SINAI (FPL)",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20248",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Bay Creek - Conyers 230kV Rebuild",
+  "official_name": "BAY CREEK - CONYERS 230KV REBUILD",
+  "desc": "GPC will rebuild the Bay Creek - Conyers 230kV line, approximately 15.29 miles, using 200C 1351 ACSS \"Martin\" conductor.",
+  "kv": 230,
+  "miles": 15.29,
+  "type": "rebuild",
+  "in_service": "2029-12-31",
+  "start": "2028-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.86812,
+    -83.882351
+   ],
+   [
+    33.66761,
+    -84.01769
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 20248, zone 202",
+  "located": [
+   {
+    "name": "BAY CREEK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Bay Creek Substation (w175826909)"
+   },
+   {
+    "name": "CONYERS",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Conyers (n153974943)"
+   }
+  ],
+  "date_note": "The plan lists a start date (2031-06-01) after the need date, so the start is estimated.",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20764",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Atkinson - Northside Drive 115kV Rebuild",
+  "official_name": "ATKINSON - NORTHSIDE DRIVE 115KV REBUILD",
+  "desc": "Rebuild a portion of the Atkinson - Northside 115kV line, approximately 3.2 miles from Atkinson to Chattahoochee with 200C 1351 ACSS Martin.",
+  "kv": 115,
+  "miles": 3.2,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.825476,
+    -84.471421
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 20764, zone 201",
+  "located": [
+   {
+    "name": "ATKINSON",
+    "method": "osm_plant",
+    "confidence": "medium",
+    "note": "Plant McDonough-Atkinson (w186847078)"
+   },
+   {
+    "name": "NORTHSIDE DRIVE",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20761",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Atkinson - Northwest 115kV Rebuild",
+  "official_name": "ATKINSON - NORTHWEST 115KV REBUILD",
+  "desc": "Rebuild the 1.2 mile Atkinson - Tilford Yards section of the Atkinson - Northwest 115kV with 200C 1351 ACSS Martin.",
+  "kv": 115,
+  "miles": 1.2,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.825476,
+    -84.471421
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 20761, zone 201",
+  "located": [
+   {
+    "name": "ATKINSON",
+    "method": "osm_plant",
+    "confidence": "medium",
+    "note": "Plant McDonough-Atkinson (w186847078)"
+   },
+   {
+    "name": "NORTHWEST",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-10478",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Cornelia - Tallulah Lodge 115kV Rebuild",
+  "official_name": "CORNELIA - TALLULAH LODGE 115KV REBUILD",
+  "desc": "Rebuild approximately 9.7 miles of the Cornelia - Chase Road - Clarksville - Hollywood segments of the Cornelia - Tallulah Lodge 115kV line with 200C 795 ACSS conductor.",
+  "kv": 115,
+  "miles": 9.7,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.511488,
+    -83.527117
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 10478, zone 212",
+  "located": [
+   {
+    "name": "CORNELIA",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Cornelia (n154392676)"
+   },
+   {
+    "name": "TALLULAH LODGE",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-18669",
+  "utility": "GPC",
+  "owner": "DU",
+  "name": "DU: Dawson Crossing - Nelson (White) 115 Kv Rebuild",
+  "official_name": "DU: DAWSON CROSSING - NELSON (WHITE) 115 KV REBUILD",
+  "desc": "Rebuild approximately 15.7 miles of the Dawson Crossing - Etowah - Reavis Mountain - Nelson sections of the Dawson Crossing - Nelson (White) 115kV line with 1351 ACSS conductor. GPC will make any necessary relaying changes at Dawson Crossing.",
+  "kv": 115,
+  "miles": 15.7,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-01-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.378118,
+    -84.133575
+   ],
+   [
+    34.382937,
+    -84.370357
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 18669, zone 212",
+  "located": [
+   {
+    "name": "DAWSON CROSSING",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dawson Crossing Substation (w177912657)"
+   },
+   {
+    "name": "NELSON (WHITE)",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Nelson Substation (w1059984089); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2024-12-31",
+  "plan_change": "New Project Project delayed from 2028 to 2030"
+ },
+ {
+  "id": "IRP-21097",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "East Point - Tributary 230kV Rebuild",
+  "official_name": "EAST POINT - TRIBUTARY 230KV REBUILD",
+  "desc": "Rebuild the 2.9 mile section from Cavender Drive to Marietta 25 with 200C 1351 ACSS conductor on the East Point - Tributary 230kV line.",
+  "kv": 230,
+  "miles": 2.9,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.67635,
+    -84.462966
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.186, TEAMS 21097, zone 201",
+  "located": [
+   {
+    "name": "EAST POINT",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Point Primary Substation (r14128477)"
+   },
+   {
+    "name": "TRIBUTARY",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20480",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "East Point - Union City 230kV Black Line Reconductor",
+  "official_name": "EAST POINT - UNION CITY 230KV BLACK LINE RECONDUCTOR",
+  "desc": "Reconductor the 1.5 mile section from Flat Shoals Road station to the Stonewall Tell loop - in point on the East Point - Union City 230kV Black line with 200C 1351 ACSS Martin conductor. Replace limiting elements at Union City",
+  "kv": 230,
+  "miles": 1.5,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.67635,
+    -84.462966
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 20480, zone 208",
+  "located": [
+   {
+    "name": "EAST POINT",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Point Primary Substation (r14128477)"
+   },
+   {
+    "name": "UNION CITY BLACK",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "Project advanced from 2031 to 2030 New Project"
+ },
+ {
+  "id": "IRP-12120",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Gainesville #2 - McEver Road 115 Kv Rebuild",
+  "official_name": "GAINESVILLE #2 - MCEVER ROAD 115 KV REBUILD",
+  "desc": "Rebuild approximately 5.3 miles of the Gainesville #2 - McEver Rd 115kV line with 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": 5.3,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.263022,
+    -83.809673
+   ],
+   [
+    34.272883,
+    -83.873801
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 12120, zone 212",
+  "located": [
+   {
+    "name": "GAINESVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Gainesville Substation #2 (w179716524); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "MCEVER ROAD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "McEver Road Substation (w1037359821)"
+   }
+  ],
+  "project_start": "2025-12-31",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20298",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Glenwood Springs - Lake Oconee 115kV Line Rebuild",
+  "official_name": "GLENWOOD SPRINGS - LAKE OCONEE 115KV LINE REBUILD",
+  "desc": "Rebuild the North Eatonton Junction - Putnam Sawmill Junction line with 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.45953,
+    -83.247451
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 20298, zone 214",
+  "located": [
+   {
+    "name": "GLENWOOD SPRINGS",
+    "method": "not found"
+   },
+   {
+    "name": "LAKE OCONEE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Lake Oconee Substation (w1054868572)"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "Advance to 2030 from 2033. New Project"
+ },
+ {
+  "id": "IRP-19996",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Goldens Creek - Warrenton Primary 230kV Rebuild",
+  "official_name": "GOLDENS CREEK - WARRENTON PRIMARY 230KV REBUILD",
+  "desc": "Rebuild approximately 0.34 miles of the Goldens Creek - Warrenton Primary 230kV line from 100C 1 - 1351.5 ACSR Martin conductor to 200C 1351 ACCR Martin conductor or equivalent.",
+  "kv": 230,
+  "miles": 0.34,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-08-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.406448,
+    -82.670842
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 19996, zone 215",
+  "located": [
+   {
+    "name": "GOLDENS CREEK",
+    "method": "not found"
+   },
+   {
+    "name": "WARRENTON PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Warrenton Substation (w1046106634); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20428",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Gordon-sandersville #1 115kV Line Rebuild (Deepstep-sand #6)",
+  "official_name": "GORDON-SANDERSVILLE #1 115KV LINE REBUILD (DEEPSTEP-SAND #6)",
+  "desc": "Rebuild the Deepstep - Robins Spring (7.6 miles) Robins Spring - Kaolin J (2.23mi), and Kaolin J - Sandersville #6 (0.66 miles) line sections of the Gordon - Sandersville #1 115kV line. Rebuild a total of 10.49 miles from 100C 336 ACSR to 100C ACSR 795 conductor.",
+  "kv": 115,
+  "miles": 7.6,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.882471,
+    -83.316914
+   ],
+   [
+    33.001821,
+    -82.832729
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 20428, zone 214",
+  "located": [
+   {
+    "name": "GORDON",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Gordon Substation (w170991651)"
+   },
+   {
+    "name": "SANDERSVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Sandersville Substation #6 (w484518626); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "SAND )",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2023-12-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20375",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: East Watkinsville 230 Kv Station Modification",
+  "official_name": "GTC: EAST WATKINSVILLE 230 KV STATION MODIFICATION",
+  "desc": "Replace the 1600A reactors at East Watkinsville on the Russell Dam 230kV line with larger size.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2030-06-01",
+  "start": "2029-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.860546,
+    -83.384765
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 20375, zone 212",
+  "located": [
+   {
+    "name": "EAST WATKINSVILLE STATION",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Watkinsville Substation (w171540512)"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21111",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Hartwell Dam - Hartwell Energy 230kV Series Reactors",
+  "official_name": "GTC: HARTWELL DAM - HARTWELL ENERGY 230KV SERIES REACTORS",
+  "desc": "GTC: Replace the 1600A series reactors on the Hartwell Dam - Hartwell Energy 230kV line with 3000A.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2030-06-01",
+  "start": "2029-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.341157,
+    -82.821173
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.187, TEAMS 21111, zone 212",
+  "located": [
+   {
+    "name": "HARTWELL DAM",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Hartwell Energy Facility Substation (w52408419); 4 candidates, nearest the zone"
+   },
+   {
+    "name": "HARTWELL ENERGY",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Hartwell Energy Facility Substation (w52408419); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2027-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21094",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Tiger Creek- Rockville-north Spa 230kV Project",
+  "official_name": "GTC: TIGER CREEK- ROCKVILLE-NORTH SPA 230KV PROJECT",
+  "desc": "Build a new 4 - breaker 230kV ring bus at Rockville substation (no auto transformer to be added at this time). Loop in the Eatonton Primary #2 - Wallace Dam 230kV line. Build a new line 230kV line to Tiger Creek. Build a new 230kV line to North Spa.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2030-06-01",
+  "start": "2029-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.094506,
+    -82.981585
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 21094, zone 214",
+  "located": [
+   {
+    "name": "TIGER CREEK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Tiger Creek Substation (w170296000)"
+   },
+   {
+    "name": "ROCKVILLE",
+    "method": "not found"
+   },
+   {
+    "name": "NORTH SPA",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20789",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Jefferson Road - Winder Primary 115kV Rebuild",
+  "official_name": "JEFFERSON ROAD - WINDER PRIMARY 115KV REBUILD",
+  "desc": "Rebuild approximately 11 miles of the Jefferson Road - Russell - Richardson Street Junction segments of the Jefferson Road - Winder Primary 115kV line with 200C 1351 ACSS Martin conductor.",
+  "kv": 115,
+  "miles": 11.0,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-03-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.977796,
+    -83.579481
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 20789, zone 212",
+  "located": [
+   {
+    "name": "JEFFERSON ROAD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Jefferson Rd Substation (w1017583912)"
+   },
+   {
+    "name": "WINDER PRIMARY",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20284",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Kettle Creek Primary - Pine Grove Primary 115kV Rebuild",
+  "official_name": "KETTLE CREEK PRIMARY - PINE GROVE PRIMARY 115KV REBUILD",
+  "desc": "Rebuild approximately 38.04 miles of 50C 4/0 ACSR conductor from the Pine Grove to the Pearson tap using 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": 38.04,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2028-01-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.881649,
+    -83.227987
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 20284, zone 216",
+  "located": [
+   {
+    "name": "KETTLE CREEK PRIMARY",
+    "method": "not found"
+   },
+   {
+    "name": "PINE GROVE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Pine Grove Primary Substation (w174399121)"
+   }
+  ],
+  "project_start": "2026-06-02",
+  "plan_change": "Project delayed from 2029 to 2030 New Project"
+ },
+ {
+  "id": "IRP-19995",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Tallulah Lodge - Toccoa 115 Kv Rebuild",
+  "official_name": "TALLULAH LODGE - TOCCOA 115 KV REBUILD",
+  "desc": "Rebuild the Tallulah Lodge - Toccoa 115kV Line with 100C 795 ACSR conductor (total of 10.3 miles). Replace limiting elements at Tallulah Lodge and Toccoa.",
+  "kv": 115,
+  "miles": 10.3,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2029-03-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.580946,
+    -83.352734
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 19995, zone 212",
+  "located": [
+   {
+    "name": "TALLULAH LODGE",
+    "method": "not found"
+   },
+   {
+    "name": "TOCCOA",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Toccoa Primary Substation (w52440914)"
+   }
+  ],
+  "project_start": "2025-12-31",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-18848",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Bainbridge Transmission: East River Road, East Bainbridge",
+  "official_name": "BAINBRIDGE TRANSMISSION: EAST RIVER ROAD, EAST BAINBRIDGE",
+  "desc": "This project will construct a new 115kV breaker and a half substation a mile north of the East Bainbridge substation. East Bainbridge will be simplified to a 115kV straight bus with two transmission lines for service to load, a generation interconnection point and a capacitor bank.",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2030-12-31",
+  "start": "2029-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.912552,
+    -84.566992
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 18848, zone 216",
+  "located": [
+   {
+    "name": "BAINBRIDGE TRANSMISSION",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Bainbridge Substation (w1058040908)"
+   }
+  ],
+  "project_start": "2023-06-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-20690",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "East Point - Union City (White) 230kV Rebuild",
+  "official_name": "EAST POINT - UNION CITY (WHITE) 230KV REBUILD",
+  "desc": "Rebuild 5.49 miles of 100C 1590.0 ACSR Lapwing with 200C 1351.5 ACSS Martin 230kV line from Welcome All to Union City on the East Point - Union City 230kV line.",
+  "kv": 230,
+  "miles": 5.49,
+  "type": "rebuild",
+  "in_service": "2031-05-01",
+  "start": "2030-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.67635,
+    -84.462966
+   ],
+   [
+    33.587056,
+    -84.54243
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 20690, zone 208",
+  "located": [
+   {
+    "name": "EAST POINT",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Point Primary Substation (r14128477)"
+   },
+   {
+    "name": "UNION CITY (WHITE)",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Union City (n154110018)"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-19632",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Avery - Hopewell 115kV Reconductor",
+  "official_name": "AVERY - HOPEWELL 115KV RECONDUCTOR",
+  "desc": "Reconductor the Hopewell to Birmingham line section (approximately 3.3 miles) on the Avery - Hopewell 115kV line with 100C 1033 ACSR conductor. Replace jumper at Birmingham with 1590 AAC jumper.",
+  "kv": 115,
+  "miles": 3.3,
+  "type": "rebuild",
+  "in_service": "2031-06-01",
+  "start": "2030-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.216989,
+    -84.385764
+   ],
+   [
+    34.174192,
+    -84.283406
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 19632, zone 202",
+  "located": [
+   {
+    "name": "AVERY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Avery Substation (w700215120)"
+   },
+   {
+    "name": "HOPEWELL",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Hopewell Substation (w177931281)"
+   }
+  ],
+  "project_start": "2028-01-01",
+  "plan_change": "No Change New Project"
+ },
+ {
+  "id": "IRP-10811",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Bowen #10 500/230kV Autobank Replacement",
+  "official_name": "BOWEN #10 500/230KV AUTOBANK REPLACEMENT",
+  "desc": "Replace the existing Bowen #10 1350 MVA 500/230kV auto transformer with a 2016 MVA 500/230kV auto transformer.",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2031-06-01",
+  "start": "2029-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.121585,
+    -84.922327
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.188, TEAMS 10811, zone 211",
+  "located": [
+   {
+    "name": "BOWEN",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Bowen Substation (w159758323); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20784",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Coleman - Meldrim 115kV Line Rebuild",
+  "official_name": "SAV: COLEMAN - MELDRIM 115KV LINE REBUILD",
+  "desc": "Rebuild 3 miles of the Coleman - Meldrim 115kV line from Four Lakes to Meldrim with 200C 1351 ACSS.",
+  "kv": 115,
+  "miles": 3.0,
+  "type": "rebuild",
+  "in_service": "2032-06-01",
+  "start": "2031-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.10772,
+    -81.226912
+   ],
+   [
+    32.155282,
+    -81.368377
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 20784, zone 219",
+  "located": [
+   {
+    "name": "COLEMAN",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Coleman Substation (w608270486); 2 candidates, nearest the zone"
+   },
+   {
+    "name": "MELDRIM",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Meldrim Substation (w121624363)"
+   }
+  ],
+  "project_start": "2029-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20758",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Bay Creek - Conyers 230kV Limiting Element Replacement",
+  "official_name": "BAY CREEK - CONYERS 230KV LIMITING ELEMENT REPLACEMENT",
+  "desc": "Replace equipment such as jumpers, switches, and traps at the Bay Creek, Rockdale, and Conyers substations with equipment capable of carrying 3000A.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.86812,
+    -83.882351
+   ],
+   [
+    33.66761,
+    -84.01769
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 20758, zone 202",
+  "located": [
+   {
+    "name": "BAY CREEK",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Bay Creek Substation (w175826909)"
+   },
+   {
+    "name": "CONYERS",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Conyers (n153974943)"
+   }
+  ],
+  "project_start": "2031-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20793",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Evans Primary - Thurmond Dam (USA) #5 115kV Rebuild",
+  "official_name": "EVANS PRIMARY - THURMOND DAM (USA) #5 115KV REBUILD",
+  "desc": "Rebuild approximately 5.45 miles of Euchee Creek - Thurmond Dam segment of the Evans Primary - Thurmond Dam (USA) #5 115kV line with 200C 1351 ACSS Martin conductor. Replace the main bus with a larger element at Thurmond Dam (USA).",
+  "kv": 115,
+  "miles": 5.45,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.543994,
+    -82.168648
+   ],
+   [
+    33.660127,
+    -82.195931
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 20793, zone 215",
+  "located": [
+   {
+    "name": "EVANS PRIMARY",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "THURMOND DAM (USA)",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "project_start": "2029-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20794",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Evans Primary - Thurmond Dam (USA) #6 115kV Rebuild",
+  "official_name": "EVANS PRIMARY - THURMOND DAM (USA) #6 115KV REBUILD",
+  "desc": "Rebuild approximately 8.9 miles of the Evans Primary - Thurmond Dam (USA) #6 115kV line with 200C 1351 ACSS Martin conductor. Replace the main bus with a larger element at Thurmond Dam (USA).",
+  "kv": 115,
+  "miles": 8.9,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.543994,
+    -82.168648
+   ],
+   [
+    33.660127,
+    -82.195931
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 20794, zone 215",
+  "located": [
+   {
+    "name": "EVANS PRIMARY",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "THURMOND DAM (USA)",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   }
+  ],
+  "project_start": "2030-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-12217",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Center Primary - Clarksboro 230 Kv Rebuild",
+  "official_name": "GTC: CENTER PRIMARY - CLARKSBORO 230 KV REBUILD",
+  "desc": "GTC to rebuild the Center Primary - Clarksboro Primary 230kV line (approx. 8.3 miles) with 200C 1351 ACSS conductor.",
+  "kv": 230,
+  "miles": 8.3,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-04-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.053441,
+    -83.398085
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 12217, zone 212",
+  "located": [
+   {
+    "name": "CENTER PRIMARY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Center Primary Substation (w171540518)"
+   },
+   {
+    "name": "CLARKSBORO",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2028-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-12147",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: East Social Circle - Snellville 230kV Equipment Upgrade",
+  "official_name": "GTC: EAST SOCIAL CIRCLE - SNELLVILLE 230KV EQUIPMENT UPGRADE",
+  "desc": "Replace the 1200A switches at Snellville Primary with 3000A. Also, replace the 1200A line trap and switches at East Social Circle with 3000A on the East Social Circle - Snellville 230kV line.",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.67415,
+    -83.679326
+   ],
+   [
+    33.838869,
+    -84.048121
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 12147, zone 212",
+  "located": [
+   {
+    "name": "EAST SOCIAL CIRCLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "East Social Circle Substation (w171531630)"
+   },
+   {
+    "name": "SNELLVILLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Snellville Substation (w176906115)"
+   }
+  ],
+  "project_start": "2030-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20791",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Shoal Creek - South Hall 230kV Rebuild",
+  "official_name": "GTC: SHOAL CREEK - SOUTH HALL 230KV REBUILD",
+  "desc": "Rebuild approximately 7.9 miles of South Hall - Chestnut Mountain - Spout Springs Road segments of the Shoal Creek - South Hall 230kV line with 200C 1351 ACSS conductor. Also, replace 1 - AAC 1590 jumpers at South Hall with 2 - AAC 1590.",
+  "kv": 230,
+  "miles": 7.9,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-05-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.21861,
+    -83.802581
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 20791, zone 212",
+  "located": [
+   {
+    "name": "SHOAL CREEK",
+    "method": "not found"
+   },
+   {
+    "name": "SOUTH HALL",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "South Hall Substation (w159608145)"
+   }
+  ],
+  "project_start": "2029-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-21053",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "McEver Road - Shoal Creek 115kV Rebuild Phase III",
+  "official_name": "MCEVER ROAD - SHOAL CREEK 115KV REBUILD PHASE III",
+  "desc": "Rebuild the 2 - 4/0 copper part (approximately 2.9 miles) of the Gainesville Ferry - Lakeside WTP A line section, part of the McEver Road - Shoal Creek 115kV line, using 200C 1351 ACSS conductor.",
+  "kv": 115,
+  "miles": 2.9,
+  "type": "rebuild",
+  "in_service": "2033-06-01",
+  "start": "2032-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.272883,
+    -83.873801
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 21053, zone 212",
+  "located": [
+   {
+    "name": "MCEVER ROAD",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "McEver Road Substation (w1037359821)"
+   },
+   {
+    "name": "SHOAL CREEK",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2030-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20796",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Meldrim Bank D Replacement",
+  "official_name": "SAV: MELDRIM BANK D REPLACEMENT",
+  "desc": "Replace 300 MVA 230/115kV Bank D with 400 MVA Bank.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2033-06-01",
+  "start": "2032-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.155282,
+    -81.368377
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 20796, zone 219",
+  "located": [
+   {
+    "name": "MELDRIM",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Meldrim Substation (w121624363)"
+   }
+  ],
+  "project_start": "2030-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-14222",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Thomson Primary 230/115kV Second Transformer",
+  "official_name": "THOMSON PRIMARY 230/115KV SECOND TRANSFORMER",
+  "desc": "Install a second 400 MVA, 230/115kV auto transformer at Thomson Primary substation.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2033-06-01",
+  "start": "2032-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.453955,
+    -82.414219
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.189, TEAMS 14222, zone 215",
+  "located": [
+   {
+    "name": "THOMSON PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Thomson Primary Substation (w160065782); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2025-08-01",
+  "plan_change": "Project delayed from 2031 to 2033 New Project"
+ },
+ {
+  "id": "IRP-10487",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Pine Grove Primary - West Valdosta 115 Kv Reconductor",
+  "official_name": "PINE GROVE PRIMARY - WEST VALDOSTA 115 KV RECONDUCTOR",
+  "desc": "Rebuild 3.7 miles of 100C 4/0 ACSR conductor with 200C 795 ACSS Drake on the Bemis - Pine Grove Primary section of the Pine Grove Primary - West Valdosta 115kV line.",
+  "kv": 115,
+  "miles": 3.7,
+  "type": "rebuild",
+  "in_service": "2033-12-31",
+  "start": "2033-01-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    30.881649,
+    -83.227987
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.190, TEAMS 10487, zone 216",
+  "located": [
+   {
+    "name": "PINE GROVE PRIMARY",
+    "method": "osm_substation",
+    "confidence": "low",
+    "note": "Pine Grove Primary Substation (w174399121)"
+   },
+   {
+    "name": "WEST VALDOSTA",
+    "method": "not found"
+   }
+  ],
+  "project_start": "2029-12-31",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-18700",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Dawson Crossing - Gainesville #1 115 Kv",
+  "official_name": "DAWSON CROSSING - GAINESVILLE #1 115 KV",
+  "desc": "Replace the 500CU main bus at Gainesville #1 115kV with 3\" Sch 40 AL Tube.",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2034-06-01",
+  "start": "2033-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.378118,
+    -84.133575
+   ],
+   [
+    34.263022,
+    -83.809673
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.190, TEAMS 18700, zone 212",
+  "located": [
+   {
+    "name": "DAWSON CROSSING",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Dawson Crossing Substation (w177912657)"
+   },
+   {
+    "name": "GAINESVILLE",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Gainesville Substation #2 (w179716524); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2032-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-20787",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "SAV: Little Ogeechee 230/115kV Bank Replacement",
+  "official_name": "SAV: LITTLE OGEECHEE 230/115KV BANK REPLACEMENT",
+  "desc": "Replace SATX 280MVA auto transformer with 400MVA auto transformer.",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2034-06-01",
+  "start": "2033-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.995,
+    -81.225
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.190, TEAMS 20787, zone 219",
+  "located": [
+   {
+    "name": "LITTLE OGEECHEE",
+    "method": "manual",
+    "confidence": "low",
+    "note": "Little Ogeechee River, south Savannah GA"
+   }
+  ],
+  "project_start": "2030-06-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-17993",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Evans Primary - Thomson Primary 115kV Rebuild",
+  "official_name": "EVANS PRIMARY - THOMSON PRIMARY 115KV REBUILD",
+  "desc": "Rebuild the existing 100C 336 ACSR conductor for the Thomson Primary to Pumpkin Center 115kV line section (approximately 5.28 miles), part of the Evans Primary - Thomson Primary 115kV line with 200C 1351 ACSS Martin conductor.",
+  "kv": 115,
+  "miles": 5.28,
+  "type": "rebuild",
+  "in_service": "2034-12-31",
+  "start": "2033-12-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.543994,
+    -82.168648
+   ],
+   [
+    33.453955,
+    -82.414219
+   ]
+  ],
+  "loc": "med",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.190, TEAMS 17993, zone 215",
+  "located": [
+   {
+    "name": "EVANS PRIMARY",
+    "method": "reference",
+    "confidence": "high",
+    "note": "Projects_Overlaps.xlsx"
+   },
+   {
+    "name": "THOMSON PRIMARY",
+    "method": "osm_substation",
+    "confidence": "medium",
+    "note": "Thomson Primary Substation (w160065782); 2 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2031-01-01",
+  "plan_change": "New Project New Project"
+ },
+ {
+  "id": "IRP-12016",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Arkwright - Lloyd Shoals 115 Kv Line Reconductor",
+  "official_name": "ARKWRIGHT - LLOYD SHOALS 115 KV LINE RECONDUCTOR",
+  "desc": "",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2024-06-01",
+  "start": "2023-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.320614,
+    -83.841009
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 12016, zone 214",
+  "located": [
+   {
+    "name": "ARKWRIGHT",
+    "method": "not found"
+   },
+   {
+    "name": "LLOYD SHOALS",
+    "method": "osm_plant",
+    "confidence": "high",
+    "note": "Lloyd Shoals Dam (w674159021)"
+   }
+  ],
+  "past_in_service": true
+ },
+ {
+  "id": "IRP-19628",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Arlington Primary - Lizard Lope 115kV Reconductor",
+  "official_name": "ARLINGTON PRIMARY - LIZARD LOPE 115KV RECONDUCTOR",
+  "desc": "",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    31.439579,
+    -84.721794
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 19628, zone 216",
+  "located": [
+   {
+    "name": "ARLINGTON PRIMARY",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Arlington Substation (w855787918)"
+   },
+   {
+    "name": "LIZARD LOPE",
+    "method": "not found"
+   }
+  ]
+ },
+ {
+  "id": "IRP-20477",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Banks Crossing - Center Primary (Black) 230 Kv Line",
+  "official_name": "BANKS CROSSING - CENTER PRIMARY (BLACK) 230 KV LINE",
+  "desc": "",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    34.053441,
+    -83.398085
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 20477, zone 212",
+  "located": [
+   {
+    "name": "BANKS CROSSING",
+    "method": "not found"
+   },
+   {
+    "name": "CENTER PRIMARY (BLACK)",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Center Primary Substation (w171540518)"
+   }
+  ]
+ },
+ {
+  "id": "IRP-12063",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Douglasville - Post Rd 115kV Rebuild",
+  "official_name": "DOUGLASVILLE - POST RD 115KV REBUILD",
+  "desc": "",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.751497,
+    -84.747714
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 12063, zone 201",
+  "located": [
+   {
+    "name": "DOUGLASVILLE",
+    "method": "town",
+    "confidence": "low",
+    "note": "town of Douglasville (n154309277)"
+   },
+   {
+    "name": "POST RD",
+    "method": "not found"
+   }
+  ]
+ },
+ {
+  "id": "IRP-19623",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Augusta Corporate Park - Vogtle 230kV Rebuild",
+  "official_name": "GTC: AUGUSTA CORPORATE PARK - VOGTLE 230KV REBUILD",
+  "desc": "",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.145816,
+    -81.76271
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 19623, zone 215",
+  "located": [
+   {
+    "name": "AUGUSTA CORPORATE PARK",
+    "method": "not found"
+   },
+   {
+    "name": "VOGTLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Vogtle Substation (500KV/230KV) (w121812102)"
+   }
+  ]
+ },
+ {
+  "id": "IRP-15228",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Kraft 230/115kV Transformer Rating Increase",
+  "official_name": "KRAFT 230/115KV TRANSFORMER RATING INCREASE",
+  "desc": "",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2029-06-01",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.148135,
+    -81.145983
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 15228, zone 219",
+  "located": [
+   {
+    "name": "KRAFT",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Kraft Substation (w121986375)"
+   }
+  ]
+ },
+ {
+  "id": "IRP-20482-2031",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Pittman Road - West Point Dam (USA) 115kV Rebuild",
+  "official_name": "PITTMAN ROAD - WEST POINT DAM (USA) 115KV REBUILD",
+  "desc": "Rebuild 3 miles from the Pittman Road 115kV station to the West Point Dam (USA) 115kV station with 100C 1351 ACSS Martin conductor. Replace AAC 750 jumper at Pittman Road 115kV with (2) 1590 AAC.",
+  "kv": 115,
+  "miles": 3.0,
+  "type": "rebuild",
+  "in_service": "2031-06-01",
+  "start": "2030-07-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    32.918762,
+    -85.188822
+   ]
+  ],
+  "loc": "low",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 20482, zone 213",
+  "located": [
+   {
+    "name": "PITTMAN ROAD",
+    "method": "not found"
+   },
+   {
+    "name": "WEST POINT DAM (USA)",
+    "method": "osm_plant",
+    "confidence": "medium",
+    "note": "West Point Dam (w1058469136); 3 candidates, nearest the zone"
+   }
+  ],
+  "project_start": "2025-06-01",
+  "plan_change": "Project advanced from 2031 to 2028 New Project"
+ },
+ {
+  "id": "IRP-20266",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "GTC: Goshen - Vogtle 230kV Rebuild",
+  "official_name": "GTC: GOSHEN - VOGTLE 230KV REBUILD",
+  "desc": "",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2031-06-01",
+  "start": "2030-06-01",
+  "date_precision": "day",
+  "cost": null,
+  "coords": [
+   [
+    33.31976,
+    -81.995312
+   ],
+   [
+    33.145816,
+    -81.76271
+   ]
+  ],
+  "loc": "high",
+  "source": "Challenge package: Georgia Power 2025 IRP Volume 3, 2024 GA ITS Ten-Year Plan, Table 2",
+  "page": "PDF p.191, TEAMS 20266, zone 215",
+  "located": [
+   {
+    "name": "GOSHEN",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Goshen Substation (w52019569)"
+   },
+   {
+    "name": "VOGTLE",
+    "method": "osm_substation",
+    "confidence": "high",
+    "note": "Vogtle Substation (500KV/230KV) (w121812102)"
+   }
+  ]
  },
  {
   "id": "EX-01",
@@ -2384,8 +8236,8 @@
     -82.45
    ],
    [
-    33.14,
-    -81.76
+    33.145816,
+    -81.76271
    ]
   ],
   "source": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/thomson-vogtle.html"
@@ -2397,8 +8249,8 @@
   "name": "Stevens Creek Hydro (DESC-owned, Martinez GA)",
   "coords": [
    [
-    33.56,
-    -82.05
+    33.562599,
+    -82.051362
    ]
   ],
   "source": ""
@@ -2410,8 +8262,8 @@
   "name": "Plant Vogtle",
   "coords": [
    [
-    33.14,
-    -81.76
+    33.145816,
+    -81.76271
    ]
   ],
   "source": ""
@@ -2423,8 +8275,8 @@
   "name": "Plant McIntosh",
   "coords": [
    [
-    32.357,
-    -81.169
+    32.356819,
+    -81.170346
    ]
   ],
   "source": ""
@@ -2436,12 +8288,12 @@
   "name": "Okatie - McIntosh 115kV tie (DESC-Georgia)",
   "coords": [
    [
-    32.3,
-    -80.93
+    32.333758,
+    -81.032495
    ],
    [
-    32.357,
-    -81.169
+    32.352116,
+    -81.175112
    ]
   ],
   "source": ""
