@@ -1,4 +1,4 @@
-// Seamline file readers: turn dropped files into something the importer understands.
+// Nexxo file readers: turn dropped files into something the importer understands.
 //   CSV, TSV, TXT, JSON, GeoJSON     -> text          -> Ingest.parsePlan
 //   XLSX, XLSM, XLS, ODS             -> row objects   -> Ingest.parseRows   (SheetJS)
 //   KML, KMZ, GPX                    -> GeoJSON       -> Ingest.parseGeoJSON (togeojson, JSZip)

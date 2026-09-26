@@ -1,9 +1,9 @@
-// Seamline UI: map (map.js), the results panel (overlaps, plan changes, optimize, data checks), the build-window
+// Nexxo UI: map (map.js), the results panel (overlaps, plan changes, optimize, data checks), the build-window
 // timeline, the importer and the dialogs. Logic lives in engine.js and ingest.js.
 const { TIERS, fmtMoney: money, findOverlaps, monthIndex: mon } = Engine;
-const BASE = window.SEAMLINE_DATA.basemap;
-const ALL = window.SEAMLINE_DATA.projects;
-const MODEL = window.SEAMLINE_DATA.model || { slips: {}, checks: [] };
+const BASE = window.NEXXO_DATA.basemap;
+const ALL = window.NEXXO_DATA.projects;
+const MODEL = window.NEXXO_DATA.model || { slips: {}, checks: [] };
 const TODAY = MODEL.as_of || new Date().toISOString().slice(0, 10);
 const EXIST = ALL.filter(p => p.existing);
 let PROJECTS = ALL.filter(p => !p.existing).map(p => Object.assign({ dataset: "built-in" }, p));
@@ -19,9 +19,18 @@ const lblLong = u => LONG[u] || u;
 const TYPE = { new_line: "new line", rebuild: "rebuild", substation: "substation", generation: "generation" };
 const SEV = ["Touching", "< 1.6 km", "< 8 km", "< 40 km", "> 40 km"];
 const NONE = "__none";
+// The app was called Seamline before Nexxo: carry saved settings (and a remembered key) over to the new names once.
+try {
+  for (const s of [localStorage, sessionStorage]) {
+    for (let i = s.length - 1; i >= 0; i--) {
+      const k = s.key(i);
+      if (k && k.startsWith("seamline.") && s.getItem("nexxo." + k.slice(9)) == null) s.setItem("nexxo." + k.slice(9), s.getItem(k));
+    }
+  }
+} catch (err) { /* storage blocked: nothing to carry over */ }
 const store = {
-  get: (k, d) => { try { const v = localStorage.getItem("seamline." + k); return v == null ? d : JSON.parse(v); } catch (err) { return d; } },
-  set: (k, v) => { try { localStorage.setItem("seamline." + k, JSON.stringify(v)); } catch (err) { /* storage blocked: keep it for this visit */ } },
+  get: (k, d) => { try { const v = localStorage.getItem("nexxo." + k); return v == null ? d : JSON.parse(v); } catch (err) { return d; } },
+  set: (k, v) => { try { localStorage.setItem("nexxo." + k, JSON.stringify(v)); } catch (err) { /* storage blocked: keep it for this visit */ } },
 };
 const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
@@ -693,7 +702,7 @@ function renderChanges(P) {
   const list = xs => xs.map((x, i) => `<button type="button" class="tr lite" data-k="${esc(keyOf(x))}"><span class="muted">${km(x.km)}</span><span class="pair"><span class="pp"><i class="a"></i>${esc(short(x.p))}</span><span class="pp"><i class="b"></i>${esc(short(x.q))}</span><small>${esc(why(x))}</small></span></button>`).join("") || `<div class="empty">None.</div>`;
   const u = k => S[k] ? `<div class="hist"><span><b>${esc(lbl(k))}</b> · ${S[k].n} projects with a history</span>${histogram(S[k].months, k === state.utilA ? "var(--u0)" : "var(--u1)")}<small>${S[k].slipped} later, ${S[k].advanced} earlier, ${S[k].n - S[k].slipped - S[k].advanced} unchanged · months moved between the last two plans</small><small class="muted">${esc(S[k].source)}</small></div>` : "";
   P.innerHTML = `<div class="detail"><h2>How dates moved between the last two plans</h2><div class="hists">${u(state.utilA)}${u(state.utilB)}</div>
-    <p class="note">Seamline replays each pair with the dates the previous plan listed. These are the shared build windows the latest updates opened and closed.</p></div>
+    <p class="note">Nexxo replays each pair with the dates the previous plan listed. These are the shared build windows the latest updates opened and closed.</p></div>
     <h3 class="sub">Shared windows opened <span class="up">${d.opened.length}</span></h3><div class="rows">${list(d.opened)}</div>
     <h3 class="sub">Closed <span class="down">${d.closed.length}</span></h3><div class="rows">${list(d.closed)}</div>`;
   P.querySelectorAll("[data-k]").forEach(el => activate(el, () => { const x = RESULT.pairs.find(v => keyOf(v) === el.dataset.k); if (x) { state.tab = "overlaps"; select(x); } }));
@@ -743,7 +752,7 @@ function renderChecks(P) {
   P.querySelectorAll(".check [data-i]").forEach(b => b.onclick = () => { const i = +b.dataset.i; state.openCheck = state.openCheck === i ? null : i; renderChecks(P); });
   $("#dl").onclick = () => {
     const url = URL.createObjectURL(new Blob([JSON.stringify(MODEL, null, 1)], { type: "application/json" }));
-    const a = document.createElement("a"); a.href = url; a.download = "seamline-validation.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const a = document.createElement("a"); a.href = url; a.download = "nexxo-validation.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 }
 
@@ -751,9 +760,9 @@ function renderChecks(P) {
 // ---------- panel: assistant ----------
 // Claude answers questions using tools that read the same data the page shows (agent.js runs the loop).
 const CHAT = { messages: [], log: [], busy: false };
-const SYSTEM = `You are Geo, the assistant inside Seamline. If asked your name, you are Geo. a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
+const SYSTEM = `You are Geo, the assistant inside Nexxo. If asked your name, you are Geo. a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
 
-How Seamline measures things:
+How Nexxo measures things:
 - Distance is between the closest points of two projects. Tiers: touching (0 km), under 1.6 km (can share right-of-way, access roads, permits), under 8 km (laydown yards, deliveries), under 40 km (crews, cranes, contractors).
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
@@ -767,7 +776,7 @@ const TOOLS = [
     sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to order the results. cost covers Dominion only; kv and length_km cover both utilities." },
     order: { type: "string", enum: ["desc", "asc"], description: "desc = largest or latest first (default), asc = smallest or earliest first" },
     limit: { type: "integer", description: "Max results, default 10" } } } },
-  { name: "get_project", description: "Everything Seamline knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
+  { name: "get_project", description: "Everything Nexxo knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
   { name: "list_overlaps", description: "Ranked flagged pairs of projects (one from each utility). Filter and sort them; each row has a key for get_overlap and show_on_map.", input_schema: { type: "object", properties: {
     sort: { type: "string", enum: ["expected", "chance", "distance"], description: "expected = expected savings (default), chance = chance of a shared window, distance = closest first" },
     order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking — the least valuable pairs, or the farthest apart — since only `limit` rows come back." },
@@ -781,8 +790,8 @@ const TOOLS = [
   { name: "get_plan_changes", description: "How each utility's planned dates moved between its last two published plans (counts later, earlier, unchanged), and which shared build windows the latest plan updates opened or closed, with the reason.", input_schema: { type: "object", properties: {} } },
   { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
   { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
-  { name: "show_on_map", description: "Select a pair or a project in Seamline so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
-  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Seamline flagged them as a coordination pair. Use this for any question of the form 'compare A and B' — reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
+  { name: "show_on_map", description: "Select a pair or a project in Nexxo so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
+  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Nexxo flagged them as a coordination pair. Use this for any question of the form 'compare A and B' — reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
     project_ids: { type: "array", items: { type: "string" }, description: "Two to five project ids, e.g. ['DESC-11', 'IRP-20277']" } }, required: ["project_ids"] } },
   { name: "why_not", description: "Why two specific projects are NOT flagged as an opportunity: too far apart, the same utility, a location that could not be established, or one of them already likely built. Most pairs do not overlap, so use this whenever the user asks about a pair that is missing from the list rather than guessing at the reason.", input_schema: { type: "object", properties: {
     project_id_a: { type: "string", description: "A project id, e.g. DESC-12" },
@@ -948,7 +957,7 @@ function runTool(name, i) {
     if (flagged) return Object.assign(base, { rejected: false, reason: "flagged", key: keyOf(flagged), distance_km: +flagged.km.toFixed(2),
       explanation: `This pair IS flagged, as ${keyOf(flagged)}, at ${flagged.km.toFixed(1)} km.` });
     if (p.utility === q.utility) return Object.assign(base, { rejected: true, reason: "same_utility",
-      explanation: `Both projects belong to ${lblLong(p.utility)}. Seamline compares work across two different utilities.` });
+      explanation: `Both projects belong to ${lblLong(p.utility)}. Nexxo compares work across two different utilities.` });
     if (!(p.coords || []).length || !(q.coords || []).length) return Object.assign(base, { rejected: true, reason: "unlocated",
       explanation: `${(p.coords || []).length ? q.id : p.id} has no location, so no distance can be measured.` });
     const km = Engine.closest(p, q)[0];
@@ -1050,10 +1059,10 @@ const md = text => {
   flushAll();
   return out.join("");
 };
-const apiKey = () => { try { return sessionStorage.getItem("seamline.key") || localStorage.getItem("seamline.key") || ""; } catch (err) { return CHAT.key || ""; } };
+const apiKey = () => { try { return sessionStorage.getItem("nexxo.key") || localStorage.getItem("nexxo.key") || ""; } catch (err) { return CHAT.key || ""; } };
 function saveKey(k, remember) {
   CHAT.key = k;
-  try { sessionStorage.setItem("seamline.key", k); if (remember) localStorage.setItem("seamline.key", k); else localStorage.removeItem("seamline.key"); } catch (err) { /* storage blocked: key lives for this page only */ }
+  try { sessionStorage.setItem("nexxo.key", k); if (remember) localStorage.setItem("nexxo.key", k); else localStorage.removeItem("nexxo.key"); } catch (err) { /* storage blocked: key lives for this page only */ }
 }
 const SUGGEST_BY_LANG = {
   en: ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "Which is the biggest project?", "How reliable is the data?"],
@@ -1074,7 +1083,7 @@ function renderAsk(P) {
       ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
         <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
-        <span class="note">Geo runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
+        <span class="note">Geo runs in your browser and sends your question, plus the Nexxo data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
@@ -1129,7 +1138,7 @@ function renderAsk(P) {
     }
     say(r.reason, "warn");
   };
-  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
+  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("nexxo.key"); localStorage.removeItem("nexxo.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
   P.querySelectorAll(".flag").forEach(b => b.onclick = () => {
     if (b.dataset.lang === state.askLang) return;
     state.askLang = b.dataset.lang; store.set("askLang", state.askLang);
@@ -1297,7 +1306,7 @@ function openBrief(x0, narrative) {
   const steps = [D.steps[0], x.tier === 0 && D.steps[1], x.tier <= 1 && D.steps[2], x.tier <= 2 && D.steps[3], D.steps[4], D.steps[5]].filter(Boolean);
   const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} ${esc(D.to2)} ${fmtD(p, "in_service")}${p === moved ? `<br><em>${esc(D.proposed)}</em>` : ""}</td><td>${c.est ? esc(D.est) : ""}${money(c.v)}</td></tr>`;
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandBrief)}</span></div><div class="b-date">${today}</div></header>
+    <header class="b-head"><div class="b-brand">NEXXO <span>${esc(D.brandBrief)}</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(uA)} ${esc(D.planning)}<br>${esc(uB)} ${esc(D.planning)}</dd>
       <dt>${esc(D.re)}</dt><dd>${esc(D.reCoord(x.p.name, x.q.name))}</dd></dl>
     ${briefNote(narrative)}
@@ -1349,14 +1358,14 @@ const DOC = {
       "Compare contractor and crew plans; share mobilization where the windows overlap.",
       "Name one coordinator at each utility and set a monthly check-in until both are in service.",
     ],
-    footBrief: srcs => `Prepared with Seamline from public plans (${srcs}). Locations are matched from substation names to OpenStreetMap and checked by hand`,
+    footBrief: srcs => `Prepared with Nexxo from public plans (${srcs}). Locations are matched from substation names to OpenStreetMap and checked by hand`,
     footApprox: ", and at least one of these is approximate",
     footBriefEnd: "; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.",
     ledeSchedule: (n, mo, before, after) => `Moving these ${n} projects by at most ${mo} months raises the expected savings from coordinating nearby work from <b>${before}</b> to <b>${after}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.`,
     thMove: "Move", thInService: "In service", thAdds: "Adds", months: "months",
     stepsSchedule: ["Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.",
-      "Agree the moves that fit at the next SERTP coordination meeting.", "Re-run Seamline on the next published plans to track the result."],
-    footSchedule: "Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.",
+      "Agree the moves that fit at the next SERTP coordination meeting.", "Re-run Nexxo on the next published plans to track the result."],
+    footSchedule: "Prepared with Nexxo. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.",
     measures: { cost: "published cost", kv: "voltage", length_km: "length", in_service: "in-service date", name: "name" },
     ledeReport: (n, checked, screen, flagged, expected, hold, priced) =>
       `${n} planned projects are loaded${checked ? `, and ${checked} cross-utility pairs were checked against a ${screen} km screen` : ""}. ${flagged ? `<b>${flagged}</b> pairs are close enough to coordinate on, worth <b>${expected}</b> in expected savings (${hold} if every date holds).` : ""} Only ${priced} of the ${n} projects publish a cost; the rest are redacted in their own filing, so no figure is attributed to them here.`,
@@ -1368,7 +1377,7 @@ const DOC = {
     coverPlaced: (ok, n, bad) => `${ok} of ${n} projects could be placed on a map${bad ? `; ${bad} could not and are excluded from every distance` : ""}.`,
     coverBand: (n, from, to) => `${n} further pairs fall between ${from} km and ${to} km. They are deliberately outside the ranking and the totals; ${from} km is a chosen threshold, not a cliff.`,
     coverFilters: (d, b, mode) => `Filters in effect: within ${d} km, window buffer ±${b} months, match rule "${mode}".`,
-    footReport: "Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand; costs are reproduced from the filings that publish them and never estimated for the ones that do not. Confirm with both utilities before acting.",
+    footReport: "Prepared with Nexxo from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand; costs are reproduced from the filings that publish them and never estimated for the ones that do not. Confirm with both utilities before acting.",
   },
   es: {
     locale: "es-ES",
@@ -1403,14 +1412,14 @@ const DOC = {
       "Comparar los planes de contratistas y cuadrillas; compartir la movilización donde las ventanas se solapan.",
       "Nombrar un coordinador en cada utility y fijar una reunión mensual hasta que ambos entren en servicio.",
     ],
-    footBrief: srcs => `Preparado con Seamline desde planes públicos (${srcs}). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano`,
+    footBrief: srcs => `Preparado con Nexxo desde planes públicos (${srcs}). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano`,
     footApprox: ", y al menos una de estas es aproximada",
     footBriefEnd: "; los costos son estimaciones de nivel de planeación salvo que el plan publique uno. Confirmar con ambas utilities antes de actuar.",
     ledeSchedule: (n, mo, before, after) => `Mover estos ${n} proyectos a lo sumo ${mo} meses sube el ahorro esperado por coordinar obra cercana de <b>${before}</b> a <b>${after}</b>. Cada movimiento es sobre un proyecto que no ha arrancado. Las probabilidades salen de cómo se movieron las fechas de cada utility entre sus dos últimos planes.`,
     thMove: "Movimiento", thInService: "Entra en servicio", thAdds: "Agrega", months: "meses",
     stepsSchedule: ["Cada utility revisa si sus movimientos calzan con fechas de necesidad de confiabilidad, temporadas de corte y ciclos de presupuesto.",
-      "Acordar los movimientos que calzan en la próxima reunión de coordinación de SERTP.", "Volver a correr Seamline sobre los próximos planes publicados para seguir el resultado."],
-    footSchedule: "Preparado con Seamline. Es una ayuda de planeación: asume que cada fecha se mueve una vez más como en las actualizaciones de plan anteriores, y que las utilities se mueven de forma independiente.",
+      "Acordar los movimientos que calzan en la próxima reunión de coordinación de SERTP.", "Volver a correr Nexxo sobre los próximos planes publicados para seguir el resultado."],
+    footSchedule: "Preparado con Nexxo. Es una ayuda de planeación: asume que cada fecha se mueve una vez más como en las actualizaciones de plan anteriores, y que las utilities se mueven de forma independiente.",
     measures: { cost: "costo publicado", kv: "voltaje", length_km: "longitud", in_service: "fecha de entrada en servicio", name: "nombre" },
     ledeReport: (n, checked, screen, flagged, expected, hold, priced) =>
       `Hay ${n} proyectos planeados cargados${checked ? `, y se revisaron ${checked} pares entre utilities contra un filtro de ${screen} km` : ""}. ${flagged ? `<b>${flagged}</b> pares están lo bastante cerca para coordinarse, por <b>${expected}</b> de ahorro esperado (${hold} si todas las fechas se mantienen).` : ""} Solo ${priced} de los ${n} proyectos publican un costo; el resto lo tienen tachado en su propio filing, así que acá no se les atribuye ninguna cifra.`,
@@ -1422,7 +1431,7 @@ const DOC = {
     coverPlaced: (ok, n, bad) => `${ok} de ${n} proyectos se pudieron ubicar en el mapa${bad ? `; ${bad} no, y quedan excluidos de toda distancia` : ""}.`,
     coverBand: (n, from, to) => `Otros ${n} pares caen entre ${from} km y ${to} km. Quedan deliberadamente afuera del ranking y de los totales; ${from} km es un umbral elegido, no un acantilado.`,
     coverFilters: (d, b, mode) => `Filtros vigentes: a menos de ${d} km, margen de ventana ±${b} meses, regla de coincidencia "${mode}".`,
-    footReport: "Preparado con Seamline desde planes públicos (las listas de proyectos SCRTP de DESC, el plan a diez años del IRP 2025 de Georgia Power y SERTP). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano; los costos se reproducen de los filings que los publican y nunca se estiman para los que no. Confirmar con ambas utilities antes de actuar.",
+    footReport: "Preparado con Nexxo desde planes públicos (las listas de proyectos SCRTP de DESC, el plan a diez años del IRP 2025 de Georgia Power y SERTP). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano; los costos se reproducen de los filings que los publican y nunca se estiman para los que no. Confirmar con ambas utilities antes de actuar.",
   },
 };
 const doc = () => DOC[askLang()] || DOC.en;
@@ -1439,7 +1448,7 @@ function openReport(opts, narrative) {
   const totals = { expected: RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0), hold: RESULT.pairs.reduce((a, x) => a + x.sav.total, 0) };
 
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandReport)}</span></div><div class="b-date">${today}</div></header>
+    <header class="b-head"><div class="b-brand">NEXXO <span>${esc(D.brandReport)}</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}${solo() ? "" : `<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}`}</dd>
       <dt>${esc(D.re)}</dt><dd>${esc(D.reReport(PROJECTS.length, o.utility ? lblLong(o.utility) : null, MEASURE[o.sort] || o.sort))}</dd></dl>
     ${briefNote(narrative)}
@@ -1463,7 +1472,7 @@ function openReport(opts, narrative) {
 
 function openScheduleBrief(o, narrative) {
   const D = doc(), today = docDate();
-  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandSchedule)}</span></div><div class="b-date">${today}</div></header>
+  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">NEXXO <span>${esc(D.brandSchedule)}</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}</dd><dt>${esc(D.re)}</dt><dd>${esc(D.reMoves(o.moves.length))}</dd></dl>
     ${briefNote(narrative)}
     <p class="b-lede">${D.ledeSchedule(o.moves.length, state.opt.maxShift, money(o.before), money(o.after))}</p>
@@ -1890,7 +1899,7 @@ $("#copy").onclick = () => {
       .concat(VIEW.map((x, i) => [i + 1, q(TIERS[x.tier].label), x.km.toFixed(2), x.sameWindow, Math.round(x.ov), Math.round(x.gap), x.risk.chance.toFixed(3), Math.round(x.risk.expected), Math.round(x.sav.total),
         q(x.p.utility), q(x.p.name), x.p.in_service, q(x.p.page || x.p.source), q(x.q.utility), q(x.q.name), x.q.in_service, q(x.q.page || x.q.source), q(STATUS[keyOf(x)] || "Open")].join(","))).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  const a = document.createElement("a"); a.href = url; a.download = solo() ? "seamline-projects.csv" : "seamline-overlaps.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const a = document.createElement("a"); a.href = url; a.download = solo() ? "nexxo-projects.csv" : "nexxo-overlaps.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
 addEventListener("resize", () => renderTimeline());

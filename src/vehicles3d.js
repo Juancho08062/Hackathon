@@ -1,4 +1,4 @@
-// Seamline 3D vehicles: procedural work trucks for the pair view, built from three.js primitives (no downloads).
+// Nexxo 3D vehicles: procedural work trucks for the pair view, built from three.js primitives (no downloads).
 // Each vehicle is modeled in meters, faces +x, sits on y = 0 and is centered on its chassis; the scene scales it
 // (SCENE_SCALE matches the pair view, where a 7 m truck is about 1.4 units long).
 // Two levels: "detailed" merges each vehicle into one mesh per material (about ten draw calls, a few thousand

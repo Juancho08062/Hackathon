@@ -1,5 +1,5 @@
 // Run with: node tests/agent.test.js
-// The assistant is the one part of Seamline whose behaviour cannot be checked by reading it: the model decides which
+// The assistant is the one part of Nexxo whose behaviour cannot be checked by reading it: the model decides which
 // tool to call, and the loop has to handle every stop reason the API can return. These tests replay scripted responses
 // through a fake client shaped like the SDK, so the whole loop runs with no network and no API key.
 // The offline matcher (src/agent-offline.js) is tested here too, since it answers the same questions when the model

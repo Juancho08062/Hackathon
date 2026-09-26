@@ -1,4 +1,4 @@
-// Seamline assistant: answers questions about the loaded plans with Claude, using tools that read the same data the
+// Nexxo assistant: answers questions about the loaded plans with Claude, using tools that read the same data the
 // page shows (app.js supplies them). The page has no server, so the Anthropic TypeScript SDK loads in the browser on
 // first use and calls the API with the key the viewer types in; the key never leaves their browser except to the API.
 (function (root) {

@@ -1,4 +1,4 @@
-// three.js r128 (0.128.0) examples, concatenated for Seamline's High and Ultra 3D quality: SSAO and SMAA. MIT license, (c) three.js authors.
+// three.js r128 (0.128.0) examples, concatenated for Nexxo's High and Ultra 3D quality: SSAO and SMAA. MIT license, (c) three.js authors.
 
 // ---- examples/js/math/SimplexNoise.js
 ( function () {

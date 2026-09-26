@@ -1,4 +1,4 @@
-// three.js r128 (0.128.0) examples, concatenated for Seamline's realistic 3D mode. MIT license, (c) three.js authors.
+// three.js r128 (0.128.0) examples, concatenated for Nexxo's realistic 3D mode. MIT license, (c) three.js authors.
 
 // ---- examples/js/objects/Sky.js
 ( function () {

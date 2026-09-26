@@ -125,7 +125,7 @@ def overpass(q):
     err = None
     for url in MIRRORS * 2:
         req = urllib.request.Request(url, data=urllib.parse.urlencode({"data": q}).encode(),
-                                     headers={"User-Agent": "seamline-shellhacks/1.0"})
+                                     headers={"User-Agent": "nexxo-shellhacks/1.0"})
         try:
             return json.load(urllib.request.urlopen(req, timeout=180))["elements"]
         except Exception as e:  # noqa: BLE001 - any mirror failure means try the next one

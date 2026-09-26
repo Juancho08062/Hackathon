@@ -1,4 +1,4 @@
-// Seamline offline assistant: answers the common questions by pattern, with no model, no key and no network.
+// Nexxo offline assistant: answers the common questions by pattern, with no model, no key and no network.
 // It calls the same nine tools the Claude assistant calls (app.js supplies them), so the numbers are identical; only
 // the routing and the wording are done here instead of by a model. Two reasons it exists:
 //   - Conference Wi-Fi fails exactly when the page is being watched, and the six suggested questions in the Ask panel
@@ -218,7 +218,7 @@
       pairsOf: (n, all) => `The first ${n} of ${all} flagged pairs:`,
       projectsOf: (n, all) => `The first ${n} of ${all} matching projects:`,
       whyNot: r => r.reason === "flagged" ? `**${r.project_id_a} and ${r.project_id_b} are flagged**, as ${r.key}, at ${r.distance_km} km.`
-        : r.reason === "same_utility" ? `**Not flagged:** both belong to the same utility; Seamline only compares work across two utilities.`
+        : r.reason === "same_utility" ? `**Not flagged:** both belong to the same utility; Nexxo only compares work across two utilities.`
         : r.reason === "unlocated" ? `**Not flagged:** one of them has no location, so no distance can be measured.`
         : r.reason === "too_far" ? `**Not flagged:** their closest points are ${r.distance_km} km apart, ${r.just_outside ? "just beyond" : "beyond"} the distance screen.${r.just_outside ? " Widening the distance filter a little would include them." : ""}`
         : `**Not flagged:** they are ${r.distance_km} km apart, inside the screen, but the current match mode or build-window filter excludes them.`,
@@ -262,7 +262,7 @@
       pairsOf: (n, all) => `Los primeros ${n} de ${all} pares marcados:`,
       projectsOf: (n, all) => `Los primeros ${n} de ${all} proyectos que coinciden:`,
       whyNot: r => r.reason === "flagged" ? `**${r.project_id_a} y ${r.project_id_b} sí están marcados**, como ${r.key}, a ${r.distance_km} km.`
-        : r.reason === "same_utility" ? `**No está marcado:** los dos son de la misma utility; Seamline solo compara obras entre dos utilities.`
+        : r.reason === "same_utility" ? `**No está marcado:** los dos son de la misma utility; Nexxo solo compara obras entre dos utilities.`
         : r.reason === "unlocated" ? `**No está marcado:** uno de los dos no tiene ubicación, así que no se puede medir la distancia.`
         : r.reason === "too_far" ? `**No está marcado:** sus puntos más cercanos están a ${r.distance_km} km, ${r.just_outside ? "justo por fuera del" : "por fuera del"} filtro de distancia.${r.just_outside ? " Ampliar un poco el filtro de distancia los incluiría." : ""}`
         : `**No está marcado:** están a ${r.distance_km} km, dentro del filtro, pero el modo de coincidencia o el filtro de ventanas de obra los excluye.`,

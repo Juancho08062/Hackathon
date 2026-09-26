@@ -1,4 +1,4 @@
-// Seamline map: MapLibre GL with a plain offline basemap (state and county outlines from data/basemap.json), raster
+// Nexxo map: MapLibre GL with a plain offline basemap (state and county outlines from data/basemap.json), raster
 // basemaps (light streets, satellite, topographic) and a 3D mode that drapes everything over real terrain (AWS
 // Terrarium elevation tiles) and raises a tower every few hundred metres along each planned line.
 // The app hands it plain lists (projects, links, rings, yards) already styled; this file only turns them into layers.

@@ -1,6 +1,6 @@
 # Vendored libraries
 
-Pinned copies of the third-party scripts Seamline loads, so the site works offline and on static hosting. Each one is loaded from here first, with the CDN copy as a fallback (see `src/libs.js`).
+Pinned copies of the third-party scripts Nexxo loads, so the site works offline and on static hosting. Each one is loaded from here first, with the CDN copy as a fallback (see `src/libs.js`).
 
 | file | library | version | license |
 |---|---|---|---|

@@ -1,6 +1,6 @@
 # Proposed improvements
 
-Five changes to Seamline, written as requirements so they can be picked up
+Five changes to Nexxo, written as requirements so they can be picked up
 independently. Each one names the problem it solves, what "done" means, and the
 files it touches.
 
@@ -67,7 +67,7 @@ Read this before starting anything, so nothing gets built twice.
 
 ### Problem
 
-The assistant is the only part of Seamline that stops working without an
+The assistant is the only part of Nexxo that stops working without an
 internet connection, and it fails in four ways that are all likely at a
 conference: no network, `import()` of the SDK from jsDelivr blocked, a rejected
 key, or a rate limit.
@@ -402,7 +402,7 @@ surface, so it should not block the others.
 
 ## Non-goals
 
-- **No server.** Seamline is static and each viewer supplies their own key.
+- **No server.** Nexxo is static and each viewer supplies their own key.
   Nothing here introduces a backend.
 - **No new dependencies.** Everything above is plain JavaScript in the existing
   module style.

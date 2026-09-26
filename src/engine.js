@@ -1,4 +1,4 @@
-// Seamline overlap engine: geometry, distance tiers, build windows and the rough savings model.
+// Nexxo overlap engine: geometry, distance tiers, build windows and the rough savings model.
 // Pure functions with no DOM access, so the same file runs in the browser and in Node (tests/engine.test.js).
 (function (root) {
   // ---------- geometry (km, local equirectangular projection) ----------
@@ -104,7 +104,7 @@
   const PER_KM = { new_line: { 500: 2.5e6, 230: 1.4e6, 115: 0.95e6, 46: 0.6e6 }, rebuild: { 500: 1.25e6, 230: 0.75e6, 115: 0.55e6, 46: 0.4e6 } };
   const SUB = { 500: 60e6, 230: 25e6, 115: 8e6, 46: 4e6 };
   // Unit costs behind each shared item. Planning assumptions, editable in the app's Cost assumptions panel.
-  // "check" names a public source to compare against; the values are Seamline's round planning numbers, not quotes from it.
+  // "check" names a public source to compare against; the values are Nexxo's round planning numbers, not quotes from it.
   const ASSUMPTIONS = [
     { key: "outage", group: "Touching or crossing", label: "Coordinated outage", unit: "$ per outage avoided", value: 250e3, check: "switching crews, standby and replacement power for one planned outage" },
     { key: "crossing", group: "Touching or crossing", label: "Crossing structure design", unit: "$ per crossing", value: 120e3, check: "engineering and one set of crossing structures designed once" },

@@ -1,4 +1,4 @@
-// Seamline library loader: loads a third-party script on first use, from vendor/ first and the pinned CDN copy second.
+// Nexxo library loader: loads a third-party script on first use, from vendor/ first and the pinned CDN copy second.
 // Keeping local copies means the site works offline and on static hosting; the CDN covers single-file copies of index.html.
 (function (root) {
   const LIBS = {

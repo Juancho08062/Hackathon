@@ -21,7 +21,7 @@ def query(bbox):
     q = f'[out:json][timeout:160];way["power"="line"]["voltage"~"(115000|161000|230000|500000)"]({bbox});out geom tags;'
     for attempt in range(3):
         for url in MIRRORS:
-            req = urllib.request.Request(url, data=urllib.parse.urlencode({"data": q}).encode(), headers={"User-Agent": "seamline-shellhacks/1.0"})
+            req = urllib.request.Request(url, data=urllib.parse.urlencode({"data": q}).encode(), headers={"User-Agent": "nexxo-shellhacks/1.0"})
             try:
                 return json.load(urllib.request.urlopen(req, timeout=180))["elements"]
             except Exception as e:  # noqa: BLE001 - try the next mirror

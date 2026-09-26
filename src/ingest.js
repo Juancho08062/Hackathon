@@ -1,4 +1,4 @@
-// Seamline importer: turns a utility's plan into Seamline projects. It takes text (CSV, TSV, JSON, GeoJSON),
+// Nexxo importer: turns a utility's plan into Nexxo projects. It takes text (CSV, TSV, JSON, GeoJSON),
 // spreadsheet rows (from src/formats.js) or GeoJSON (from KML, KMZ, GPX or shapefiles).
 // Column names are matched loosely so exports from different utilities load without editing.
 (function (root) {
@@ -140,7 +140,7 @@
     };
   }
 
-  // Reduce any GeoJSON geometry to the parts Seamline measures from: each part is a list of [lon, lat] points (a line)
+  // Reduce any GeoJSON geometry to the parts Nexxo measures from: each part is a list of [lon, lat] points (a line)
   // or a single point. Separate parts stay separate, so nothing is measured across the gap between them.
   function geomParts(g) {
     if (!g) return null;

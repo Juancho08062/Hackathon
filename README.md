@@ -1,15 +1,15 @@
-# Seamline
+# Nexxo
 
-Seamline compares the planned transmission construction of two neighboring utilities, flags where their work overlaps (within 40 km, measured between the closest points), and tells planners which of those overlaps are **likely to really happen**, what coordinating them would save, and which few date moves would save the most.
+Nexxo compares the planned transmission construction of two neighboring utilities, flags where their work overlaps (within 40 km, measured between the closest points), and tells planners which of those overlaps are **likely to really happen**, what coordinating them would save, and which few date moves would save the most.
 
 The built-in example is **Dominion Energy South Carolina** against **Georgia** (Georgia Power, Georgia Transmission and MEAG) along the Savannah River, built from the challenge's own PDFs plus the newer published lists. Any other utility's plan can be loaded from the files utilities publish (Excel, CSV, KML/KMZ, shapefile, GeoJSON, GPX).
 
-![Seamline: overlaps ranked by expected savings next to the map](docs/screenshots/overview.jpg)
+![Nexxo: overlaps ranked by expected savings next to the map](docs/screenshots/overview.jpg)
 
 ## What makes it different
 
 1. **It reads the plans itself.** A reproducible pipeline extracts all 44 DESC and 218 Georgia projects from the challenge PDFs, including each Georgia project's detail page (published start date, description, miles), places every end point on OpenStreetMap substations, and runs 10 validation checks on every rebuild. Every number traces back to a PDF page, a TEAMS number and how its location was found. It reproduces **all 6** overlaps in the challenge's reference table.
-2. **It knows plans move.** Comparing two editions of each utility's plan shows 23 of 30 DESC projects slipped (median 12 months). Seamline turns that into a **chance** that each pair is really in the field together, from today on, and ranks pairs by **expected savings**. Of the 41 pairs that overlap on paper, 23 are less than 50% likely to still overlap; 13 pairs that don't overlap on paper are 50% or more likely to. The last plan updates opened 9 shared windows and closed 3.
+2. **It knows plans move.** Comparing two editions of each utility's plan shows 23 of 30 DESC projects slipped (median 12 months). Nexxo turns that into a **chance** that each pair is really in the field together, from today on, and ranks pairs by **expected savings**. Of the 41 pairs that overlap on paper, 23 are less than 50% likely to still overlap; 13 pairs that don't overlap on paper are 50% or more likely to. The last plan updates opened 9 shared windows and closed 3.
 3. **It says what to do.** A schedule optimizer finds the 8 date moves (at most 6 months, projects not yet started) that raise expected savings from $13.6M to $16.1M, and prints a joint proposal for both utilities.
 4. **It shows the real place.** The map tilts into 3D over real terrain and satellite imagery, with towers along each planned line, across the river that separates the two states.
 5. **You can ask it.** Geo, the built-in assistant, answers plain-language questions, in English or Spanish, from the same data, flies the map to what it's talking about and opens the printable briefs. The common questions work with no API key.
@@ -37,7 +37,7 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 - **Changes**: how far each utility's dates moved between its last two plans, and which shared windows the latest updates opened or closed, and why.
 - **Optimize**: the date moves that most raise expected savings, with limits you set, shown on the map and printable as a joint schedule proposal.
 - **Checks**: the pipeline's validation report, each check with the records it caught, downloadable as JSON.
-- **Geo** (in the rail): the assistant, which greets you with "Hey, I'm Geo", for questions like "which overlaps near Augusta are most likely to happen?", "why isn't DESC-11 paired with IRP-20277?" or "¿qué cambió en el plan de DESC?". It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with fourteen tools over Seamline's own data: search and rank projects, list and explain overlaps, compare two projects, say why a pair is *not* flagged, plan changes, the schedule optimizer and the data checks, plus four that act on the page (show something on the map, open a pair's coordination brief, the joint schedule proposal or a report over the whole comparison). `src/agent.js` runs the loop; the tools are in `src/app.js`. The site has no server, so each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API. **Without a key**, or when the API can't be reached, `src/agent-offline.js` routes the common questions (every capability the panel lists) straight to the same tools by pattern and says so in the answer; anything it can't place with confidence asks for a key instead of guessing. Pairs just past the distance screen are listed under the ranking, kept out of every total, so the 40 km line reads as a chosen threshold rather than a cliff.
+- **Geo** (in the rail): the assistant, which greets you with "Hey, I'm Geo", for questions like "which overlaps near Augusta are most likely to happen?", "why isn't DESC-11 paired with IRP-20277?" or "¿qué cambió en el plan de DESC?". It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with fourteen tools over Nexxo's own data: search and rank projects, list and explain overlaps, compare two projects, say why a pair is *not* flagged, plan changes, the schedule optimizer and the data checks, plus four that act on the page (show something on the map, open a pair's coordination brief, the joint schedule proposal or a report over the whole comparison). `src/agent.js` runs the loop; the tools are in `src/app.js`. The site has no server, so each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API. **Without a key**, or when the API can't be reached, `src/agent-offline.js` routes the common questions (every capability the panel lists) straight to the same tools by pattern and says so in the answer; anything it can't place with confidence asks for a key instead of guessing. Pairs just past the distance screen are listed under the ranking, kept out of every total, so the 40 km line reads as a chosen threshold rather than a cliff.
 - **Share** copies a link to exactly what's on screen: utilities, filters, tab, selected pair, basemap, 3D and camera. Planners can paste it into an email and the other side opens the same view.
 - **Play** steps the map month by month: projects light up while under construction and pairs building at the same time spark. **Unit costs** edits every number behind the savings; **Import plans** loads another utility.
 - **3D illustration** (from the pair panel, or the walker): Its ground is a cut-out terrain block with earthen sides, shaped from the same elevation tiles; heights are stretched at most 5× so the flat river country reads without inventing cliffs, and the footer gives the real range in meters and the factor. The gap is marked the way a survey crew would: a red-and-white range pole with flagging tape on each closest point, a painted line on the ground between them with tick marks and a marker post at every even step (100 m, 500 m, 1 km…), and a label with the gap in km and miles. The line, the posts and each line's cleared right-of-way (about 30 m at 115 kV, 46 m at 230 kV, 61 m at 500 kV, edged in the utility's color) are true to scale; towers, poles and vehicles are drawn larger so they can be seen. Offline it falls back to an illustrative ground. Plants are modeled on a combined-cycle station (inlet filter houses, gas turbines, HRSGs with exhaust stacks, a steam turbine hall, a row of fan-cell cooling towers venting plumes, tanks, a pipe rack and the plant's own switchyard). Substations have lattice gantries, transformers with radiators, conservators and bushings, breakers, disconnect switches and a control house. Yards and crews carry real-proportion equipment: pickups, a flatbed with a cable reel, bucket trucks, an all-terrain crane and an excavator, each parked by its measured footprint so none overlap. **Quality** has two looks: *Detailed* (default, stylized and fast) and *Ultra-realistic* (texture maps on siding, concrete and gravel, galvanized steel and bare aluminum wires, loblolly pines, denser ground cover, finer terrain and stronger ambient occlusion).
@@ -64,7 +64,7 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 
 ## Cost and impact: a worked example
 
-The challenge's bonus asks for a rough cost or impact estimate for at least one flagged opportunity. Seamline prices every pair item by item; here is one in full, as the pair panel and the coordination brief show it.
+The challenge's bonus asks for a rough cost or impact estimate for at least one flagged opportunity. Nexxo prices every pair item by item; here is one in full, as the pair panel and the coordination brief show it.
 
 **DESC Okatie - McIntosh 115 kV tie: series reactor × Georgia Plant McIntosh Unit 12 combined cycle.** Both work at the McIntosh end of the tie across the Savannah River: 0.6 km apart at the closest points, so they can share land (right-of-way, access roads, permits) as well as a yard, deliveries, crews, cranes and contractors. On paper their construction windows share 13 months (DESC Dec 2027 - Dec 2028, estimated; Georgia Jun 2027 - Jun 2030, estimated).
 
@@ -127,7 +127,7 @@ The [`samples/`](samples) folder has one fictional plan per format (nine files) 
 | `hifld-style-existing-lines.geojson` | (existing lines, example) | the HIFLD field layout (`OWNER`, `VOLTAGE`, `SUB_1`, `SUB_2`); tick "These are existing lines" to load it as a background layer |
 | `edisto-electric-survey.gpx` | Edisto Electric Cooperative | a surveyed route and waypoints with no dates or utility: type the utility name, and a default in-service date if the points should count toward build windows |
 
-`tests/samples.test.js` loads each one through the same readers the browser uses. After an import, Seamline compares the new utility with whichever loaded utility has the nearest project.
+`tests/samples.test.js` loads each one through the same readers the browser uses. After an import, Nexxo compares the new utility with whichever loaded utility has the nearest project.
 
 Most published plan lists name substations but give no coordinates, and PDF-only plans need their table copied into Excel first. Adding coordinates is the one manual step.
 
@@ -182,7 +182,7 @@ CI runs lint, tests and the index.html check on every push and pull request (`.g
 
 ## Deploying
 
-Seamline is a static site: `index.html` plus the `vendor/` folder. Any static host works, and there is no build step to run on the host because `index.html` is committed already built.
+Nexxo is a static site: `index.html` plus the `vendor/` folder. Any static host works, and there is no build step to run on the host because `index.html` is committed already built.
 
 - **GitHub Pages:** in the repository's Settings, open Pages, set Source to "Deploy from a branch", pick `main` and `/ (root)`, and save. The site appears at `https://<user>.github.io/<repo>/`. On a free GitHub plan the repository has to be public for Pages to work.
 - **Netlify, Vercel, Cloudflare Pages or S3:** publish the repository root.
@@ -200,9 +200,9 @@ The built-in dataset includes both project lists from the challenge package, not
 
 A project that appears in both an official list and our newer lists (SCRTP 2026-2030, SERTP 2026) keeps the newer entry and carries the official record in `official`. Of the 262 official projects, 62 were already on the map and 132 are added. The 68 that could not be placed (mostly Atlanta-area, south Georgia and customer substations that OpenStreetMap does not name) are listed in `data/official/unplaced.json`; none of them are in Georgia's Augusta or Savannah planning zones (215 and 219), which face South Carolina.
 
-**Checked against the challenge's reference table.** `data/official/reference_overlaps.csv` holds the six overlaps in the challenge's `Projects_Overlaps.xlsx`. A test confirms Seamline flags all six. Seamline's distances are shorter than the reference's because it measures between the closest points of the two projects, as the challenge specifies, while the reference measures between their centres:
+**Checked against the challenge's reference table.** `data/official/reference_overlaps.csv` holds the six overlaps in the challenge's `Projects_Overlaps.xlsx`. A test confirms Nexxo flags all six. Nexxo's distances are shorter than the reference's because it measures between the closest points of the two projects, as the challenge specifies, while the reference measures between their centres:
 
-| reference | pair | reference (centre to centre) | Seamline (closest points) |
+| reference | pair | reference (centre to centre) | Nexxo (closest points) |
 |---|---|---|---|
 | OVL_1 | Hooks - Thurmond Tie / Evans Primary - Thurmond Dam #5 | 6.6 km | 0 km, touching (both end at Thurmond) |
 | OVL_2 | Jasper - Okatie #2 / McIntosh - Purrysburg reactors | 9.1 km | 3.3 km |
@@ -215,7 +215,7 @@ With everything loaded, DESC (64 projects) against Georgia (161) is 10,304 pairs
 
 ## Schedule risk and plan drift
 
-Planned dates move, so an overlap on paper is not an overlap in the field. Seamline measures how much they move, from the plans themselves:
+Planned dates move, so an overlap on paper is not an overlap in the field. Nexxo measures how much they move, from the plans themselves:
 
 - **DESC:** 30 projects appear in both the 2024-2028 and the 2026-2030 lists. 23 of them moved later (median 12 months, up to 55); none moved earlier.
 - **Georgia:** each IRP project page says how it changed from the previous ten-year plan. Of 94 projects with a history, 66 kept their date, 16 moved later and 12 earlier (up to 3 years either way).

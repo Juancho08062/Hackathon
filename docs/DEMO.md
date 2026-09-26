@@ -1,10 +1,10 @@
-# Seamline: 3-minute demo
+# Nexxo: 3-minute demo
 
 Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Set **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Ask** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
 
 ## 0:00 – The problem (20 s)
 
-> Utilities plan years ahead, each on its own. DESC and Georgia build right across the Savannah River from each other, and nobody lines up their crews, yards or outages. FERC Order 1920 exists because of this. Seamline finds where their plans meet, and more importantly, which of those meetings will actually happen.
+> Utilities plan years ahead, each on its own. DESC and Georgia build right across the Savannah River from each other, and nobody lines up their crews, yards or outages. FERC Order 1920 exists because of this. Nexxo finds where their plans meet, and more importantly, which of those meetings will actually happen.
 
 *On screen: the map. The grey and coloured lines underneath are today's grid, 10,092 real lines from OpenStreetMap; the bold ones are the plans.*
 
@@ -24,7 +24,7 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 *Click **Overlaps** in the rail, open the pair ranked #4 (Jasper – Okatie #2 × McIntosh Unit 12). The map flies to it.*
 
-> So Seamline turns that history into a chance. This pair is six months apart on paper, but there's a 68% chance both crews are in the field together, because DESC usually runs late. Pairs are ranked by expected savings, not by the plan's optimism.
+> So Nexxo turns that history into a chance. This pair is six months apart on paper, but there's a 68% chance both crews are in the field together, because DESC usually runs late. Pairs are ranked by expected savings, not by the plan's optimism.
 
 ## 1:25 – Walk the site (35 s)
 
@@ -58,7 +58,7 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 ## 2:50 – Close (10 s)
 
-> Seamline: real plans, honest odds, a site you can walk, and a schedule both utilities can agree on. Thank you.
+> Nexxo: real plans, honest odds, a site you can walk, and a schedule both utilities can agree on. Thank you.
 
 ## If something breaks
 

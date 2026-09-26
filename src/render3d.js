@@ -1,4 +1,4 @@
-// Seamline 3D, Ultra-realistic render setup: moves the built pair scene closer to a photo of the site.
+// Nexxo 3D, Ultra-realistic render setup: moves the built pair scene closer to a photo of the site.
 // Registered as Scene3D.hooks.setupRender, which runs once per open before the first frame; it acts only when the
 // quality is Ultra-realistic. The scene is already in linear color by then, so sRGB hex colors here are converted. detail() projects a procedural texture in world space (triplanar), so merged and instanced
 // geometry without UVs still shows grain, roughness variation and bump.
