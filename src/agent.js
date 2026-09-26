@@ -19,8 +19,10 @@
 
   // One user turn: call Claude, run the tools it asks for, send their results back, until it answers in text.
   // messages is the running conversation (append-only); execute(name, input) returns a JSON-able result.
-  async function ask({ apiKey, system, tools, messages, execute, onTool }) {
-    const c = await getClient(apiKey);
+  // client is only passed by the tests: the loop is the one piece of this page that cannot be checked by reading it,
+  // and loading the real SDK to test it would need a network and a key.
+  async function ask({ apiKey, system, tools, messages, execute, onTool, client: injected }) {
+    const c = injected || await getClient(apiKey);
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const response = await c.beta.messages.create({
         model: MODEL,

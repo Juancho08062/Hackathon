@@ -6,7 +6,7 @@
   "scripts": {
     "build": "python3 scripts/build.py",
     "build:data": "python3 scripts/build_projects.py && python3 scripts/build.py",
-    "test": "node tests/engine.test.js && node tests/samples.test.js",
+    "test": "node tests/engine.test.js && node tests/agent.test.js && node tests/samples.test.js",
     "lint": "eslint .",
     "check": "npm run lint && npm test && python3 scripts/build.py && git diff --exit-code -- index.html",
     "start": "python3 -m http.server 8000"
