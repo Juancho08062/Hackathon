@@ -44,7 +44,7 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 *Click **Optimize**.*
 
-> Finding overlaps isn't enough. The optimizer finds 8 date moves, none over 6 months, only on projects that haven't started, that raise expected savings from $13.7 million to $16.2 million, and prints a joint proposal for both planning teams.
+> Finding overlaps isn't enough. The optimizer finds 8 date moves, none over 6 months, only on projects that haven't started, that raise expected savings from $13.6 million to $16.1 million, and prints a joint proposal for both planning teams.
 
 *Click **Share**.*
 
@@ -65,4 +65,4 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 - No imagery, terrain or grid: switch to **Plain**. Everything else works offline.
 - Walker lands in the wrong place: press **Walk** to switch to the orbit view, or close and drop it again.
 - Assistant errors: skip the Ask step and spend the time on Optimize.
-- Numbers to remember: 262 official records · 10,304 pairs · 169 overlaps · 6 of 6 reference overlaps · 23 of 30 DESC projects slipped · +9 / −3 windows · 68% (Jasper–Okatie × McIntosh 12) · $13.7M → $16.2M with 8 moves · 10,092 existing lines.
+- Numbers to remember: 262 official records · 10,304 pairs · 169 overlaps · 6 of 6 reference overlaps · 23 of 30 DESC projects slipped · +9 / −3 windows · 68% (Jasper–Okatie × McIntosh 12) · $13.6M → $16.1M with 8 moves · 10,092 existing lines.
