@@ -415,6 +415,8 @@ checks = [
 ]
 model = dict(
     as_of=TODAY.isoformat(),
+    pipeline=dict(pdfs=2, official=len(official), official_placed=len(placed) + sum(len(v) for v in SAME.values()),
+                  on_map=sum(1 for o in out if not o.get("existing"))),
     slips=dict(
         DESC=dict(dist(desc_slips), source="Same project in DESC's 2024-2028 and 2026-2030 lists: change in in-service date"),
         GPC=dict(dist(gpc_slips), source="Georgia IRP 2025 project pages: change from the previous ten-year plan"),

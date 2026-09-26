@@ -264,6 +264,8 @@ t("schedule optimizer: on the built-in plans a few moves raise expected savings"
   const r = E.optimizeSchedule(pairs, m.slips, { today: m.as_of, maxMoves: 6 });
   assert(r.moves.length > 0 && r.moves.length <= 6);
   assert(r.after - r.before >= r.moves.length * 25000);
+  const descOnly = E.optimizeSchedule(pairs, m.slips, { today: m.as_of, utilities: ["DESC"] });
+  assert(descOnly.moves.every(x => x.project.utility === "DESC"));
   const again = E.optimizeSchedule(pairs, m.slips, { today: m.as_of, maxMoves: 6 });
   assert.deepStrictEqual(again.moves.map(x => [x.id, x.months]), r.moves.map(x => [x.id, x.months]));
 });

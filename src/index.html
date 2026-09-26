@@ -1,64 +1,96 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Seamline</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%230C1F27'/%3E%3Cpath d='M12 40 18 9h2l6 31M14 29h10M15.5 21h7' fill='none' stroke='%237FD3EA' stroke-width='2.6' stroke-linejoin='round'/%3E%3Cpath d='M27 40 32 17h2l5 23M29 31h8' fill='none' stroke='%23F2A54A' stroke-width='2.6' stroke-linejoin='round'/%3E%3Cpath d='M5 12q10 6 20 0t18 1' fill='none' stroke='%23FF5C7F' stroke-width='2.2' stroke-dasharray='3 3'/%3E%3C/svg%3E">
-<meta name="description" content="Compare neighboring utilities' planned transmission work and flag projects close enough to share crews, land and outages.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%231B1F23'/%3E%3Cpath d='M4 17 9 7l5 10 5-10' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="description" content="Compare neighboring utilities' planned transmission work, flag projects close enough to share crews, land and outages, and weigh each by the chance it really happens.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="vendor/maplibre-gl.css" id="mlcss">
 <style>
 /*STYLES*/
 </style>
 
-<div class="wrap">
-  <header class="hero">
-    <div class="brand">
-      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 42 16 8h2l7 34M11.5 30h11M13 22h8M14.5 14h5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M27 42 32 16h2l5 26M29 32h8M30.5 24h5" fill="none" stroke="#F2A54A" stroke-width="2.4" stroke-linejoin="round"/><path d="M3 10q11 6 22 0t20 1" fill="none" stroke="#FF5C7F" stroke-width="2" stroke-dasharray="3 3"/></svg>
-      <div>
-        <h1>Seamline</h1>
-        <p class="tag">Finds where two utilities' planned construction comes within 40 km, ranks each match by how close it is and whether it's built in the same window, and estimates what coordinating would save.</p>
-      </div>
+<div class="app">
+  <header class="appbar">
+    <a class="logo" href="#" aria-label="Seamline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18 9 6l6 12 6-12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Seamline</a>
+    <div class="compare" role="group" aria-label="Utilities to compare">
+      <span class="sw a" aria-hidden="true"></span><select id="utilA" aria-label="First utility"></select>
+      <span class="vs" aria-hidden="true">↔</span>
+      <span class="sw b" aria-hidden="true"></span><select id="utilB" aria-label="Second utility"></select>
     </div>
-    <ul class="hero-facts" aria-label="About">
-      <li><b>40 km</b> closest-point test</li>
-      <li><b>4 tiers</b> of what can be shared</li>
-      <li><b>FERC 1920</b> interregional planning</li>
-    </ul>
+    <span class="asof" id="asof"></span>
+    <span class="grow"></span>
+    <button type="button" class="btn" id="openAssume">Unit costs</button>
+    <button type="button" class="btn" id="openImport" aria-expanded="false" aria-controls="import">Import plans</button>
+    <button type="button" class="btn" id="copy">Export CSV</button>
   </header>
 
-  <section class="bar" aria-label="What to compare">
-    <div class="compare">
-      <label for="utilA">Compare</label>
-      <select id="utilA"></select>
-      <span class="vs">with</span>
-      <select id="utilB" aria-label="Second utility"></select>
-      <button type="button" class="btn primary" id="openImport" aria-expanded="false" aria-controls="import">Add a utility's plans</button>
+  <div class="filterbar" id="controls">
+    <label class="fl">Overlap within <select id="dist" aria-label="Geographic threshold">
+      <option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40" selected>40 km (25 mi)</option><option value="60">60 km</option><option value="100">100 km</option></select></label>
+    <label class="fl">Window buffer <select id="buf" aria-label="Build-window buffer">
+      <option value="0" selected>±0 mo</option><option value="3">±3 mo</option><option value="6">±6 mo</option><option value="12">±12 mo</option></select></label>
+    <div class="seg" role="group" aria-label="Match rule">
+      <button type="button" id="m-near" aria-pressed="true">Near</button><button type="button" id="m-both" aria-pressed="false">Near + same window</button><button type="button" id="m-time" aria-pressed="false">Same window</button>
     </div>
-    <div class="controls">
-      <div class="ctl"><label for="dist">Geographic threshold <output id="distv"></output></label><input id="dist" type="range" min="5" max="100" step="5" value="40"></div>
-      <div class="ctl"><label for="buf">Build-window buffer <output id="bufv"></output></label><input id="buf" type="range" min="0" max="24" step="1" value="0"></div>
-      <div class="ctl-group">
-        <span class="lbl">Show pairs that are</span>
-        <div class="seg" role="group" aria-label="Match rule">
-          <button type="button" id="m-near" aria-pressed="true">Near</button>
-          <button type="button" id="m-both" aria-pressed="false">Near, same window</button>
-          <button type="button" id="m-time" aria-pressed="false">Same window</button>
-        </div>
-      </div>
+    <div class="seg" role="group" aria-label="Build period">
+      <button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All</button>
     </div>
-  </section>
+    <label class="chk"><input type="checkbox" id="pastOn" checked> Include dates already passed</label>
+    <span class="grow"></span>
+    <span class="summary" id="summary" aria-live="polite"></span>
+  </div>
 
-  <section class="import" id="import" hidden aria-label="Add a utility's plans">
+  <main class="work">
+    <section class="left" aria-label="Map and build windows">
+      <div class="mapwrap">
+        <div id="map" role="region" aria-label="Map of planned projects"></div>
+        <div class="maptools">
+          <div class="seg" role="group" aria-label="Map extent"><button type="button" id="v-focus" aria-pressed="true">Overlaps</button><button type="button" id="v-all" aria-pressed="false">All projects</button></div>
+          <div class="seg" role="group" aria-label="Basemap" id="basemaps"></div>
+          <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
+        </div>
+        <div class="legend" id="legend"></div>
+        <p class="tilenote" id="tileNote" hidden></p>
+      </div>
+      <div class="timeline">
+        <div class="tlhead">
+          <b>Build windows</b><span class="muted" id="tlsub"></span>
+          <span class="grow"></span>
+          <button type="button" class="btn sm" id="play" aria-pressed="false">Play</button>
+          <input type="range" id="tslider" step="1" aria-label="Month to show on the map">
+          <b class="tyear" id="tyear">All years</b>
+          <button type="button" class="btn sm" id="tall" hidden>All years</button>
+        </div>
+        <div class="tlbody"><svg id="tl" role="img" aria-label="Build windows of the listed pairs"></svg></div>
+      </div>
+    </section>
+
+    <aside class="side" aria-label="Results">
+      <nav class="tabs" role="tablist" aria-label="Views">
+        <button type="button" role="tab" id="tab-overlaps" aria-selected="true" data-tab="overlaps">Overlaps <span class="n" id="n-overlaps"></span></button>
+        <button type="button" role="tab" id="tab-changes" aria-selected="false" data-tab="changes">Plan changes <span class="n" id="n-changes"></span></button>
+        <button type="button" role="tab" id="tab-optimize" aria-selected="false" data-tab="optimize">Optimize <span class="n" id="n-optimize"></span></button>
+        <button type="button" role="tab" id="tab-checks" aria-selected="false" data-tab="checks">Data checks <span class="n" id="n-checks"></span></button>
+      </nav>
+      <div class="panel" id="panel" role="tabpanel"></div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal" id="import" hidden role="dialog" aria-modal="true" aria-labelledby="impTitle">
+  <div class="sheet wide">
+    <div class="sheet-head"><h2 id="impTitle">Import a utility's plans</h2><button type="button" class="btn" data-close="import">Close</button></div>
     <div class="import-grid">
       <div>
-        <h2>Add a utility's plans</h2>
         <p class="note">Drop the plan the way the utility published it: an <b>Excel</b> project list, a <b>CSV</b>, or GIS files (<b>KML/KMZ</b>, <b>shapefile</b> as a .zip or the .shp, .dbf and .prj together, <b>GeoJSON</b>). Column names are matched loosely, so <code>owner</code>, <code>voltage</code>, <code>isd</code> and <code>latitude</code> all work, and title rows above a spreadsheet's header are skipped. Tables need coordinates for each project; GIS files carry their own. Year-only dates like <code>2029</code> are fine.</p>
         <div class="fields">
-          <div><label for="impUtil">Utility name <span class="note">(used when the file has no utility column)</span></label><input id="impUtil" type="text" placeholder="e.g. Santee Cooper" autocomplete="off"></div>
+          <div><label for="impUtil">Utility name <span class="note">(when the file has no utility column)</span></label><input id="impUtil" type="text" placeholder="e.g. Santee Cooper" autocomplete="off"></div>
           <div><label for="impSrc">Source link <span class="note">(optional)</span></label><input id="impSrc" type="url" placeholder="https://… plan PDF or data page" autocomplete="off"></div>
-          <div><label for="impIsd">Default in-service date <span class="note">(for rows without one, like GPX)</span></label><input id="impIsd" type="text" placeholder="e.g. 2029 or 2029-06-30" autocomplete="off"></div>
+          <div><label for="impIsd">Default in-service date <span class="note">(rows without one, like GPX)</span></label><input id="impIsd" type="text" placeholder="e.g. 2029 or 2029-06-30" autocomplete="off"></div>
           <div><label for="impStart">Default construction start <span class="note">(optional)</span></label><input id="impStart" type="text" placeholder="estimated if blank" autocomplete="off"></div>
         </div>
-        <label class="chk exist-imp"><input type="checkbox" id="impExisting"> These are <b>existing</b> lines and substations, like a HIFLD download. Show them as a background layer instead of comparing them.</label>
+        <label class="chk"><input type="checkbox" id="impExisting"> These are <b>existing</b> lines and substations, like a HIFLD download. Show them as a background layer instead of comparing them.</label>
         <label class="drop" id="drop" for="file">
           <input id="file" type="file" multiple>
           <b>Drop files here</b> or click to choose<span class="fmts">XLSX · XLS · CSV · TSV · KML · KMZ · SHP · ZIP · GeoJSON · JSON · GPX</span>
@@ -75,57 +107,17 @@
         <ul id="datasets" class="datasets"></ul>
       </div>
     </div>
-  </section>
-
-  <div class="stats" id="stats"></div>
-  <div class="tiers" id="tiers" role="group" aria-label="Filter by distance tier"></div>
-
-  <div class="main">
-    <div class="card">
-      <h2>Map
-        <span class="seg" role="group" aria-label="Map view"><button type="button" id="v-focus" aria-pressed="true">Overlap area</button><button type="button" id="v-all" aria-pressed="false">All projects</button></span>
-        <label class="chk"><input type="checkbox" id="exOn" checked> Existing infrastructure</label>
-        <label class="bm"><span class="sr">Map style</span><select id="basemap" aria-label="Map style"></select></label>
-        <span class="zm"><button type="button" class="btn" id="zin" aria-label="Zoom in">+</button><button type="button" class="btn" id="zout" aria-label="Zoom out">−</button><button type="button" class="btn" id="zreset">Reset</button></span>
-      </h2>
-      <div class="legend" id="legend"></div>
-      <svg id="map" role="img" aria-label="Map of planned projects. Drag to pan, scroll or use the buttons to zoom."></svg>
-      <div class="scrub" id="scrub">
-        <button type="button" class="btn play" id="play" aria-pressed="false">Play</button>
-        <div class="scrub-track"><input type="range" id="tslider" step="1" aria-label="Month to show on the map"><div class="ticks" id="tticks" aria-hidden="true"></div></div>
-        <div class="scrub-read"><b id="tyear">All years</b><span id="tlive" hidden></span></div>
-        <button type="button" class="btn" id="tall" hidden>Show all years</button>
-      </div>
-      <div class="mapfoot"><p class="note tilenote" id="tileNote" hidden>Map tiles didn't load. This preview blocks outside images, so open <code>index.html</code> from the repo in a browser to see Streets, Satellite and Terrain. The Plain map always works.</p><span class="attr" id="attr"></span></div>
-      <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km. Press Play to watch the build years: pairs that are under construction at the same time light up.</div>
-    </div>
-    <div class="card">
-      <h2><span id="listTitle">Coordination opportunities</span> <em id="cnt"></em></h2>
-      <div class="search"><input id="q" type="search" placeholder="Filter by project or place" aria-label="Filter opportunities"><button type="button" class="btn" id="copy">Copy as CSV</button></div>
-      <span class="note msg" id="msg" aria-live="polite"></span>
-      <div class="clusters" id="clusters" hidden></div>
-      <div id="detail"></div>
-      <div class="list" id="list"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Construction timeline <em>estimated start to planned in-service, flagged projects only</em></h2>
-    <div class="tlwrap"><svg id="tl" role="img" aria-label="Timeline of flagged projects"></svg></div>
-  </div>
-
-  <div class="card" id="assume">
-    <h2>Cost assumptions <em>planning estimates, not quotes; change any number and every saving updates</em> <button type="button" class="btn" id="asmReset" hidden>Reset to defaults</button></h2>
-    <p class="note asm-lede">Each shared item's saving is worked out from these unit costs. When one utility's cost is shared, each side saves its share (50% by default). A coordinated outage and a crossing designed once are counted in full. To check the numbers, compare them with USDA NASS Land Values for land, the MISO Transmission Cost Estimation Guide for line, road and yard costs, and local crane rental and heavy-haul rates.</p>
-    <div class="asm-wrap" id="asmBody"></div>
-  </div>
-
-  <div class="foot">
-    <div><b>Built-in data.</b> DESC: <a href="https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf" target="_blank" rel="noopener">SCRTP 2026 to 2030 project descriptions ($2M and above)</a>. Georgia: <a href="https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf" target="_blank" rel="noopener">SERTP 2026 preliminary expansion plan</a>, <a href="https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf" target="_blank" rel="noopener">2025 SERTP report</a>, and Georgia Power's pages for <a href="https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/callaway-thomson.html" target="_blank" rel="noopener">Callaway Road to Thomson</a> and <a href="https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/effingham-county.html" target="_blank" rel="noopener">Effingham County</a>. Georgia's grid is planned jointly by Georgia Power, Georgia Transmission and MEAG, so all three appear as one system.</div>
-    <div><b>Method.</b> Distance is measured between the closest points of two projects, not their centers. Pairs within 40 km are flagged and tiered: touching, under 1.6 km, under 8 km, under 40 km. Ranking is tier first, then whether the build windows overlap, then distance. Plans list in-service dates, so construction start is estimated from type, voltage and length unless a start date is given.</div>
-    <div><b>Assumptions.</b> Public plans name substations, not coordinates, so built-in locations are placed by hand; dashed lines are best guesses. Grey markers are existing assets for reference. Cost model: the plan's cost where listed; otherwise about $2.5M/km for new 500 kV line, $1.4M/km at 230 kV, $0.95M/km at 115 kV, half that for rebuilds, and $60M, $25M or $8M for 500, 230 or 115 kV substations. Savings are worked out item by item from the unit costs under Cost assumptions, which you can change.</div>
   </div>
 </div>
+
+<div class="modal" id="assume" hidden role="dialog" aria-modal="true" aria-labelledby="asmTitle">
+  <div class="sheet wide">
+    <div class="sheet-head"><h2 id="asmTitle">Unit costs</h2><button type="button" class="btn" id="asmReset" hidden>Reset to defaults</button><button type="button" class="btn" data-close="assume">Close</button></div>
+    <p class="note">Planning estimates, not quotes. Each shared item's saving is worked out from these numbers, and every pair updates when one changes. When one utility's cost is shared, each side saves its share (50% by default); a coordinated outage and a crossing designed once count in full. Check them against USDA NASS land values, the MISO Transmission Cost Estimation Guide, and local crane and heavy-haul rates.</p>
+    <div class="asm-wrap" id="asmBody"></div>
+  </div>
+</div>
+
 <div class="tip" id="tip" hidden></div>
 <div class="brief-wrap" id="brief" hidden role="dialog" aria-modal="true" aria-label="Coordination brief">
   <div class="brief-bar"><button type="button" class="btn primary" id="briefPrint">Print or save as PDF</button><button type="button" class="btn" id="briefCopy">Copy text</button><button type="button" class="btn" id="briefClose">Close</button></div>
@@ -141,12 +133,14 @@
     </div>
     <div class="m3d-stage" id="m3dStage"></div>
     <p class="m3d-msg" id="m3dMsg" hidden></p>
-    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible.</p>
+    <p class="note m3d-foot">Illustration of the pair: distances along the ground are to scale; terrain and towers are schematic. Drag to orbit, scroll to zoom.</p>
   </div>
 </div>
 
 <script src="vendor/d3.min.js"></script>
 <script>window.d3 || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"><\/script>')</script>
+<script src="vendor/maplibre-gl.js"></script>
+<script>window.maplibregl || (document.getElementById("mlcss").href = "https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css", document.write('<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"><\/script>'))</script>
 <script>
 window.SEAMLINE_DATA = { basemap: /*BASEMAP*/null, projects: /*PROJECTS*/[], model: /*MODEL*/null };
 </script>
@@ -164,6 +158,9 @@ window.SEAMLINE_DATA = { basemap: /*BASEMAP*/null, projects: /*PROJECTS*/[], mod
 </script>
 <script>
 /*SCENE3D*/
+</script>
+<script>
+/*MAP*/
 </script>
 <script>
 /*APP*/

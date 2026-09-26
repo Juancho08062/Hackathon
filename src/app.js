@@ -1,7 +1,10 @@
-// Seamline UI: map, ranked list, timeline and the importer panel. Logic lives in engine.js and ingest.js.
+// Seamline UI: map (map.js), the results panel (overlaps, plan changes, optimize, data checks), the build-window
+// timeline, the importer and the dialogs. Logic lives in engine.js and ingest.js.
 const { TIERS, fmtMoney: money, findOverlaps, monthIndex: mon } = Engine;
 const BASE = window.SEAMLINE_DATA.basemap;
 const ALL = window.SEAMLINE_DATA.projects;
+const MODEL = window.SEAMLINE_DATA.model || { slips: {}, checks: [] };
+const TODAY = MODEL.as_of || new Date().toISOString().slice(0, 10);
 const EXIST = ALL.filter(p => p.existing);
 let PROJECTS = ALL.filter(p => !p.existing).map(p => Object.assign({ dataset: "built-in" }, p));
 const DATASETS = [{ id: "built-in", name: "Built-in: DESC and Georgia", count: PROJECTS.length, builtin: true }];
@@ -9,18 +12,25 @@ const DATASETS = [{ id: "built-in", name: "Built-in: DESC and Georgia", count: P
 const $ = s => document.querySelector(s);
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const LABEL = { DESC: "Dominion Energy SC", GPC: "Georgia (Georgia Power, GTC, MEAG)" };
+const LABEL = { DESC: "Dominion Energy SC", GPC: "Georgia ITS" };
+const LONG = { DESC: "Dominion Energy South Carolina", GPC: "Georgia (Georgia Power, GTC, MEAG)" };
 const lbl = u => LABEL[u] || u;
+const lblLong = u => LONG[u] || u;
 const TYPE = { new_line: "new line", rebuild: "rebuild", substation: "substation", generation: "generation" };
-// Raster basemaps. "plain" is the built-in vector map and works offline.
-const BASEMAPS = {
-  plain: { label: "Plain" },
-  streets: { label: "Streets", url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, attr: "© OpenStreetMap contributors" },
-  satellite: { label: "Satellite", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, attr: "Imagery © Esri, Maxar, Earthstar Geographics" },
-  terrain: { label: "Terrain", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin, USGS" },
+const SEV = ["Touching", "< 1.6 km", "< 8 km", "< 40 km", "> 40 km"];
+const NONE = "__none";
+const store = {
+  get: (k, d) => { try { const v = localStorage.getItem("seamline." + k); return v == null ? d : JSON.parse(v); } catch (err) { return d; } },
+  set: (k, v) => { try { localStorage.setItem("seamline." + k, JSON.stringify(v)); } catch (err) { /* storage blocked: keep it for this visit */ } },
 };
-let tileErrors = 0;
-const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true };
+const state = {
+  utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
+  sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
+  tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  basemap: store.get("basemap", "plain"),
+};
+const STATUS = store.get("status", {});
+const STATUSES = ["Open", "Contacted", "Coordinating", "Not pursuing"];
 
 const fmtD = (p, which) => {
   const d = new Date(p[which] + "T00:00:00Z");
@@ -28,110 +38,82 @@ const fmtD = (p, which) => {
   if (which === "in_service" && p.date_precision === "estimated") return "~" + d.getUTCFullYear() + " (est.)";
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 };
-// SVG path for a project's line parts, each drawn on its own so separate parts are never joined.
-const lineD = (p, pt) => Engine.isLine(p) ? Engine.partsOf(p).filter(c => c.length > 1).map(c => d3.line()(c.map(pt))).join("") : null;
+const monthLabel = m => new Date(Date.UTC(Math.floor(m / 12), Math.floor(m % 12), 1)).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const km = d => d < 0.1 ? "0 km" : d < 10 ? d.toFixed(1) + " km" : Math.round(d) + " km";
+const pct = v => Math.round(v * 100) + "%";
 const tcol = i => css(TIERS[i].tok);
 const utilities = () => [...new Set(PROJECTS.map(p => p.utility))];
-// "None" in the second picker shows one utility's projects on their own, with no pairs or ranking.
-const NONE = "__none";
 const solo = () => state.utilB === NONE;
 const shownUtil = u => u === state.utilA || (!solo() && u === state.utilB);
 const uColor = u => u === state.utilA ? css("--u0") : u === state.utilB ? css("--u1") : css("--ink3");
+const keyOf = x => x.p.id + "|" + x.q.id;
+const isPast = p => p.in_service < TODAY;
+const miles = v => Math.round(v).toLocaleString();
+// Shorter names for tight rows: drop sponsor prefixes, the "(USA)" style owner tags, and the work after a colon.
+const short = p => p.name.replace(/^(SAV|GTC|MEAG|CC)\s*[:-]\s*/i, "").replace(/\s*\((USA|SAV|APC|FPL)\)/g, "").split(":")[0].trim();
 
 // ---------- compute ----------
-let RESULT = { pairs: [], checked: 0 }, VIEW = [], CLUSTERS = [], dataVersion = 0;
-let SOLO = [];
+let RESULT = { pairs: [], checked: 0 }, VIEW = [], CLUSTERS = [], SOLO = [], dataVersion = 0, asmVersion = 0;
+const chanceCache = new Map();
+function risk(x) {
+  const k = `${keyOf(x)}|${state.B}|${dataVersion}|${x.p.start}|${x.q.start}`;
+  let c = chanceCache.get(k);
+  if (!c) { c = Engine.overlapChance(x, MODEL.slips, { bufferMonths: state.B, today: TODAY }); chanceCache.set(k, c); }
+  const e = Engine.expectedSavings(x, c.p);
+  return { chance: c.p, why: c.why, expected: e.expected, fixed: e.fixed, windowed: e.windowed };
+}
+function inHorizon(p) {
+  if (!state.horizon) return true;
+  const now = mon(TODAY);
+  return mon(p.start) <= now + state.horizon && mon(p.in_service) >= now;
+}
 function compute() {
+  const q = state.q.toLowerCase();
   if (solo()) {
-    const q = state.q.toLowerCase();
     RESULT = { pairs: [], checked: 0 }; VIEW = []; CLUSTERS = [];
-    SOLO = PROJECTS.filter(p => p.utility === state.utilA && (!q || (p.name + " " + p.desc).toLowerCase().includes(q)))
+    SOLO = PROJECTS.filter(p => p.utility === state.utilA && (!q || (p.name + " " + p.desc).toLowerCase().includes(q)) && (state.past || !isPast(p)) && inHorizon(p))
       .sort((a, b) => mon(a.start) - mon(b.start) || a.name.localeCompare(b.name));
     return;
   }
-  // The pair comparison only reruns when its inputs change; search and tier toggles just re-filter the cached pairs.
-  const res = Engine.cachedOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: state.mode }, dataVersion);
+  const res = Engine.cachedOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: state.mode }, dataVersion + "/" + asmVersion);
   if (res !== RESULT) {
     RESULT = res;
-    // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance slider says
+    RESULT.pairs.forEach(x => { x.risk = risk(x); });
+    // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance filter says
     CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
   }
-  const q = state.q.toLowerCase();
   VIEW = RESULT.pairs.filter(x => state.tiers.has(Math.min(x.tier, 4)) &&
-    (!q || (x.p.name + " " + x.q.name + " " + x.p.desc + " " + x.q.desc).toLowerCase().includes(q)));
+    (state.past || (!isPast(x.p) && !isPast(x.q))) && inHorizon(x.p) && inHorizon(x.q) &&
+    (!q || (x.p.name + " " + x.q.name + " " + x.p.desc + " " + x.q.desc + " " + x.p.page + " " + x.q.page).toLowerCase().includes(q)));
+  const by = {
+    expected: (a, b) => b.risk.expected - a.risk.expected || a.tier - b.tier || a.km - b.km,
+    chance: (a, b) => b.risk.chance - a.risk.chance || b.risk.expected - a.risk.expected,
+    distance: (a, b) => a.tier - b.tier || b.sameWindow - a.sameWindow || a.km - b.km,
+  }[state.sort];
+  VIEW.sort(by);
 }
-
-// Best shared yard for a pair (cached on the pair), and the cluster a pair belongs to.
 const pairYard = x => x.yard || (x.yard = Engine.yardFor([x.p, x.q], EXIST.filter(e => !e.backdrop), 40));
 const clusterOf = x => CLUSTERS.find(c => c.projects.includes(x.p) && c.projects.includes(x.q));
-const inSel = (sel, p) => !!sel && (sel.cluster ? sel.cluster.projects.includes(p) : sel.p === p || sel.q === p);
-const miles = v => Math.round(v).toLocaleString();
+const inSel = (sel, p) => !!sel && (sel.cluster ? sel.cluster.projects.includes(p) : sel.moves ? sel.moves.some(m => m.id === p.id) : sel.p === p || sel.q === p);
+
+// ---------- optimizer (cached per inputs) ----------
+let optCache = { key: null, r: null };
+function optimize() {
+  if (solo()) return null;
+  const who = state.opt.who === "both" ? null : [state.opt.who === "a" ? state.utilA : state.utilB];
+  const key = [state.utilA, state.utilB, state.D, state.B, state.mode, dataVersion, asmVersion, state.opt.maxShift, state.opt.who].join("|");
+  if (optCache.key !== key) optCache = { key, r: Engine.optimizeSchedule(RESULT.pairs, MODEL.slips, { today: TODAY, bufferMonths: state.B, maxShift: state.opt.maxShift, utilities: who }) };
+  return optCache.r;
+}
+let driftCache = { key: null, r: null };
+function drift() {
+  const key = [state.utilA, state.utilB, state.D, state.B, state.mode, dataVersion].join("|");
+  if (driftCache.key !== key) driftCache = { key, r: Engine.driftChanges(RESULT.pairs, state.B) };
+  return driftCache.r;
+}
 
 // ---------- map ----------
-let proj, zoomK = 1, zoomBehavior;
-const MW = 900, MH = 640;
-function fitFeature() {
-  const pts = [];
-  if (state.view === "focus" && RESULT.pairs.length) RESULT.pairs.slice(0, 40).forEach(x => { pts.push(x.ca, x.cb); });
-  else PROJECTS.filter(p => shownUtil(p.utility)).forEach(p => pts.push(...p.coords));
-  if (!pts.length) return { type: "Feature", geometry: { type: "MultiPoint", coordinates: [[-85, 30.5], [-79, 35]] } };
-  const la = pts.map(p => p[0]), lo = pts.map(p => p[1]);
-  const pad = Math.max(0.25, (Math.max(...la) - Math.min(...la)) * 0.15);
-  return { type: "Feature", geometry: { type: "MultiPoint", coordinates: [[Math.min(...lo) - pad, Math.min(...la) - pad], [Math.max(...lo) + pad, Math.max(...la) + pad]] } };
-}
-function drawMap() {
-  const svg = d3.select("#map").attr("viewBox", `0 0 ${MW} ${MH}`);
-  proj = d3.geoMercator().fitExtent([[16, 16], [MW - 16, MH - 16]], fitFeature());
-  const path = d3.geoPath(proj), pt = c => proj([c[1], c[0]]);
-  svg.selectAll("*").remove();
-  svg.append("rect").attr("width", MW).attr("height", MH).attr("fill", css("--water"));
-  const raster = !!BASEMAPS[state.basemap].url, bright = state.basemap === "satellite";
-  svg.append("g").attr("id", "tiles");
-  const z = svg.append("g").attr("id", "zoomg"), g = z.append("g");
-  if (!raster) {
-    g.selectAll(".st").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", css("--land")).attr("stroke", css("--line")).attr("stroke-width", 1);
-    g.selectAll(".co").data(BASE.counties).join("path").attr("d", d => path(d.g)).attr("fill", "none").attr("stroke", css("--grid")).attr("stroke-width", .6);
-  }
-  g.selectAll(".sb").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", "none")
-    .attr("stroke", bright ? "rgba(255,255,255,.7)" : css("--ink3")).attr("stroke-width", raster ? 1.5 : 1.1);
-  drawSeam(g, path, raster);
-  const places = [["Augusta", 33.47, -81.97], ["Savannah", 32.08, -81.09], ["Atlanta", 33.75, -84.39], ["Columbia", 34.0, -81.03], ["Charleston", 32.78, -79.93], ["Macon", 32.84, -83.63], ["Thomson", 33.47, -82.50], ["Beaufort", 32.43, -80.67], ["Aiken", 33.60, -81.68]];
-  const stl = BASE.states.map(s => { const c = d3.geoCentroid({ type: "Feature", geometry: s.g }); return [s.n.toUpperCase(), c[1], c[0], true]; });
-  g.selectAll(".lb").data(stl.concat(places)).join("text").attr("x", d => proj([d[2], d[1]])[0]).attr("y", d => proj([d[2], d[1]])[1])
-    .attr("text-anchor", "middle").attr("fill", d => d[3] ? css("--ink3") : css("--ink2")).attr("data-fs", d => d[3] ? 14 : 11)
-    .attr("letter-spacing", d => d[3] ? ".2em" : 0).attr("font-family", d => d[3] ? css("--display") : null).text(d => d[0]);
-  // existing infrastructure: built-in plants and lines, plus any backdrop layer imported (for example HIFLD)
-  const eg = z.append("g").attr("id", "existing").style("display", state.exist ? null : "none").selectAll("g").data(EXIST.filter(e => e.backdrop || shownUtil(e.utility))).join("g").style("cursor", "help")
-    .on("mousemove", (ev, d) => tip(ev, `<b>${esc(d.name)}</b><br>Existing ${esc(lbl(d.utility))} ${Engine.isLine(d) ? "line" : "asset"}${d.kv > 0 ? " · " + d.kv + " kV" : ""}${d.backdrop ? "<br>From " + esc(d.dsName) : ""}`)).on("mouseleave", hideTip);
-  eg.filter(d => Engine.isLine(d)).append("path").attr("d", d => lineD(d, pt)).attr("fill", "none").attr("stroke", css("--ink3")).attr("stroke-width", 2.5).attr("stroke-opacity", .6);
-  eg.filter(d => !Engine.isLine(d)).append("path").attr("class", "dia").attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1])
-    .attr("fill", css("--panel")).attr("stroke", d => uColor(d.utility)).attr("stroke-width", 1.5);
-  z.append("g").attr("id", "links");
-  z.append("g").attr("id", "projs");
-  z.append("g").attr("id", "sparks");
-  z.append("g").attr("id", "yards");
-  // existing-asset names sit above project lines, with a halo so a line never hides them
-  z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => !e.backdrop && shownUtil(e.utility) && !Engine.isLine(e))).join("text").attr("class", "exl ex")
-    .attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1]).attr("data-fs", 10).attr("fill", css("--ink2"))
-    .attr("stroke", raster ? "rgba(255,255,255,.8)" : css("--land")).attr("stroke-width", 3).attr("paint-order", "stroke").attr("stroke-linejoin", "round").style("pointer-events", "none").text(d => d.name.split(" (")[0]);
-  z.selectAll("#toplabels text.ex").style("display", state.exist ? null : "none");
-  // name the seam once, beside the river between Augusta and Savannah
-  const sm = SEAM[Math.floor(SEAM.length * 0.72)];
-  if (sm) z.select("#toplabels").append("text").attr("class", "exl").attr("data-x", sm.x + 4).attr("data-y", sm.y).attr("data-fs", 10).attr("font-weight", 600).attr("letter-spacing", ".16em")
-    .attr("fill", css("--seam")).attr("stroke", raster ? "rgba(255,255,255,.85)" : css("--land")).attr("stroke-width", 3).attr("paint-order", "stroke").style("pointer-events", "none").text("THE SEAM · SAVANNAH RIVER");
-  svg.append("g").attr("id", "scale").attr("transform", `translate(24,${MH - 30})`);
-  zoomBehavior = d3.zoom().scaleExtent([1, 20]).on("zoom", ev => { zoomK = ev.transform.k; z.attr("transform", ev.transform); renderTiles(ev.transform); applyK(); });
-  if (raster) z.selectAll("text").attr("fill", bright ? "#fff" : css("--ink")).attr("stroke", bright ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.8)").attr("stroke-width", 3).attr("paint-order", "stroke");
-  tileErrors = 0; $("#tileNote").hidden = true;
-  $("#attr").textContent = BASEMAPS[state.basemap].attr || "";
-  renderTiles(d3.zoomIdentity);
-  svg.call(zoomBehavior).on("dblclick.zoom", null);
-  zoomK = 1;
-}
-// The Seam: the Georgia and South Carolina border (the Savannah River) drawn as stitched thread.
-// Built from the vertices both states' outlines share, so it follows the river exactly.
-let SEAM = [];
+let mapReady = false, SEAM = null;
 function seamCoords() {
   const st = n => BASE.states.find(x => x.n === n), ga = st("Georgia"), sc = st("South Carolina");
   if (!ga || !sc) return null;
@@ -144,513 +126,514 @@ function seamCoords() {
   }
   return best.length > 3 ? best : null;
 }
-function drawSeam(g, path, raster) {
-  SEAM = [];
-  const cs = seamCoords(); if (!cs) return;
-  const line = { type: "LineString", coordinates: cs };
-  g.append("path").attr("d", path(line)).attr("fill", "none").attr("stroke", css("--seamglow")).attr("stroke-width", raster ? 9 : 7).attr("stroke-linecap", "round");
-  const base = g.append("path").attr("id", "seampath").attr("d", path(line)).attr("fill", "none").attr("stroke", css("--seam")).attr("stroke-width", 1.4);
-  const node = base.node(), L = node.getTotalLength();
-  for (let l = 4; l < L; l += 8) {
-    const a = node.getPointAtLength(Math.max(0, l - 0.5)), b = node.getPointAtLength(Math.min(L, l + 0.5)), d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    SEAM.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, tx: (b.x - a.x) / d, ty: (b.y - a.y) / d });
-  }
-  g.append("g").attr("id", "stitches").selectAll("line").data(SEAM).join("line").attr("stroke", css("--seam")).attr("stroke-width", 1.3).attr("stroke-linecap", "round");
-}
-
-// Web Mercator tiles aligned to the d3 projection: world spans 2πS px at scale S, offset by the projection translate.
-function renderTiles(t) {
-  const bm = BASEMAPS[state.basemap], layer = d3.select("#tiles");
-  if (!bm.url) { layer.selectAll("image").remove(); return; }
-  const S = proj.scale(), [tx, ty] = proj.translate();
-  const W = 2 * Math.PI * S * t.k, left = t.x + t.k * (tx - Math.PI * S), top = t.y + t.k * (ty - Math.PI * S);
-  // Pick the zoom for the screen's real pixels, not the SVG's: on a Retina screen this loads the next zoom level
-  // (four tiles where one would show), so labels and imagery stay sharp. None of these servers offer @2x tiles.
-  const px = Math.max(1, ($("#map").clientWidth || MW) / MW * (window.devicePixelRatio || 1));
-  const z = Math.max(0, Math.min(19, Math.round(Math.log2(W * px / 256)))), n = 2 ** z, ts = W / n;
-  const tiles = [];
-  for (let i = Math.max(0, Math.floor(-left / ts)); i <= Math.min(n - 1, Math.floor((MW - left) / ts)); i++)
-    for (let j = Math.max(0, Math.floor(-top / ts)); j <= Math.min(n - 1, Math.floor((MH - top) / ts)); j++) tiles.push([z, i, j]);
-  layer.selectAll("image").data(tiles, d => d.join("/"))
-    .join(e => e.append("image").attr("href", d => bm.url(...d)).attr("preserveAspectRatio", "none")
-      .on("error", () => { if (++tileErrors === 3) tilesFailed(); }))
-    .attr("x", d => left + d[1] * ts).attr("y", d => top + d[2] * ts).attr("width", ts + .5).attr("height", ts + .5);
-}
-
-// Outside tiles can be blocked (offline, or a sandboxed preview): fall back to the plain map and say why.
-function tilesFailed() {
-  if (!BASEMAPS[state.basemap].url) return;
-  const name = BASEMAPS[state.basemap].label;
-  state.basemap = "plain"; $("#basemap").value = "plain";
-  drawMap(); refresh();
-  $("#tileNote").innerHTML = `${name} tiles couldn't load here, so the map switched back to Plain. They need an internet connection and don't load inside sandboxed previews; open <code>index.html</code> in a browser to use them.`;
-  $("#tileNote").hidden = false;
-}
-
-// Keep markers and labels the same on-screen size while zooming.
-function applyK() {
-  const k = zoomK, z = d3.select("#zoomg");
-  z.selectAll("text").attr("font-size", function () { return this.dataset.fs / k; }).attr("stroke-width", function () { return this.getAttribute("stroke") ? 3 / k : null; });
-  z.selectAll("text.exl").attr("x", function () { return +this.dataset.x + 9 / k; }).attr("y", function () { return +this.dataset.y + 4 / k; });
-  z.selectAll("path.dia").attr("d", function () { const x = +this.dataset.x, y = +this.dataset.y, s = 6 / k; return `M${x},${y - s}L${x + s},${y}L${x},${y + s}L${x - s},${y}Z`; });
-  z.selectAll("circle").attr("r", function () { return this.dataset.r / k; });
-  z.selectAll("path.yd").attr("d", function () { const x = +this.dataset.x, y = +this.dataset.y, s = +this.dataset.s / k; return `M${x - s},${y - s}h${2 * s}v${2 * s}h${-2 * s}Z`; })
-    .attr("stroke-width", function () { return 2 / k; });
-  // cross-stitches: short slanted ticks across the seam, the same size at every zoom
-  const sl = 3.4 / k;
-  z.select("#stitches").selectAll("line").attr("x1", d => d.x - (d.ty + d.tx * 0.6) * sl).attr("y1", d => d.y + (d.tx - d.ty * 0.6) * sl)
-    .attr("x2", d => d.x + (d.ty + d.tx * 0.6) * sl).attr("y2", d => d.y - (d.tx - d.ty * 0.6) * sl);
-  const sc = d3.select("#scale"); sc.selectAll("*").remove();
-  const c = proj.invert([MW / 2, MH / 2]), a = proj(c), b = proj([c[0] + state.D / (111.32 * Math.cos(c[1] * Math.PI / 180)), c[1]]);
-  const w = (b[0] - a[0]) * k;
-  sc.append("rect").attr("width", Math.min(w, MW - 60)).attr("height", 4).attr("fill", css("--hot"));
-  sc.append("text").attr("y", -6).attr("font-size", 11).attr("fill", css("--ink2")).text(`${state.D} km${w > MW - 60 ? " (wider than view)" : ""}`);
-}
-// Where a project stands at month t: not started, under construction, or in service.
 const phase = (p, t) => t == null ? "all" : t < mon(p.start) ? "planned" : t <= mon(p.in_service) ? "building" : "done";
 const live = (x, t) => phase(x.p, t) === "building" && phase(x.q, t) === "building";
 function renderMap() {
-  const shown = VIEW.slice(0, 60), sel = state.sel, hov = state.hover, pt = c => proj([c[1], c[0]]), t = state.t;
+  if (!mapReady) return;
+  const shown = VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
-  const focus = sel || hov;
-  d3.select("#links").selectAll("g").data(shown, d => d.p.id + "|" + d.q.id)
-    .join(e => { const g = e.append("g"); g.append("line"); g.append("circle"); return g; })
-    .call(g => g.select("line").attr("x1", d => pt(d.ca)[0]).attr("y1", d => pt(d.ca)[1]).attr("x2", d => pt(d.cb)[0]).attr("y2", d => pt(d.cb)[1])
-      .attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", d => focus === d ? 3.5 : 1.5).attr("stroke-dasharray", "4 3"))
-    .call(g => g.select("circle").attr("cx", d => pt(d.ca)[0]).attr("cy", d => pt(d.ca)[1]).attr("data-r", d => d.tier <= 1 ? (focus === d ? 12 : 8) : 0)
-      .attr("fill", "none").attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", 2))
-    .attr("opacity", d => focus ? (d === focus || (focus.cluster && focus.cluster.pairs.includes(d)) ? 1 : .12) : t != null ? (live(d, t) ? 1 : .08) : d.sameWindow ? .9 : .45)
-    .style("cursor", "pointer").on("click", (ev, d) => select(d));
-  const rows = PROJECTS.filter(p => shownUtil(p.utility))
-    .map(p => ({ p, on: solo() || flagged.has(p.id), hi: inSel(focus, p), ph: phase(p, t) }));
-  const G = d3.select("#projs").selectAll("g.p").data(rows, d => d.p.id)
-    .join(e => { const g = e.append("g").attr("class", "p"); g.append("path").attr("class", "casing"); g.append("path").attr("class", "line"); g.append("circle"); return g; });
-  // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite.
-  const raster = !!BASEMAPS[state.basemap].url, lightMap = state.basemap === "streets" || state.basemap === "terrain";
-  const wide = d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + (raster ? 1.5 : 0) + (d.ph === "building" ? 1.5 : 0);
-  G.select("path.casing").attr("d", d => lineD(d.p, pt))
-    .attr("fill", "none").attr("stroke", lightMap ? "rgba(20,24,28,.85)" : raster ? "rgba(255,255,255,.9)" : css("--panel")).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
-    .attr("stroke-width", d => wide(d) + (raster ? 4 : 3));
-  const phaseOp = { all: 1, building: 1, done: .5, planned: .14 };
-  G.attr("opacity", d => focus ? (d.hi ? 1 : .22) : (d.on ? 1 : .3) * phaseOp[d.ph]).classed("building", d => d.ph === "building").style("cursor", "pointer")
-    .on("mousemove", (ev, d) => showTip(ev, d.p)).on("mouseleave", hideTip)
-    .on("click", (ev, d) => { if (solo()) return select({ p: d.p, solo: true }); const pr = VIEW.find(x => x.p === d.p || x.q === d.p); if (pr) select(pr); });
-  G.select("path.line").attr("d", d => lineD(d.p, pt))
-    .attr("fill", "none").attr("stroke", d => uColor(d.p.utility)).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
-    .attr("stroke-width", wide)
-    .attr("stroke-dasharray", d => d.p.loc === "low" ? "6 4" : null);
-  G.select("circle").attr("cx", d => pt(d.p.coords[0])[0]).attr("cy", d => pt(d.p.coords[0])[1])
-    .attr("data-r", d => Engine.isLine(d.p) ? 0 : (d.hi ? 7 : 4.5))
-    .attr("fill", d => d.p.loc === "low" ? css("--panel") : uColor(d.p.utility)).attr("stroke", d => raster && d.p.loc !== "low" ? (lightMap ? "rgba(20,24,28,.9)" : "#fff") : uColor(d.p.utility)).attr("stroke-width", 2);
-  // sparks: flagged pairs that are both under construction at the scrubbed month
-  const sp = t == null ? [] : shown.filter(x => live(x, t));
-  d3.select("#sparks").selectAll("circle").data(sp, d => d.p.id + "|" + d.q.id).join("circle").attr("class", "spark")
-    .attr("cx", d => (pt(d.ca)[0] + pt(d.cb)[0]) / 2).attr("cy", d => (pt(d.ca)[1] + pt(d.cb)[1]) / 2).attr("data-r", 11)
-    .attr("fill", d => tcol(Math.min(d.tier, 4))).attr("fill-opacity", .25).attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", 2)
-    .style("cursor", "pointer").on("click", (ev, d) => select(d));
-  drawYards(focus);
-  if (t != null) {
-    const nb = rows.filter(r => r.ph === "building").length;
-    $("#tlive").textContent = `${nb} project${nb === 1 ? "" : "s"} under construction` + (solo() ? "" : ` · ${sp.length} flagged pair${sp.length === 1 ? "" : "s"} building at once`);
+  const moved = state.showMoves && optimize() ? new Set(optimize().moves.map(m => m.id)) : null;
+  const raster = state.basemap !== "plain";
+  const casing = state.basemap === "satellite" ? "rgba(255,255,255,.85)" : raster ? "rgba(20,24,28,.55)" : css("--panel");
+  const phaseOp = { all: 1, building: 1, done: .45, planned: .15 };
+  const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
+    const hi = inSel(focus, p) || (moved && moved.has(p.id));
+    let op = (solo() || flagged.has(p.id) ? 1 : .28) * phaseOp[phase(p, t)];
+    if (isPast(p)) op *= .45;
+    if (focus || moved) op = hi ? 1 : Math.min(op, .18);
+    return { id: p.id, parts: Engine.partsOf(p), kv: p.kv, color: uColor(p.utility), casing, opacity: op, dash: p.loc === "low",
+      width: (p.kv >= 500 ? 3.4 : p.kv >= 230 ? 2.6 : p.kv >= 115 ? 1.9 : 1.4) + (hi ? 2 : 0) + (phase(p, t) === "building" ? 1.2 : 0), r: hi ? 7 : 4.5 };
+  });
+  const pairOp = d => focus ? (d === focus || (focus.cluster && focus.cluster.pairs.includes(d)) ? 1 : .1) : t != null ? (live(d, t) ? 1 : .08) : .75;
+  const links = solo() ? [] : shown.filter(d => d.km >= 0.1).map(d => ({ id: keyOf(d), a: d.ca, b: d.cb, color: tcol(Math.min(d.tier, 4)), width: focus === d ? 3 : 1.4, opacity: pairOp(d) }));
+  const rings = solo() ? [] : shown.filter(d => d.tier <= 2 || d === focus).map(d => ({ id: keyOf(d), at: [(d.ca[0] + d.cb[0]) / 2, (d.ca[1] + d.cb[1]) / 2],
+    color: tcol(Math.min(d.tier, 4)), r: d === focus ? 13 : d.tier <= 1 ? 9 : 6, w: d.tier === 0 ? 2.6 : 1.8, opacity: pairOp(d) }));
+  const sparks = t == null ? [] : shown.filter(x => live(x, t)).map(x => ({ id: keyOf(x), at: [(x.ca[0] + x.cb[0]) / 2, (x.ca[1] + x.cb[1]) / 2], color: tcol(Math.min(x.tier, 4)) }));
+  let yardRing = null, spokes = [];
+  const yards = solo() ? [] : CLUSTERS.map((c, i) => ({ id: "c" + i, at: c.yard.at, r: focus && focus.cluster === c ? 7 : 5, fill: focus && focus.cluster === c ? css("--seam") : "#FFFFFF" }));
+  const fx = focus && !focus.solo && !focus.moves ? (focus.cluster ? focus.cluster.yard : focus.tier <= 3 ? pairYard(focus) : null) : null;
+  if (fx) {
+    yardRing = { at: fx.at, km: 40 };
+    spokes = fx.spokes.map(s => [fx.at, s]);
+    if (!focus.cluster) yards.push({ id: "pairyard", at: fx.at, r: 6, fill: css("--seam") });
   }
-  applyK();
+  SeamMap.update({ projects, existing: state.exist ? EXIST.filter(e => e.backdrop || shownUtil(e.utility)).map(e => ({ id: e.id, parts: Engine.partsOf(e) })) : [],
+    links, rings, sparks, yards, yardRing, spokes, seam: SEAM, showExisting: state.exist });
+  if (t != null) {
+    const nb = PROJECTS.filter(p => shownUtil(p.utility) && phase(p, t) === "building").length;
+    $("#tlsub").textContent = `${nb} under construction` + (solo() ? "" : ` · ${sparks.length} listed pair${sparks.length === 1 ? "" : "s"} building at once`);
+  }
+}
+function mapPoints() {
+  const pts = [];
+  if (state.view === "focus" && VIEW.length) VIEW.slice(0, 40).forEach(x => { pts.push(x.ca, x.cb); });
+  else PROJECTS.filter(p => shownUtil(p.utility)).forEach(p => pts.push(...p.coords));
+  return pts;
+}
+function fitAll(duration) { SeamMap.fit(mapPoints(), { padKm: 8, duration }); }
+function flyTo(x) {
+  if (x.solo) return SeamMap.fit(x.p.coords, { padKm: 6 });
+  if (x.moves) return SeamMap.fit(x.moves.flatMap(m => m.project.coords), { padKm: 10 });
+  const pts = x.cluster ? [x.cluster.yard.at, ...x.cluster.yard.spokes] : [x.ca, x.cb, ...x.p.coords, ...x.q.coords];
+  SeamMap.fit(pts, { padKm: x.cluster ? 6 : Math.max(3, x.km * 0.4), padding: 60 });
+}
+function mapClick(hit) {
+  if (!hit) return;
+  if (["links", "rings", "sparks"].includes(hit.layer)) { const x = VIEW.find(v => keyOf(v) === hit.id); if (x) select(x); return; }
+  if (hit.layer === "yards" && hit.id && hit.id[0] === "c") return select({ cluster: CLUSTERS[+hit.id.slice(1)] });
+  const p = PROJECTS.find(v => v.id === hit.id);
+  if (!p) return;
+  if (solo()) return select({ p, solo: true });
+  const x = VIEW.find(v => v.p === p || v.q === p);
+  if (x) select(x);
+}
+function mapHover(hit, ev) {
+  if (!hit || !ev) return hideTip();
+  const p = PROJECTS.find(v => v.id === hit.id) || EXIST.find(v => v.id === hit.id);
+  if (p) return showTip(ev, p);
+  const x = VIEW.find(v => keyOf(v) === hit.id);
+  if (x) return tip(ev, `<b>${esc(SEV[Math.min(x.tier, 4)])} · ${km(x.km)}</b><br>${esc(short(x.p))}<br>${esc(short(x.q))}<br>${pct(x.risk.chance)} chance of a shared window`);
+  hideTip();
+}
+function tip(ev, html) { const t = $("#tip"); t.innerHTML = html; t.hidden = false; t.style.left = Math.min(ev.clientX + 12, innerWidth - 290) + "px"; t.style.top = (ev.clientY + 12) + "px"; }
+function showTip(ev, p) {
+  tip(ev, `<b>${esc(p.name)}</b><br>${esc(lbl(p.utility))}${p.existing ? " · existing" : ""}${p.kv ? " · " + p.kv + " kV " + (TYPE[p.type] || "") : ""}` +
+    (p.existing ? "" : `<br>In service ${fmtD(p, "in_service")}${p.cost ? " · " + money(p.cost) : ""}${isPast(p) ? (p.likely_built ? "<br>Likely built" : "<br>In-service date has passed") : ""}${p.loc === "low" ? "<br>Approximate location" : ""}`));
+}
+function hideTip() { $("#tip").hidden = true; }
+function legend() {
+  const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
+  $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
+    <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
+    (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
 
 // ---------- time scrubber ----------
 let playTimer = null;
-const monthLabel = m => new Date(Date.UTC(Math.floor(m / 12), Math.floor(m % 12), 1)).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 function setupScrub() {
   const ps = PROJECTS.filter(p => shownUtil(p.utility));
   if (!ps.length) return;
   const lo = Math.floor(Math.min(...ps.map(p => mon(p.start)))), hi = Math.ceil(Math.max(...ps.map(p => mon(p.in_service))));
   const r = $("#tslider"); r.min = lo; r.max = hi;
   if (state.t != null) state.t = Math.min(hi, Math.max(lo, state.t));
-  r.value = state.t ?? lo;
-  const y0 = Math.ceil(lo / 12), y1 = Math.floor(hi / 12);
-  $("#tticks").innerHTML = Array.from({ length: y1 - y0 + 1 }, (_, i) => `<span style="left:${((y0 + i) * 12 - lo) / (hi - lo) * 100}%">${y0 + i}</span>`).join("");
+  r.value = state.t ?? mon(TODAY);
   scrubUI();
 }
 function scrubUI() {
   const on = state.t != null;
   $("#tyear").textContent = on ? monthLabel(state.t) : "All years";
-  $("#tlive").hidden = !on;
   $("#tall").hidden = !on;
-  $("#scrub").classList.toggle("on", on);
   $("#play").textContent = playTimer ? "Pause" : "Play";
   $("#play").setAttribute("aria-pressed", !!playTimer);
+  if (!on) $("#tlsub").textContent = solo() ? "listed projects" : "top pairs in the list · bars show construction, green where both are in the field";
 }
-function setT(t) { state.t = t; scrubUI(); renderMap(); moveCursor(); }
+function setT(t) { state.t = t; scrubUI(); renderMap(); renderTimeline(); }
 function stopPlay() { clearInterval(playTimer); playTimer = null; scrubUI(); }
 function togglePlay() {
   if (playTimer) return stopPlay();
   const r = $("#tslider");
   if (state.t == null || state.t >= +r.max) { r.value = r.min; setT(+r.min); }
-  playTimer = setInterval(() => {
-    const n = state.t + 1;
-    if (n > +r.max) return stopPlay();
-    r.value = n; setT(n);
-  }, 110);
+  playTimer = setInterval(() => { const n = state.t + 1; if (n > +r.max) return stopPlay(); r.value = n; setT(n); }, 120);
   scrubUI();
 }
-function tip(ev, html) { const t = $("#tip"); t.innerHTML = html; t.hidden = false; t.style.left = Math.min(ev.clientX + 12, innerWidth - 290) + "px"; t.style.top = (ev.clientY + 12) + "px"; }
-function showTip(ev, p) {
-  tip(ev, `<b>${esc(p.name)}</b><br>${esc(lbl(p.utility))} · ${p.kv} kV ${TYPE[p.type] || ""}<br>In service ${fmtD(p, "in_service")}${p.cost ? " · " + money(p.cost) : ""}${p.loc === "low" ? "<br>Approximate location" : ""}${p.imported ? "<br>Imported" : ""}`);
-}
-function hideTip() { $("#tip").hidden = true; }
 
-// ---------- summary ----------
-// Shared yards: a square marker for every cluster's yard; for the selected pair or cluster, its yard, the 40 km
-// crew-drive ring around it and dashed spokes to each work site.
-function drawYards(focus) {
-  const pt = c => proj([c[1], c[0]]), path = d3.geoPath(proj), Y = d3.select("#yards"), col = css("--seam");
-  Y.selectAll("*").remove();
-  if (solo()) return;
-  const fx = focus && !focus.solo ? (focus.cluster ? { yd: focus.cluster.yard } : focus.tier <= 3 ? { yd: pairYard(focus) } : null) : null;
-  if (fx) {
-    Y.append("path").attr("d", path(d3.geoCircle().center([fx.yd.at[1], fx.yd.at[0]]).radius(40 / 111.2)())).attr("fill", col).attr("fill-opacity", .06)
-      .attr("stroke", col).attr("stroke-width", 1.5).attr("stroke-dasharray", "6 4").attr("vector-effect", "non-scaling-stroke").style("pointer-events", "none");
-    const a = pt(fx.yd.at);
-    fx.yd.spokes.forEach(s => { const b = pt(s); Y.append("line").attr("x1", a[0]).attr("y1", a[1]).attr("x2", b[0]).attr("y2", b[1]).attr("stroke", col).attr("stroke-width", 1.5).attr("stroke-dasharray", "2 3").attr("vector-effect", "non-scaling-stroke"); });
+// ---------- timeline ----------
+function renderTimeline() {
+  const svg = d3.select("#tl"); svg.selectAll("*").remove();
+  const box = $(".tlbody"), W = Math.max(600, box.clientWidth || 800), LW = Math.min(300, W * 0.3), RH = 26, top = 22;
+  const rows = solo() ? SOLO.slice(0, 40).map(p => ({ label: short(p), bars: [p] }))
+    : (state.sel && state.sel.p && state.sel.q && !VIEW.slice(0, 12).includes(state.sel) ? [state.sel] : []).concat(VIEW.slice(0, 12)).map(x => ({ x, label: `${short(x.p)} × ${short(x.q)}`, bars: [x.p, x.q] }));
+  const H = Math.max(80, top + rows.length * RH + 6);
+  svg.attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`);
+  if (!rows.length) { svg.append("text").attr("x", 12).attr("y", 40).attr("fill", css("--ink2")).attr("font-size", 12).text(solo() ? "No projects match." : "No pairs match the filters."); return; }
+  const all = rows.flatMap(r => r.bars);
+  const lo = Math.floor(Math.min(d3.min(all, p => mon(p.start)), mon(TODAY)) / 12) * 12, hi = Math.ceil(d3.max(all, p => mon(p.in_service)) / 12) * 12;
+  const X = d3.scaleLinear().domain([lo, hi]).range([LW, W - 12]);
+  for (let m = lo; m <= hi; m += 12) {
+    svg.append("line").attr("x1", X(m)).attr("x2", X(m)).attr("y1", top - 6).attr("y2", H).attr("stroke", css("--grid"));
+    if (m < hi) svg.append("text").attr("x", X(m) + 3).attr("y", 13).attr("font-size", 11).attr("fill", css("--ink3")).text(m / 12);
   }
-  const marks = CLUSTERS.map((c, i) => ({ yd: c.yard, c, i, on: focus && focus.cluster === c }));
-  if (fx && !focus.cluster) marks.push({ yd: fx.yd, on: true });
-  Y.selectAll("path.yd").data(marks).join("path").attr("class", "yd").attr("data-x", d => pt(d.yd.at)[0]).attr("data-y", d => pt(d.yd.at)[1]).attr("data-s", d => d.on ? 7 : 5)
-    .attr("fill", d => d.on ? col : css("--panel")).attr("stroke", col).attr("opacity", d => focus && !d.on ? .35 : 1).style("cursor", d => d.c ? "pointer" : "default")
-    .on("mousemove", (ev, d) => tip(ev, d.c ? `<b>Shared yard for ${d.c.projects.length} projects</b><br>${d.yd.near ? "At " + esc(d.yd.near) : "Open site"} · all within ${km(d.yd.max)}<br>About ${miles(d.c.impact.netMi)} truck-miles saved` : `<b>Best shared yard for this pair</b><br>${d.yd.near ? "At " + esc(d.yd.near) : "Open site"}`))
-    .on("mouseleave", hideTip).on("click", (ev, d) => { if (d.c) select({ cluster: d.c }); });
-}
-
-// ---------- motion ----------
-// Modeled on the Bellows Digital site's motion: long soft ease-outs, staggered entrances, scroll reveals, a pointer
-// spotlight and pressable buttons. Everything is skipped when the system asks for reduced motion.
-const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-const easeOut = t => 1 - Math.pow(1 - t, 3);
-// Count the numbers inside a stat from what they showed before to what they show now ("~$3.2M" to "~$4.0M").
-const shown = new Map();
-function countUp(el, key) {
-  const to = el.textContent, from = shown.get(key);
-  shown.set(key, to);
-  const nums = s => (s.match(/\d[\d,]*(?:\.\d+)?/g) || []).map(v => parseFloat(v.replace(/,/g, "")));
-  const a = from == null ? nums(to).map(() => 0) : nums(from), b = nums(to);
-  if (still() || a.length !== b.length || a.every((v, i) => v === b[i])) return;
-  const fmt = (tok, v) => { const dec = (tok.split(".")[1] || "").length, s = v.toFixed(dec); return tok.includes(",") || (v >= 1000 && !dec) ? Number(s).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec }) : s; };
-  const at = k => { let i = 0; return to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k)); };
-  el.textContent = at(0); // paint the starting value first, so the final one never flashes
-  let t0 = null;
-  const D = 900;
-  const step = now => {
-    if (shown.get(key) !== to || !el.isConnected) return; // a newer value took over
-    if (t0 == null) t0 = now; // time the count from the first frame it is on screen
-    const k = easeOut(Math.min(1, (now - t0) / D));
-    el.textContent = k < 1 ? at(k) : to;
-    if (k < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-// Rows cascade in only when the set of rows changes, not on hover or selection.
-let lastRows = "";
-function cascade(list, key) {
-  if (key === lastRows) return; lastRows = key;
-  if (still()) return;
-  [...list.children].slice(0, 14).forEach((el, i) => { el.style.setProperty("--i", i); el.classList.add("enter"); el.addEventListener("animationend", () => el.classList.remove("enter"), { once: true }); });
-}
-function enterDetail() {
-  const d = $("#detail .detail");
-  if (!d || still()) return;
-  [...d.children].forEach((c, i) => c.style.setProperty("--i", Math.min(i, 8)));
-  d.classList.add("enter");
-}
-// Glide the map to a pair's meeting point, or to a cluster's yard and its sites.
-function flyTo(x) {
-  if (x.solo || !zoomBehavior) return;
-  const pts = x.cluster ? [x.cluster.yard.at, ...x.cluster.yard.spokes] : [x.ca, x.cb];
-  const pad = x.cluster ? 6 : Math.max(6, x.km * 0.6); // km of breathing room around the points
-  const xy = pts.map(c => proj([c[1], c[0]])), c0 = pts[0], kmPx = Math.abs(proj([c0[1] + pad / (111.32 * Math.cos(c0[0] * Math.PI / 180)), c0[0]])[0] - xy[0][0]);
-  const x0 = Math.min(...xy.map(p => p[0])) - kmPx, x1 = Math.max(...xy.map(p => p[0])) + kmPx, y0 = Math.min(...xy.map(p => p[1])) - kmPx, y1 = Math.max(...xy.map(p => p[1])) + kmPx;
-  const k = Math.max(1, Math.min(8, 0.85 * Math.min(MW / (x1 - x0), MH / (y1 - y0))));
-  const t = d3.zoomIdentity.translate(MW / 2 - k * (x0 + x1) / 2, MH / 2 - k * (y0 + y1) / 2).scale(k);
-  d3.select("#map").transition().duration(still() ? 0 : 1100).ease(d3.easeCubicInOut).call(zoomBehavior.transform, t);
-}
-// Play a closing animation, then hide.
-function closeAnimated(el, done) {
-  if (still() || el.hidden) return done();
-  el.classList.add("closing");
-  setTimeout(() => { el.classList.remove("closing"); done(); }, 300);
-}
-function setupMotion() {
-  const bar = document.createElement("div"); bar.className = "progress"; bar.setAttribute("aria-hidden", "true"); document.body.prepend(bar);
-  const onScroll = () => { const h = document.documentElement.scrollHeight - innerHeight; document.documentElement.style.setProperty("--sp", h > 0 ? (scrollY / h).toFixed(4) : 0); };
-  addEventListener("scroll", onScroll, { passive: true }); onScroll();
-  const h1 = $(".hero h1");
-  h1.setAttribute("aria-label", h1.textContent);
-  h1.innerHTML = `<span class="mask" aria-hidden="true">${[...h1.textContent].map((c, i) => `<span class="ch" style="--i:${i}">${esc(c)}</span>`).join("")}</span>`;
-  const hero = $(".hero");
-  if (matchMedia("(hover: hover)").matches) {
-    hero.addEventListener("pointermove", e => { const r = hero.getBoundingClientRect(); hero.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%"); hero.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%"); });
-    document.querySelectorAll(".btn.primary").forEach(b => {
-      b.addEventListener("pointermove", e => { if (still()) return; const r = b.getBoundingClientRect(); b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.18}px, ${(e.clientY - r.top - r.height / 2) * 0.3}px)`; });
-      b.addEventListener("pointerleave", () => { b.style.transform = ""; });
+  const nowX = X(mon(TODAY));
+  svg.append("line").attr("x1", nowX).attr("x2", nowX).attr("y1", top - 8).attr("y2", H).attr("stroke", css("--ink")).attr("stroke-dasharray", "2 2");
+  svg.append("text").attr("x", nowX + 3).attr("y", top - 1).attr("font-size", 10).attr("fill", css("--ink")).text("today");
+  const g = svg.selectAll("g.r").data(rows).join("g").attr("class", "r").attr("transform", (d, i) => `translate(0,${top + i * RH})`).style("cursor", "pointer")
+    .on("click", (ev, d) => select(d.x || { p: d.bars[0], solo: true }));
+  g.append("rect").attr("x", 0).attr("width", W).attr("height", RH).attr("fill", d => d.x && d.x === state.sel ? css("--hotsoft") : "transparent");
+  g.append("text").attr("x", 10).attr("y", RH / 2 + 4).attr("font-size", 12).attr("fill", css("--ink")).attr("font-weight", d => d.x && d.x === state.sel ? 600 : 400)
+    .text(d => { const n = Math.floor((LW - 20) / 6.4); return d.label.length > n ? d.label.slice(0, n - 1) + "…" : d.label; });
+  g.each(function (d) {
+    const G = d3.select(this), n = d.bars.length;
+    d.bars.forEach((p, i) => {
+      const y = n === 1 ? 9 : 5 + i * 9;
+      G.append("rect").attr("x", X(mon(p.start))).attr("width", Math.max(3, X(mon(p.in_service)) - X(mon(p.start)))).attr("y", y).attr("height", 6)
+        .attr("fill", uColor(p.utility)).attr("fill-opacity", isPast(p) ? .3 : .9);
     });
-  }
-  const top = [hero, $(".bar"), $("#stats"), $("#tiers"), ...document.querySelectorAll(".main>.card")];
-  top.forEach((el, i) => { el.classList.add("rise"); el.style.setProperty("--i", i); });
-  const later = [$(".card:has(#tl)"), $("#assume"), $(".foot")].filter(Boolean);
-  if ("IntersectionObserver" in window) {
-    later.forEach(el => el.classList.add("reveal"));
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); } }), { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-    later.forEach(el => io.observe(el));
-  }
-  requestAnimationFrame(() => requestAnimationFrame(() => top.forEach(el => el.classList.add("in"))));
-}
-
-function renderStats() {
-  if (solo()) {
-    const ps = PROJECTS.filter(p => p.utility === state.utilA), costs = ps.map(Engine.estCost);
-    const lineKm = ps.filter(Engine.isLine).reduce((t, p) => t + Engine.lengthKm(p), 0);
-    const years = ps.map(p => +p.in_service.slice(0, 4));
-    $("#stats").innerHTML = [
-      [`${ps.length}`, `planned projects for ${lbl(state.utilA)}`],
-      [`${Math.round(lineKm).toLocaleString()} km`, `of new or rebuilt line`],
-      [ps.length ? `${Math.min(...years)}–${Math.max(...years)}` : "–", `in-service years`],
-      [ps.length ? "~" + money(costs.reduce((t, c) => t + c.v, 0)) : "–", `total cost, listed or estimated`],
-    ].map(([b, t]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join("");
-    $("#stats").querySelectorAll("b").forEach((b, i) => countUp(b, "stat" + i));
-    return;
-  }
-  const nA = PROJECTS.filter(p => p.utility === state.utilA).length, nB = PROJECTS.filter(p => p.utility === state.utilB).length;
-  const near = RESULT.pairs.filter(x => x.near), both = near.filter(x => x.sameWindow);
-  const pct = RESULT.checked ? 100 * near.length / RESULT.checked : 0;
-  const total = VIEW.reduce((s, x) => s + x.sav.total, 0);
-  $("#stats").innerHTML = [
-    [`${nA} / ${nB}`, `planned projects compared`],
-    [`${near.length}`, `of ${RESULT.checked.toLocaleString()} project pairs are within ${state.D} km (${pct.toFixed(1)}%)`],
-    [`${both.length}`, `of those are built in the same window`],
-    [total ? "~" + money(total) : "–", "rough savings if the listed pairs coordinate"],
-  ].map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
-  $("#stats").querySelectorAll("b").forEach((b, i) => countUp(b, "stat" + i));
-}
-function renderTiers() {
-  $("#tiers").hidden = solo();
-  if (solo()) return;
-  $("#tiers").innerHTML = TIERS.slice(0, 4).map((t, i) => {
-    const n = RESULT.pairs.filter(x => x.tier === i).length, nt = RESULT.pairs.filter(x => x.tier === i && x.sameWindow).length;
-    const on = state.tiers.has(i);
-    return `<button type="button" class="tier" aria-pressed="${on}" data-t="${i}" style="--c:var(${t.tok})"><b>${n}</b><span class="tb"><span class="tl">${t.label}</span><span class="tm">${t.means}</span><span class="tn">${nt} in the same build window</span></span></button>`;
-  }).join("");
-  $("#tiers").querySelectorAll(".tier b").forEach((b, i) => countUp(b, "tier" + i));
-  $("#tiers").querySelectorAll(".tier").forEach(b => b.onclick = () => {
-    const i = +b.dataset.t;
-    if (state.tiers.has(i) && state.tiers.size > 2) state.tiers.delete(i); else state.tiers.add(i);
-    refresh();
+    if (n === 2) {
+      const a = Math.max(mon(d.bars[0].start), mon(d.bars[1].start)), b = Math.min(mon(d.bars[0].in_service), mon(d.bars[1].in_service));
+      if (b > a) G.append("rect").attr("x", X(a)).attr("width", X(b) - X(a)).attr("y", 22).attr("height", 3).attr("fill", css("--time"));
+    }
   });
+  if (state.t != null) {
+    const x = X(Math.min(hi, Math.max(lo, state.t)));
+    svg.append("line").attr("x1", x).attr("x2", x).attr("y1", top - 8).attr("y2", H).attr("stroke", css("--seam")).attr("stroke-width", 2);
+  }
 }
 
-// ---------- list and detail ----------
-const pn = (p, cls) => `<span class="${cls}">${esc(p.name)}</span> <i>${fmtD(p, "in_service")}</i>`;
-function renderClusters() {
+// ---------- panel: tabs ----------
+function renderTabs() {
+  document.querySelectorAll(".tabs [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
+  $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
+  const both = !solo();
+  $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
+  if (both) {
+    const d = drift(), o = optimize();
+    $("#n-changes").innerHTML = `<span class="up">+${d.opened.length}</span> <span class="down">−${d.closed.length}</span>`;
+    $("#n-optimize").innerHTML = o && o.moves.length ? `<span class="up">+${money(o.after - o.before)}</span>` : "";
+  }
+  const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
+  $("#n-checks").innerHTML = review ? `<span class="warn">${review} to review</span>` : "";
+}
+function renderPanel() {
+  renderTabs();
+  const P = $("#panel");
+  if (state.sel && state.tab === "overlaps") return renderDetail(P);
+  if (state.tab === "changes" && !solo()) return renderChanges(P);
+  if (state.tab === "optimize" && !solo()) return renderOptimize(P);
+  if (state.tab === "checks") return renderChecks(P);
+  renderOverlaps(P);
+}
+
+// ---------- panel: overlaps table ----------
+function overlapsHead(P) {
+  if (P.dataset.view === "overlaps" && $("#q")) return;
+  P.dataset.view = "overlaps";
+  P.innerHTML = `<div class="ph">
+      <div class="ph-row"><div class="chips" id="chips" role="group" aria-label="Filter by distance"></div></div>
+      <div class="ph-row"><label class="fl">Sort <select id="sort"><option value="expected">Expected savings</option><option value="chance">Chance of a shared window</option><option value="distance">Distance</option></select></label>
+        <span class="grow"></span><input id="q" type="search" placeholder="Filter by project, substation, TEAMS id" aria-label="Filter overlaps"></div>
+    </div>
+    <div class="yards" id="clusters"></div>
+    <div class="thead" id="thead"></div>
+    <div class="rows" id="rows"></div>`;
+  $("#sort").value = state.sort;
+  $("#q").value = state.q;
+  $("#sort").onchange = e => { state.sort = e.target.value; refresh(); };
+  let qTimer = null;
+  $("#q").oninput = e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value; state.shown = 60; refresh(); }, 150); };
+}
+function renderOverlaps(P) {
+  overlapsHead(P);
+  if (solo()) return renderSoloRows();
+  $("#chips").innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
+    .concat(TIERS.slice(0, 4).map((t, i) => `<button type="button" class="chip" data-t="${i}" aria-pressed="${state.tiers.has(i) && state.tiers.size < 5}"><i style="background:${tcol(i)}"></i>${SEV[i]} ${RESULT.pairs.filter(x => x.tier === i).length}</button>`)).join("");
+  $("#chips").querySelectorAll(".chip").forEach(b => b.onclick = () => {
+    const v = b.dataset.t;
+    if (v === "all") state.tiers = new Set([0, 1, 2, 3, 4]);
+    else if (state.tiers.size >= 5) state.tiers = new Set([+v]);
+    else { if (state.tiers.has(+v)) state.tiers.delete(+v); else state.tiers.add(+v); if (!state.tiers.size) state.tiers = new Set([0, 1, 2, 3, 4]); }
+    state.shown = 60; refresh();
+  });
   const C = $("#clusters");
-  C.hidden = solo() || !CLUSTERS.length;
-  if (C.hidden) return;
-  C.innerHTML = `<div class="cl-h">Shared yards <em>groups of 3 or more projects, both utilities, built at the same time, that one staging yard can serve</em></div>` +
-    CLUSTERS.map((c, i) => `<button type="button" class="cl${state.sel && state.sel.cluster === c ? " sel" : ""}" data-i="${i}"><b>${c.projects.length} projects</b><span>one yard ${c.yard.near ? "at " + esc(c.yard.near) : "on open land"} · ${miles(c.impact.netMi)} truck-miles saved</span></button>`).join("");
-  C.querySelectorAll(".cl").forEach(b => b.onclick = () => select({ cluster: CLUSTERS[+b.dataset.i] }));
-}
-function yardMath(yd, im) {
-  const A = Engine.ASSUME;
-  return `<table class="imp"><tbody>
-    <tr><td>Heavy loads that share trips<small>${A.loads} loads × ${im.n - 1} extra project${im.n === 2 ? "" : "s"} × 2 × ${A.haulKm} km from the depot</small></td><td>${miles(im.haulMi)} mi</td></tr>
-    <tr><td>Added yard-to-site driving<small>${A.shuttles} round trips per project × ${A.circuity} × each site's distance from the yard</small></td><td>−${miles(im.shuttleMi)} mi</td></tr>
-    <tr class="tot"><td>Net truck-miles saved</td><td>${miles(im.netMi)} mi</td></tr>
-    <tr><td>Driver hours saved<small>at ${A.mph} mph</small></td><td>${miles(im.hours)} h</td></tr>
-    <tr><td>CO2 avoided<small>${A.mpg} mpg × ${A.co2Gal} kg CO2 per gallon of diesel (EPA)</small></td><td>${im.co2t.toFixed(1)} t</td></tr></tbody></table>`;
-}
-function yardPlace(yd) {
-  const ll = yd.at.map(v => v.toFixed(3)).join(", ");
-  return `${yd.near ? `next to <b>${esc(yd.near)}</b>` : "on open land"} (<a href="https://www.google.com/maps?q=${yd.at[0].toFixed(5)},${yd.at[1].toFixed(5)}" target="_blank" rel="noopener">${ll}</a>)`;
-}
-function renderCluster(c, el) {
-  const im = c.impact;
-  el.innerHTML = `<div class="detail"><div class="dh"><h3>One yard for ${c.projects.length} projects</h3><span class="row"><button type="button" class="btn" id="clr">Close</button></span></div>
-    <p class="yd-lede">These projects are all built during overlapping windows and chain together through nearby pairs. The best single staging yard is ${yardPlace(c.yard)}, which puts every work site within ${km(c.yard.max)}, inside a crew's 40 km daily drive.</p>
-    <table class="imp yd-list"><tbody>${c.projects.map((p, i) => `<tr><td><span class="dot" style="background:${uColor(p.utility)}"></span>${esc(p.name)}<small>${esc(lbl(p.utility))} · ${fmtD(p, "start")} to ${fmtD(p, "in_service")}</small></td><td>${km(c.yard.dists[i])}</td></tr>`).join("")}</tbody></table>
-    <div class="yd-kpis"><div><b>${miles(im.netMi)}</b><span>truck-miles saved</span></div><div><b>${miles(im.hours)} h</b><span>driver time saved</span></div><div><b>${im.co2t.toFixed(1)} t</b><span>CO2 avoided</span></div><div><b>${money(im.dollars)}</b><span>${im.yardsAvoided} yard${im.yardsAvoided === 1 ? "" : "s"} not built</span></div></div>
-    <div><h3>How the road savings add up</h3>${yardMath(c.yard, im)}</div>
-    <p class="note">The yard is the point with the least total distance to every site (a geometric median), moved to an existing substation or plant when one is almost as good, since those already have road access. Distances are straight lines times the road factor; roads and zoning aren't checked. Change the numbers under <a href="#assume">Cost assumptions</a>.</p></div>`;
-  $("#clr").onclick = () => select(null);
-}
-function renderSoloList() {
-  $("#listTitle").textContent = "Projects";
-  $("#cnt").textContent = `${SOLO.length} shown`;
-  const L = $("#list");
-  if (!SOLO.length) { L.innerHTML = `<div class="empty">No projects match the filter.</div>`; return; }
-  L.innerHTML = SOLO.slice(0, 200).map((p, i) => `<div class="pair solo${state.sel && state.sel.p === p ? " sel" : ""}" tabindex="0" data-i="${i}" style="--c:${uColor(p.utility)}">
-    <div class="rank">${i + 1}</div>
-    <div class="pn"><div class="tierline"><span class="tchip">${esc(TYPE[p.type] || p.type)}</span><span class="kmv">${p.kv} kV</span>${p.cost ? `<span class="chip save">${money(p.cost)}</span>` : ""}</div>
-      ${pn(p, "a")}</div></div>`).join("") + (SOLO.length > 200 ? `<div class="empty">Showing the first 200 of ${SOLO.length}.</div>` : "");
-  cascade(L, "solo|" + SOLO.slice(0, 14).map(p => p.id).join());
-  L.querySelectorAll(".pair").forEach(el => {
-    const x = { p: SOLO[+el.dataset.i], solo: true };
-    el.onclick = () => select(x);
-    el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(x); } };
-    el.onmouseenter = () => { state.hover = x; renderMap(); };
-    el.onmouseleave = () => { state.hover = null; renderMap(); };
-  });
-}
-function renderList() {
-  if (solo()) return renderSoloList();
-  $("#listTitle").textContent = "Coordination opportunities";
-  $("#cnt").textContent = `${VIEW.length} flagged`;
-  renderClusters();
-  const L = $("#list");
-  if (!VIEW.length) { L.innerHTML = `<div class="empty">No pairs match. Most planned projects don't overlap, so try a wider threshold, a build-window buffer, or turn tiers back on.</div>`; return; }
-  L.innerHTML = VIEW.slice(0, 60).map((x, i) => `<div class="pair${state.sel === x ? " sel" : ""}" tabindex="0" data-i="${i}" style="--c:${tcol(Math.min(x.tier, 4))}">
-    <div class="rank">${i + 1}</div>
-    <div class="pn"><div class="tierline"><span class="tchip">${TIERS[x.tier].short}</span><span class="kmv">${km(x.km)}</span>${x.sameWindow ? `<span class="chip time">${x.ov > 0 ? Math.round(x.ov) + " mo same window" : "within buffer"}</span>` : `<span class="chip">${Math.round(x.gap)} mo apart</span>`}${x.sav.total ? `<span class="chip save">~${money(x.sav.total)}</span>` : ""}</div>
-      ${pn(x.p, "a")}<br>${pn(x.q, "b")}</div></div>`).join("") + (VIEW.length > 60 ? `<div class="empty">Showing the top 60 of ${VIEW.length}.</div>` : "");
-  cascade(L, VIEW.slice(0, 14).map(x => x.p.id + "|" + x.q.id).join());
-  L.querySelectorAll(".pair").forEach(el => {
+  C.hidden = !CLUSTERS.length;
+  C.innerHTML = CLUSTERS.length ? `<span class="muted">Shared yards</span>` + CLUSTERS.map((c, i) => `<button type="button" class="chip" data-i="${i}" title="One staging yard for ${c.projects.length} projects built at the same time">${c.projects.length} projects · ${c.yard.near ? esc(c.yard.near.replace(/^(SAV|GTC|MEAG|CC)\s*[:-]\s*/i, "").split(/ (?:\d|-|\()/)[0]) : "open land"} · ${miles(c.impact.netMi)} truck-mi</button>`).join("") : "";
+  C.querySelectorAll("[data-i]").forEach(b => b.onclick = () => select({ cluster: CLUSTERS[+b.dataset.i] }));
+  $("#thead").innerHTML = `<span>#</span><span>Distance</span><span>Project pair</span><span title="Chance both are in the field together from today, given how each utility's dates moved between its last two plans">Same window</span><span class="r">Expected</span>`;
+  const R = $("#rows");
+  if (!VIEW.length) { R.innerHTML = `<div class="empty">No pairs match. Most planned projects don't overlap, so try a wider distance, a window buffer, or clear the filters.</div>`; return; }
+  const bar = c => `<span class="bar"><span style="width:${Math.round(c * 100)}%;background:${c >= .5 ? "var(--time)" : c >= .25 ? "var(--amber)" : "var(--ink3)"}"></span></span>`;
+  const paper = x => x.ov > 0 ? `on paper ${Math.round(x.ov)} mo shared` : x.sameWindow ? "on paper within buffer" : `on paper ${Math.round(x.gap)} mo apart`;
+  const side = (p, cls) => `<span class="pp${isPast(p) ? " past" : ""}"><i class="${cls}"></i>${esc(short(p))}${p.likely_built ? ` <em>likely built</em>` : isPast(p) ? ` <em>date passed</em>` : ""}</span>`;
+  R.innerHTML = VIEW.slice(0, state.shown).map((x, i) => {
+    const st = STATUS[keyOf(x)];
+    return `<div class="tr${state.hover === x ? " hov" : ""}" tabindex="0" data-i="${i}">
+      <span class="muted">${i + 1}</span>
+      <span class="dist"><b class="sev s${Math.min(x.tier, 4)}">${SEV[Math.min(x.tier, 4)]}</b><span>${km(x.km)}</span></span>
+      <span class="pair">${side(x.p, "a")}${side(x.q, "b")}${st && st !== "Open" ? `<span class="status">${esc(st)}</span>` : ""}</span>
+      <span class="ch">${x.risk.why === "built" ? `<span class="muted">built</span>` : `<span class="chv">${bar(x.risk.chance)}<b>${pct(x.risk.chance)}</b></span>`}<small>${paper(x)}</small></span>
+      <span class="r"><b>${x.risk.expected ? money(x.risk.expected) : "–"}</b><small>${x.sav.total ? "plan " + money(x.sav.total) : ""}</small></span></div>`;
+  }).join("") + (VIEW.length > state.shown ? `<button type="button" class="more" id="more">Show ${Math.min(60, VIEW.length - state.shown)} more of ${VIEW.length - state.shown}</button>` : "");
+  R.querySelectorAll(".tr").forEach(el => {
     const x = VIEW[+el.dataset.i];
     el.onclick = () => select(x);
     el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(x); } };
     el.onmouseenter = () => { state.hover = x; renderMap(); };
     el.onmouseleave = () => { state.hover = null; renderMap(); };
   });
+  if ($("#more")) $("#more").onclick = () => { state.shown += 60; renderMap(); renderOverlaps(P); };
 }
-function projBlock(p, cost) {
-  return `<div class="proj" style="--c:${uColor(p.utility)}"><span class="t">${esc(p.name)}</span>
-    <span class="m">${esc(lbl(p.utility))}${p.owner && p.owner !== p.utility ? " (" + esc(p.owner) + ")" : ""} · ${p.kv} kV ${TYPE[p.type] || ""}${p.miles ? " · " + (p.miles * 1.609).toFixed(1) + " km" : ""} · ${cost.est ? "est. " : ""}${money(cost.v)}${cost.note ? " (" + cost.note + ")" : ""}</span>
-    <span class="m">${p.start_published ? "Published start" : "Est. start"} ${fmtD(p, "start")} → in service ${fmtD(p, "in_service")}</span>
-    ${p.desc ? `<span>${esc(p.desc)}</span>` : ""}
-    ${p.source ? `<a href="${esc(p.source)}" target="_blank" rel="noopener">Source${p.page ? ", " + esc(String(p.page).startsWith("item") ? p.page : "p. " + p.page) : ""}</a>` : ""}</div>`;
+function renderSoloRows() {
+  $("#chips").innerHTML = `<span class="muted">${SOLO.length} ${esc(lbl(state.utilA))} projects</span>`;
+  $("#clusters").hidden = true;
+  $("#thead").innerHTML = `<span>#</span><span>Type</span><span>Project</span><span>In service</span><span class="r">Cost</span>`;
+  const R = $("#rows");
+  if (!SOLO.length) { R.innerHTML = `<div class="empty">No projects match the filter.</div>`; return; }
+  R.innerHTML = SOLO.slice(0, 300).map((p, i) => `<div class="tr" tabindex="0" data-i="${i}"><span class="muted">${i + 1}</span><span class="dist"><span>${p.kv} kV</span><small>${esc(TYPE[p.type] || p.type)}</small></span>
+    <span class="pair"><span class="pp${isPast(p) ? " past" : ""}"><i class="a"></i>${esc(p.name)}</span></span><span class="ch"><span>${fmtD(p, "in_service")}</span></span><span class="r">${p.cost ? money(p.cost) : "–"}</span></div>`).join("");
+  R.querySelectorAll(".tr").forEach(el => { const x = { p: SOLO[+el.dataset.i], solo: true }; el.onclick = () => select(x); });
 }
-function advice(x) {
-  const out = [`<b>${TIERS[x.tier].label} (${km(x.km)} at the closest points).</b> ${TIERS[x.tier].means}.`];
-  if (x.ov > 0) out.push(`Build windows overlap by about ${Math.round(x.ov)} months, so a joint crew and equipment plan can be set before mobilization.`);
-  else if (x.sameWindow) out.push(`Build windows are ${Math.round(x.gap)} months apart, inside the buffer you set.`);
-  else {
-    const later = mon(x.p.start) > mon(x.q.start) ? x.p : x.q;
-    out.push(`Build windows are about ${Math.round(x.gap)} months apart. Pulling ${esc(later.name)} forward by ${Math.ceil(x.gap)} months would put both in one window.`);
-  }
-  if (x.res.length) out.push(`Also shareable: ${x.res.map(esc).join(", ")}.`);
-  if (x.p.loc === "low" || x.q.loc === "low") out.push("At least one location is approximate, so confirm the distance with the utilities.");
-  return out;
+
+// ---------- panel: pair detail ----------
+function located(p) {
+  if (!p.located) return p.loc === "low" ? "placed by hand, approximate" : "placed by hand from the plan's substation names";
+  const M = { reference: "challenge reference", manual: "placed by hand", osm_substation: "OpenStreetMap substation", osm_plant: "OpenStreetMap plant", town: "town only", "not found": "not found" };
+  return p.located.map(l => `${esc(l.name.replace(/\s*\(.*?\)/g, "").toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))}: <span class="${l.confidence === "high" ? "" : "amber"}">${M[l.method] || l.method}</span>`).join(" · ");
 }
-function renderDetail() {
-  const x = state.sel, el = $("#detail");
-  if (!x) { el.innerHTML = ""; return; }
-  if (x.cluster) return renderCluster(x.cluster, el);
+function sourceLink(p) {
+  if (!p.source) return "–";
+  const txt = p.source.startsWith("Challenge package") ? p.source.replace("Challenge package: ", "") : p.source.includes("scrtp") ? "SCRTP 2026–2030" : p.source.includes("southeasternrtp") ? "SERTP" : "Source";
+  return p.source.startsWith("http") ? `<a href="${esc(p.source)}" target="_blank" rel="noopener">${esc(txt)}${p.page ? ", " + esc(p.page) : ""}</a>` : `${esc(txt)}${p.page ? ", " + esc(p.page) : ""}`;
+}
+function windowText(p) {
+  return `${fmtD(p, "start")} → ${fmtD(p, "in_service")} <span class="muted">${p.start_published ? "" : "est."}</span>${p.likely_built ? ` <span class="amber">· likely built</span>` : isPast(p) ? ` <span class="amber">· date passed</span>` : ""}`;
+}
+function driftText(p) {
+  if (!p.drift || !p.drift.months) return p.drift ? "date unchanged since the previous plan" : "–";
+  const m = p.drift.months;
+  return `${Math.abs(m)} months ${m > 0 ? "later" : "earlier"} than the previous plan`;
+}
+function chanceBox(x) {
+  const r = x.risk;
+  if (r.why === "built") return `<div class="callout amber"><b>Likely built</b><span>${esc(short(x.p.likely_built ? x.p : x.q))} was listed for ${fmtD(x.p.likely_built ? x.p : x.q, "in_service")} and is gone from DESC's newer plan, so there is nothing left to build together. Georgia's work still meets the finished line: share outage plans and as-built drawings.</span></div>`;
+  const ahead = mon(x.p.in_service) > mon(TODAY) && mon(x.q.in_service) > mon(TODAY);
+  const head = x.sameWindow && r.chance < .5 ? (ahead ? "In one window on paper, but plans usually move" : "In one window on paper, but mostly in the past")
+    : !x.sameWindow && r.chance >= .5 ? "Apart on paper, but likely to meet" : x.sameWindow ? "In one window, and likely to stay there" : "Apart on paper, and likely to stay apart";
+  const cls = r.chance >= .5 ? "green" : r.chance >= .25 ? "amber" : "grey";
+  return `<div class="callout ${cls}"><div class="big"><b>${pct(r.chance)}</b><small>chance</small></div><div><b>${head}</b>
+    <span>Share of 2,000 schedule draws in which both are in the field together from ${fmtD({ d: TODAY }, "d")} on, moving each date like ${esc(lbl(x.p.utility))} and ${esc(lbl(x.q.utility))} dates moved between their last two plans. Expected savings <b>${money(r.expected)}</b>${x.sav.total ? `; ${money(x.sav.total)} if every date held` : ""}.</span></div></div>`;
+}
+function renderDetail(P) {
+  P.dataset.view = "detail";
+  const x = state.sel;
+  if (x.cluster) return renderCluster(x.cluster, P);
   if (x.solo) {
-    el.innerHTML = `<div class="detail"><div class="dh"><h3>Project</h3><span class="row"><button type="button" class="btn" id="clr">Close</button></span></div>${projBlock(x.p, Engine.estCost(x.p))}
-      <p class="note">Pick a second utility under Compare to find projects near this one.</p></div>`;
-    $("#clr").onclick = () => select(null);
+    const p = x.p, c = Engine.estCost(p);
+    P.innerHTML = `<div class="dbar"><button type="button" class="btn sm" id="back">← Projects</button></div><div class="detail">
+      <h2>${esc(p.name)}</h2><table class="cmp"><tbody>
+      <tr><th>Work</th><td>${p.kv} kV ${esc(TYPE[p.type] || "")}${p.desc ? " · " + esc(p.desc) : ""}</td></tr>
+      <tr><th>Window</th><td>${windowText(p)}</td></tr><tr><th>Cost</th><td>${c.est ? "est. " : ""}${money(c.v)}</td></tr>
+      <tr><th>Located</th><td>${located(p)}</td></tr><tr><th>Source</th><td>${sourceLink(p)}</td></tr></tbody></table>
+      <p class="note">Pick a second utility at the top to find projects near this one.</p></div>`;
+    $("#back").onclick = () => select(null);
     return;
   }
-  const s = x.sav;
-  const key = x.p.id + "|" + x.q.id;
+  const s = x.sav, key = keyOf(x), idx = VIEW.indexOf(x), ref = REFS[key];
   if (!state.wi || state.wi.key !== key) state.wi = { key, who: "q", shift: 0 };
-  el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="brf">Coordination brief</button><button type="button" class="btn" id="clr" aria-label="Close details">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
-    <div class="advice" style="--c:${tcol(Math.min(x.tier, 4))}"><ul>${advice(x).map(a => `<li>${a}</li>`).join("")}</ul></div>
-    <div id="sharesBox"></div>
-    ${pairYardHTML(x)}
-    <div class="whatif"><div class="dh"><h3>What if a schedule moved?</h3><span class="seg" role="group" aria-label="Project to move">
-      <button type="button" data-w="q" aria-pressed="${state.wi.who === "q"}">Move ${esc(short(x.q))}</button><button type="button" data-w="p" aria-pressed="${state.wi.who === "p"}">Move ${esc(short(x.p))}</button></span></div>
-      <div class="wi-ctl"><input type="range" id="wiShift" min="-36" max="36" step="1" value="${state.wi.shift}" aria-label="Months to move the project"><output id="wiOut"></output></div>
-      <svg id="wiChart" role="img" aria-label="Both build windows after the shift"></svg>
-      <p class="wi-res" id="wiRes" aria-live="polite"></p>
-      <div class="row"><button type="button" class="btn" id="wiRec"></button><button type="button" class="btn" id="wiReset">Reset to plan</button></div></div>
-    <div><h3>Cost and impact estimate</h3><div id="impBox"></div></div></div>`;
-  $("#clr").onclick = () => select(null);
+  const T = TIERS[Math.min(x.tier, 4)];
+  P.innerHTML = `<div class="dbar"><button type="button" class="btn sm" id="back">← Overlaps</button><span class="muted">${idx >= 0 ? `#${idx + 1} of ${VIEW.length}` : ""}</span><span class="grow"></span>
+      <button type="button" class="btn sm" id="v3d">3D illustration</button><button type="button" class="btn sm primary" id="brf">Coordination brief</button></div>
+    <div class="detail">
+      <div class="tags"><b class="sev s${Math.min(x.tier, 4)}">${SEV[Math.min(x.tier, 4)]}${T.short.toLowerCase() !== SEV[Math.min(x.tier, 4)].toLowerCase() ? " · " + esc(T.short.toLowerCase()) : ""}</b>${x.ov > 0 ? `<b class="tag green">${Math.round(x.ov)} mo same window</b>` : ""}${ref ? `<span class="muted">Matches challenge reference ${esc(ref)}</span>` : ""}</div>
+      <h2>${esc(short(x.p))} and ${esc(short(x.q))}</h2>
+      <dl class="facts"><div><dt>Closest points</dt><dd>${km(x.km)}</dd></div><div><dt>Build windows</dt><dd>${x.ov > 0 ? Math.round(x.ov) + " mo shared" : Math.round(x.gap) + " mo apart"}</dd></div>
+        <div><dt>Chance</dt><dd>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</dd></div><div><dt>Expected</dt><dd>${money(x.risk.expected)}</dd></div></dl>
+      ${chanceBox(x)}
+      <table class="cmp"><thead><tr><th></th><th><i class="a"></i>${esc(lbl(x.p.utility))}</th><th><i class="b"></i>${esc(lbl(x.q.utility))}</th></tr></thead><tbody>
+        <tr><th>Project</th><td>${esc(x.p.name)}</td><td>${esc(x.q.name)}</td></tr>
+        <tr><th>Work</th><td>${x.p.kv} kV ${esc(TYPE[x.p.type] || "")}${x.p.desc ? `<small>${esc(x.p.desc)}</small>` : ""}</td><td>${x.q.kv} kV ${esc(TYPE[x.q.type] || "")}${x.q.desc ? `<small>${esc(x.q.desc)}</small>` : ""}</td></tr>
+        <tr><th>Window</th><td>${windowText(x.p)}</td><td>${windowText(x.q)}</td></tr>
+        <tr><th>Plan drift</th><td>${driftText(x.p)}</td><td>${driftText(x.q)}</td></tr>
+        <tr><th>Cost</th><td>${s.ca.est ? "est. " : ""}${money(s.ca.v)}</td><td>${s.cb.est ? "est. " : ""}${money(s.cb.v)}</td></tr>
+        <tr><th>Located</th><td>${located(x.p)}</td><td>${located(x.q)}</td></tr>
+        <tr><th>Source</th><td>${sourceLink(x.p)}</td><td>${sourceLink(x.q)}</td></tr></tbody></table>
+      <div id="sharesBox"></div>
+      ${pairYardHTML(x)}
+      <div class="whatif"><div class="dh"><h3>Schedule what-if</h3><span class="seg sm" role="group" aria-label="Project to move">
+        <button type="button" data-w="q" aria-pressed="${state.wi.who === "q"}">Move ${esc(lbl(x.q.utility))}</button><button type="button" data-w="p" aria-pressed="${state.wi.who === "p"}">Move ${esc(lbl(x.p.utility))}</button></span></div>
+        <div class="wi-ctl"><input type="range" id="wiShift" min="-36" max="36" step="1" value="${state.wi.shift}" aria-label="Months to move the project"><output id="wiOut"></output></div>
+        <svg id="wiChart" role="img" aria-label="Both build windows after the shift"></svg>
+        <p class="wi-res" id="wiRes" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn sm" id="wiRec"></button><button type="button" class="btn sm" id="wiReset">Reset to plan</button></div></div>
+      <div class="statusrow"><label for="st">Status</label><select id="st">${STATUSES.map(v => `<option${(STATUS[key] || "Open") === v ? " selected" : ""}>${v}</option>`).join("")}</select><span class="muted">saved on this device</span></div>
+    </div>`;
+  $("#back").onclick = () => select(null);
   $("#v3d").onclick = () => open3d(x);
   $("#brf").onclick = () => openBrief(x);
+  $("#st").onchange = e => { if (e.target.value === "Open") delete STATUS[key]; else STATUS[key] = e.target.value; store.set("status", STATUS); };
   if ($("#toCl")) $("#toCl").onclick = () => select({ cluster: clusterOf(x) });
-  el.querySelectorAll(".whatif [data-w]").forEach(b => b.onclick = () => {
+  P.querySelectorAll(".whatif [data-w]").forEach(b => b.onclick = () => {
     state.wi.who = b.dataset.w; state.wi.shift = 0; $("#wiShift").value = 0;
-    el.querySelectorAll(".whatif [data-w]").forEach(o => o.setAttribute("aria-pressed", o === b));
+    P.querySelectorAll(".whatif [data-w]").forEach(o => o.setAttribute("aria-pressed", o === b));
     updateWhatIf(x);
   });
   $("#wiShift").oninput = e => { state.wi.shift = +e.target.value; updateWhatIf(x); };
   $("#wiReset").onclick = () => { state.wi.shift = 0; $("#wiShift").value = 0; updateWhatIf(x); };
   updateWhatIf(x);
+  P.scrollTop = 0;
+}
+// The challenge's reference overlaps (data/official/reference_overlaps.csv), by project pair.
+const REFS = { "DESCP-31|IRP-20793": "OVL_1", "DESC-12|IRP-20277": "OVL_2", "DESC-12|IRP-20065": "OVL_3", "DESCP-14|IRP-20793": "OVL_4", "DESCP-10|IRP-20277": "OVL_5", "DESCP-10|IRP-20065": "OVL_6" };
+
+function yardPlace(yd) {
+  const ll = yd.at.map(v => v.toFixed(3)).join(", ");
+  return `${yd.near ? `next to <b>${esc(yd.near)}</b>` : "on open land"} (<a href="https://www.google.com/maps?q=${yd.at[0].toFixed(5)},${yd.at[1].toFixed(5)}" target="_blank" rel="noopener">${ll}</a>)`;
+}
+const yardDist = yd => yd.dists.every(d => d < 0.1) ? "right at both sites" : yd.dists.map(km).join(" and ") + " from the two sites";
+function pairYardHTML(x) {
+  if (x.tier > 3) return "";
+  const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x);
+  return `<div class="box"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yardDist(yd)}.
+    ${x.sameWindow ? `It would save about <b>${miles(im.netMi)} truck-miles</b>, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2.` : "It only helps while both are being built."}</p>
+    ${c ? `<button type="button" class="btn sm" id="toCl">Part of a ${c.projects.length}-project group: one yard for all</button>` : ""}</div>`;
+}
+function sharesHTML(x) {
+  const by = Object.fromEntries(x.sav.items.map(i => [i.share, i]));
+  const all = Engine.savings(Object.assign({}, x, { sameWindow: true })).items, byAll = Object.fromEntries(all.map(i => [i.share, i]));
+  const rows = Engine.shareable(x).flatMap(g => g.items.map(n => ({ n, g, i: by[n] || byAll[n] })));
+  return `<div class="box"><div class="dh"><h3>What they can share</h3><button type="button" class="link" id="editCosts">Edit unit costs</button></div>
+    <table class="items"><tbody>${rows.map(r => `<tr class="${r.g.active ? "" : "off"}"><td>${esc(r.i ? r.i.k : r.n)}<small>${r.i ? esc(r.i.how) : ""}${r.g.active ? "" : " · only while both are being built"}</small></td><td class="r">${r.i ? money(r.i.v) : "–"}</td></tr>`).join("")}
+    <tr class="tot"><td>Each utility saves if dates hold</td><td class="r">${x.sav.total ? money(x.sav.total) : "$0"}</td></tr></tbody></table>
+    ${x.res.length ? `<p class="note">Also in common: ${x.res.map(esc).join(", ")}.</p>` : ""}</div>`;
+}
+function renderCluster(c, P) {
+  const im = c.impact;
+  P.innerHTML = `<div class="dbar"><button type="button" class="btn sm" id="back">← Overlaps</button></div><div class="detail">
+    <h2>One yard for ${c.projects.length} projects</h2>
+    <p>These projects are built during overlapping windows and chain together through nearby pairs. The best single staging yard is ${yardPlace(c.yard)}, which puts every work site within ${km(c.yard.max)}, inside a crew's 40 km daily drive.</p>
+    <dl class="facts"><div><dt>Truck-miles saved</dt><dd>${miles(im.netMi)}</dd></div><div><dt>Driver time</dt><dd>${miles(im.hours)} h</dd></div><div><dt>CO2 avoided</dt><dd>${im.co2t.toFixed(1)} t</dd></div><div><dt>Yards not built</dt><dd>${im.yardsAvoided} · ${money(im.dollars)}</dd></div></dl>
+    <table class="items"><tbody>${c.projects.map((p, i) => `<tr><td><i class="${p.utility === state.utilA ? "a" : "b"}"></i>${esc(p.name)}<small>${esc(lbl(p.utility))} · ${fmtD(p, "start")} to ${fmtD(p, "in_service")}</small></td><td class="r">${km(c.yard.dists[i])}</td></tr>`).join("")}</tbody></table>
+    ${yardMath(c.yard, im)}
+    <p class="note">The yard is the point with the least total distance to every site (a geometric median), moved to an existing substation or plant when one is almost as good, since those already have road access. Distances are straight lines times the road factor.</p></div>`;
+  $("#back").onclick = () => select(null);
+}
+function yardMath(yd, im) {
+  const A = Engine.ASSUME;
+  return `<table class="items"><tbody>
+    <tr><td>Heavy loads that share trips<small>${A.loads} loads × ${im.n - 1} extra project${im.n === 2 ? "" : "s"} × 2 × ${A.haulKm} km from the depot</small></td><td class="r">${miles(im.haulMi)} mi</td></tr>
+    <tr><td>Added yard-to-site driving<small>${A.shuttles} round trips per project × ${A.circuity} × each site's distance from the yard</small></td><td class="r">−${miles(im.shuttleMi)} mi</td></tr>
+    <tr class="tot"><td>Net truck-miles saved</td><td class="r">${miles(im.netMi)} mi</td></tr>
+    <tr><td>CO2 avoided<small>${A.mpg} mpg × ${A.co2Gal} kg CO2 per gallon of diesel (EPA)</small></td><td class="r">${im.co2t.toFixed(1)} t</td></tr></tbody></table>`;
 }
 
-// ---------- what-if schedule shift ----------
-const short = p => (lbl(p.utility).split(" (")[0].split(" ")[0]) + " project";
+// ---------- what-if ----------
 const shiftISO = Engine.shiftISO;
-// The pair recomputed with one project's whole build window moved by m months.
 function whatIf(x, who, m) {
   if (!m) return x;
   const moved = Object.assign({}, x[who], { start: shiftISO(x[who].start, m), in_service: shiftISO(x[who].in_service, m) });
   const p = who === "p" ? moved : x.p, q = who === "q" ? moved : x.q, ov = Engine.windowOverlap(p, q);
   const y = Object.assign({}, x, { p, q, ov: Math.max(0, ov), gap: Math.max(0, -ov), sameWindow: -ov <= state.B });
   y.sav = Engine.savings(y);
+  const c = Engine.overlapChance(y, MODEL.slips, { bufferMonths: state.B, today: TODAY });
+  const e = Engine.expectedSavings(y, c.p);
+  y.risk = { chance: c.p, why: c.why, expected: e.expected };
   return y;
 }
-// Smallest move that gives the two builds a real shared window: 6 months, or all of the shorter build.
-// Doesn't depend on the slider, so the engine works it out once per pair and remembers it.
-const recommendShift = Engine.recommendShift;
 const moLabel = m => m === 0 ? "as planned" : `${Math.abs(m)} month${Math.abs(m) === 1 ? "" : "s"} ${m < 0 ? "earlier" : "later"}`;
 function updateWhatIf(x) {
-  const { who, shift } = state.wi, y = whatIf(x, who, shift), rec = recommendShift(x, who);
+  const { who, shift } = state.wi, y = whatIf(x, who, shift), rec = Engine.recommendShift(x, who);
   $("#wiOut").textContent = moLabel(shift);
-  // chart: both build windows, the moved one with a ghost of where it was
-  const svg = d3.select("#wiChart"), W = 460, H = 74, LW = 70; svg.selectAll("*").remove();
+  const svg = d3.select("#wiChart"), W = 480, H = 64, LW = 96; svg.selectAll("*").remove();
   const all = [x.p, x.q, y.p, y.q], lo = Math.floor(d3.min(all, p => mon(p.start)) / 12) * 12, hi = Math.ceil(d3.max(all, p => mon(p.in_service)) / 12) * 12;
   const X = d3.scaleLinear().domain([lo, hi]).range([LW, W - 8]);
   svg.attr("viewBox", `0 0 ${W} ${H}`);
   for (let m = lo; m <= hi; m += 12) {
     svg.append("line").attr("x1", X(m)).attr("x2", X(m)).attr("y1", 12).attr("y2", H).attr("stroke", css("--grid"));
-    if (m < hi && (hi - lo) / 12 <= 12) svg.append("text").attr("x", X(m) + 3).attr("y", 9).attr("font-size", 9).attr("fill", css("--ink3")).attr("font-family", css("--mono")).text(m / 12);
+    if (m < hi && (hi - lo) / 12 <= 12) svg.append("text").attr("x", X(m) + 3).attr("y", 9).attr("font-size", 9).attr("fill", css("--ink3")).text(m / 12);
   }
   const a = Math.max(mon(y.p.start), mon(y.q.start)), b = Math.min(mon(y.p.in_service), mon(y.q.in_service));
-  if (b > a) svg.append("rect").attr("x", X(a)).attr("width", X(b) - X(a)).attr("y", 14).attr("height", H - 14).attr("fill", css("--time")).attr("fill-opacity", .16);
-  [["p", 22], ["q", 50]].forEach(([k, yy]) => {
+  if (b > a) svg.append("rect").attr("x", X(a)).attr("width", X(b) - X(a)).attr("y", 14).attr("height", H - 14).attr("fill", css("--time")).attr("fill-opacity", .14);
+  const nowX = X(Math.min(hi, Math.max(lo, mon(TODAY))));
+  svg.append("line").attr("x1", nowX).attr("x2", nowX).attr("y1", 12).attr("y2", H).attr("stroke", css("--ink")).attr("stroke-dasharray", "2 2");
+  [["p", 20], ["q", 42]].forEach(([k, yy]) => {
     const o = x[k], n = y[k], c = uColor(o.utility);
-    svg.append("text").attr("x", LW - 8).attr("y", yy + 10).attr("text-anchor", "end").attr("font-size", 11).attr("fill", c).attr("font-weight", 600).text(short(o).split(" ")[0]);
-    if (n !== o) svg.append("rect").attr("x", X(mon(o.start))).attr("width", Math.max(2, X(mon(o.in_service)) - X(mon(o.start)))).attr("y", yy).attr("height", 14).attr("rx", 3)
+    svg.append("text").attr("x", LW - 8).attr("y", yy + 10).attr("text-anchor", "end").attr("font-size", 11).attr("fill", c).attr("font-weight", 600).text(lbl(o.utility).split(" ")[0]);
+    if (n !== o) svg.append("rect").attr("x", X(mon(o.start))).attr("width", Math.max(2, X(mon(o.in_service)) - X(mon(o.start)))).attr("y", yy).attr("height", 12).attr("rx", 2)
       .attr("fill", "none").attr("stroke", c).attr("stroke-dasharray", "3 3").attr("opacity", .6);
-    svg.append("rect").attr("x", X(mon(n.start))).attr("width", Math.max(2, X(mon(n.in_service)) - X(mon(n.start)))).attr("y", yy).attr("height", 14).attr("rx", 3).attr("fill", c).attr("fill-opacity", .85);
+    svg.append("rect").attr("x", X(mon(n.start))).attr("width", Math.max(2, X(mon(n.in_service)) - X(mon(n.start)))).attr("y", yy).attr("height", 12).attr("rx", 2).attr("fill", c).attr("fill-opacity", .85);
   });
   $("#sharesBox").innerHTML = sharesHTML(y);
-  const d = y.sav.total - x.sav.total;
-  $("#wiRes").innerHTML = (y.ov > 0 ? `Build windows overlap <b>${Math.round(y.ov)} months</b>.` : `Build windows are <b>${Math.round(y.gap)} months apart</b>.`) +
-    ` Rough savings <b>${(y.sav.total ? money(y.sav.total) : "$0")}</b>` + (shift ? (d ? ` (<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${money(Math.abs(d))}</span> vs. as planned).` : " (no change from as planned).") : ".");
+  $("#editCosts").onclick = () => openModal("assume");
+  const d = y.risk.expected - x.risk.expected;
+  $("#wiRes").innerHTML = (y.ov > 0 ? `Windows overlap <b>${Math.round(y.ov)} months</b> on paper.` : `Windows are <b>${Math.round(y.gap)} months apart</b> on paper.`) +
+    ` Chance of a shared window <b>${pct(y.risk.chance)}</b>, expected savings <b>${money(y.risk.expected)}</b>` +
+    (shift ? (Math.abs(d) >= 500 ? ` (<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${money(Math.abs(d))}</span> vs. as planned).` : " (no change from as planned).") : ".");
   const recBtn = $("#wiRec");
-  // The plan already shares a window when rec is 0; then Reset is the only way back, so no suggestion button.
   recBtn.hidden = rec == null || rec === 0 || rec === shift;
   if (rec) { recBtn.textContent = `Try ${moLabel(rec)}`; recBtn.onclick = () => { state.wi.shift = rec; $("#wiShift").value = rec; updateWhatIf(x); }; }
   $("#wiReset").hidden = !shift;
-  const s = y.sav, off = Engine.shareable(y).some(g => !g.active);
-  $("#impBox").innerHTML = `<table class="imp"><tbody><tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}<small>the sum of the ${s.items.length} item${s.items.length === 1 ? "" : "s"} priced above</small></td><td>${s.total ? money(s.total) : "$0"}</td></tr></tbody></table>
-    <p class="note">${off ? "Yard, delivery, crew, crane and contractor savings count only when both are built at the same time. " : ""}Planning estimates. Change any unit cost under <a href="#assume">Cost assumptions</a> and every pair updates.</p>`;
 }
 
-const yardDist = yd => yd.dists.every(d => d < 0.1) ? "right at both sites" : yd.dists.map(km).join(" and ") + " from the two sites";
-function pairYardHTML(x) {
-  if (x.tier > 3) return "";
-  const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x);
-  return `<div class="ydbox"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yardDist(yd)}.
-    ${x.sameWindow ? `It would save about <b>${miles(im.netMi)} truck-miles</b>, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2.` : "It only helps if both are built at the same time."}</p>
-    ${c ? `<button type="button" class="btn" id="toCl">Part of a ${c.projects.length}-project group: see one yard for all</button>` : ""}</div>`;
+// ---------- panel: plan changes ----------
+function histogram(months, color) {
+  const bins = [-36, -24, -12, 0, 12, 24, 36, 48], W = 240, H = 84, bw = 22;
+  const binOf = v => v <= -30 ? 0 : v <= -18 ? 1 : v < 0 ? 2 : v === 0 ? 3 : v < 18 ? 4 : v < 30 ? 5 : v < 42 ? 6 : 7;
+  const n = bins.map(() => 0); months.forEach(v => n[binOf(v)]++);
+  const max = Math.max(...n), x0 = 12;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="How far dates moved">${n.map((c, i) => c ? `<rect x="${x0 + i * (bw + 4)}" y="${62 - 52 * c / max}" width="${bw}" height="${52 * c / max}" fill="${color}"><title>${c}</title></rect><text x="${x0 + i * (bw + 4) + bw / 2}" y="${58 - 52 * c / max}" font-size="9" text-anchor="middle" fill="var(--ink2)">${c}</text>` : "").join("")}
+    <line x1="0" x2="${W}" y1="62" y2="62" stroke="var(--line)"/>${["−36", "−24", "−12", "0", "+12", "+24", "+36", "48+"].map((t, i) => `<text x="${x0 + i * (bw + 4) + bw / 2}" y="76" font-size="9" text-anchor="middle" fill="var(--ink3)">${t}</text>`).join("")}</svg>`;
 }
-// What the pair can share, tier by tier, in the challenge's wording. Crew and yard sharing needs a shared build window.
-// Each item carries its own estimated saving and the math behind it.
-function sharesHTML(x) {
-  const by = Object.fromEntries(x.sav.items.map(i => [i.share, i]));
-  return `<div class="shares"><h3>What they can share</h3>${Engine.shareable(x).map(g => `<div class="sg${g.active ? "" : " off"}" style="--c:${tcol(g.tier)}">
-    <span class="sl">${esc(g.label)}</span><ul class="si">${g.items.map(n => { const i = by[n]; return `<li><span>${esc(n)}</span><b>${i ? money(i.v) : "–"}</b>${i ? `<small>${esc(i.how)}</small>` : ""}</li>`; }).join("")}</ul>
-    ${g.active ? "" : `<em>only if both are built at the same time</em>`}</div>`).join("")}
-    ${x.res.length ? `<p class="note">Also in common: ${x.res.map(esc).join(", ")}.</p>` : ""}</div>`;
+function renderChanges(P) {
+  P.dataset.view = "changes";
+  const d = drift(), S = MODEL.slips || {};
+  const why = x => {
+    const r = [];
+    for (const p of [x.p, x.q]) if (p.drift && p.drift.months) r.push(`${lbl(p.utility)} moved ${short(p)} ${Math.abs(p.drift.months)} months ${p.drift.months > 0 ? "later" : "earlier"}`);
+    return r.join("; ") + (REFS[keyOf(x)] ? ` · challenge reference ${REFS[keyOf(x)]}` : "");
+  };
+  const list = xs => xs.map((x, i) => `<div class="tr lite" tabindex="0" data-k="${esc(keyOf(x))}"><span class="muted">${km(x.km)}</span><span class="pair"><span class="pp"><i class="a"></i>${esc(short(x.p))}</span><span class="pp"><i class="b"></i>${esc(short(x.q))}</span><small>${esc(why(x))}</small></span></div>`).join("") || `<div class="empty">None.</div>`;
+  const u = k => S[k] ? `<div class="hist"><span><b>${esc(lbl(k))}</b> · ${S[k].n} projects with a history</span>${histogram(S[k].months, k === state.utilA ? "var(--u0)" : "var(--u1)")}<small>${S[k].slipped} later, ${S[k].advanced} earlier, ${S[k].n - S[k].slipped - S[k].advanced} unchanged · months moved between the last two plans</small><small class="muted">${esc(S[k].source)}</small></div>` : "";
+  P.innerHTML = `<div class="detail"><h2>How dates moved between the last two plans</h2><div class="hists">${u(state.utilA)}${u(state.utilB)}</div>
+    <p class="note">Seamline replays each pair with the dates the previous plan listed. These are the shared build windows the latest updates opened and closed.</p></div>
+    <h3 class="sub">Shared windows opened <span class="up">${d.opened.length}</span></h3><div class="rows">${list(d.opened)}</div>
+    <h3 class="sub">Closed <span class="down">${d.closed.length}</span></h3><div class="rows">${list(d.closed)}</div>`;
+  P.querySelectorAll("[data-k]").forEach(el => el.onclick = () => { const x = RESULT.pairs.find(v => keyOf(v) === el.dataset.k); if (x) { state.tab = "overlaps"; select(x); } });
+}
+
+// ---------- panel: optimize ----------
+function renderOptimize(P) {
+  P.dataset.view = "optimize";
+  const o = optimize();
+  const gain = o.after - o.before, up = new Set(o.moves.flatMap(m => m.pairs.filter(a => a.after > a.before).map(a => keyOf(a.x)))).size;
+  P.innerHTML = `<div class="detail"><h2>${o.moves.length ? `${o.moves.length} date move${o.moves.length === 1 ? "" : "s"} raise expected savings from ${money(o.before)} to ${money(o.after)}` : "No move of this size adds at least $25K"}</h2>
+    <p>${o.moves.length ? `Each move is at most ${state.opt.maxShift} months, on a project that has not started, never starting before today. ${up} pairs become more likely to share a crew window (+${money(gain)}).` : "Try allowing larger moves."} Chances use how each utility's dates moved between its last two plans.</p>
+    <div class="ph-row"><label class="fl">Largest move <select id="oMax"><option value="3">3 months</option><option value="6">6 months</option><option value="12">12 months</option></select></label>
+      <label class="fl">Move <select id="oWho"><option value="both">Both utilities</option><option value="a">${esc(lbl(state.utilA))} only</option><option value="b">${esc(lbl(state.utilB))} only</option></select></label>
+      <span class="grow"></span><button type="button" class="btn sm" id="oMap" aria-pressed="${state.showMoves}">Show on map</button><button type="button" class="btn sm primary" id="oBrief"${o.moves.length ? "" : " disabled"}>Joint brief</button></div></div>
+    <div class="thead opt"><span>#</span><span>Move</span><span>Shift</span><span class="r">Adds</span></div>
+    <div class="rows">${o.moves.map((m, i) => {
+      const best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0], other = best ? (best.x.p === m.project ? best.x.q : best.x.p) : null;
+      return `<div class="tr opt" tabindex="0" data-i="${i}"><span class="muted">${i + 1}</span><span class="pair"><span class="pp"><i class="${m.project.utility === state.utilA ? "a" : "b"}"></i>${esc(short(m.project))}</span>
+        <small>In service ${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</small>${other ? `<small>Best effect · ${esc(short(other))}: ${pct(best.before)} → ${pct(best.after)}</small>` : ""}</span>
+        <span class="${m.months > 0 ? "amber" : "blue"}"><b>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} mo</b></span><span class="r up"><b>+${money(m.gain)}</b></span></div>`;
+    }).join("")}</div>
+    <p class="note pad">Planning aid: assumes each date moves once more, like past plan updates, and that the utilities move independently.</p>`;
+  $("#oMax").value = state.opt.maxShift; $("#oWho").value = state.opt.who;
+  $("#oMax").onchange = e => { state.opt.maxShift = +e.target.value; renderPanel(); renderMap(); };
+  $("#oWho").onchange = e => { state.opt.who = e.target.value; renderPanel(); renderMap(); };
+  $("#oMap").onclick = () => { state.showMoves = !state.showMoves; if (state.showMoves && o.moves.length) flyTo({ moves: o.moves }); renderPanel(); renderMap(); };
+  $("#oBrief").onclick = () => openScheduleBrief(o);
+  P.querySelectorAll(".tr.opt").forEach(el => el.onclick = () => {
+    const m = o.moves[+el.dataset.i], best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0];
+    const x = best && RESULT.pairs.find(v => keyOf(v) === keyOf(best.x));
+    if (x) { state.tab = "overlaps"; select(x); }
+  });
+}
+
+// ---------- panel: data checks ----------
+function renderChecks(P) {
+  P.dataset.view = "checks";
+  const C = MODEL.checks || [], n = s => C.filter(c => c.status === s).length;
+  const LBL = { pass: "Passed", fixed: "Fixed", warn: "Review" };
+  const rec = r => Object.entries(r).filter(([k]) => k !== "endpoints").map(([k, v]) => `<b>${esc(k)}</b> ${esc(typeof v === "object" ? JSON.stringify(v) : v)}`).join(" · ");
+  P.innerHTML = `<div class="detail"><h2>Pipeline run ${new Date(TODAY + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</h2>
+    <p>${(k => k ? `${k.pdfs} PDFs → ${k.official} official records (${k.official_placed} placed) + the newer SCRTP and SERTP lists → ${k.on_map} projects on the map → ` : "")(MODEL.pipeline)}${RESULT.pairs.length} overlaps. These checks run on every rebuild of the data (<code>scripts/build_projects.py</code>); a test confirms all 6 of the challenge's reference overlaps are flagged.</p>
+    <div class="ph-row"><span><b class="green">${n("pass")}</b> passed</span><span><b class="blue">${n("fixed")}</b> caught and fixed</span><span><b class="amber">${n("warn")}</b> to review</span><span class="grow"></span><button type="button" class="btn sm" id="dl">Download report (JSON)</button></div></div>
+    <div class="rows">${C.map((c, i) => `<div class="check"><button type="button" class="tr lite" data-i="${i}" aria-expanded="${state.openCheck === i}"><b class="st ${c.status}">${LBL[c.status] || c.status}</b><span class="pair"><b>${esc(c.title)}</b><small>${esc(c.result)}</small></span></button>
+      ${state.openCheck === i ? `<ul class="recs">${(c.records || []).slice(0, 40).map(r => `<li>${rec(r)}</li>`).join("") || "<li>No records.</li>"}${(c.records || []).length > 40 ? `<li class="muted">and ${c.records.length - 40} more in the report</li>` : ""}</ul>` : ""}</div>`).join("")}</div>`;
+  P.querySelectorAll(".check [data-i]").forEach(b => b.onclick = () => { const i = +b.dataset.i; state.openCheck = state.openCheck === i ? null : i; renderChecks(P); });
+  $("#dl").onclick = () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(MODEL, null, 1)], { type: "application/json" }));
+    const a = document.createElement("a"); a.href = url; a.download = "seamline-validation.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 }
 
 // ---------- coordination brief ----------
-// A one-page memo for one pair, addressed to both utilities' planners. Printable, or copy as plain text.
 function openBrief(x0) {
-  // Use the what-if move only when it improves on the plan (more shared months or more savings); otherwise brief the plan as published.
-  const y = whatIf(x0, state.wi.who, state.wi.shift), better = state.wi.shift && (y.ov > x0.ov || y.sav.total > x0.sav.total);
+  const y = whatIf(x0, state.wi.who, state.wi.shift), better = state.wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
   const x = better ? y : x0, moved = better ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
-  const uA = lbl(x.p.utility), uB = lbl(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(state.wi.shift)}` : ""}.`
-    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = recommendShift(x0, "q"); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
+    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = Engine.recommendShift(x0, "q"); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
+  const risk = x.risk.why === "built" ? "One of the projects is likely built already." : `Given how both utilities' dates have moved between plans, there is a ${pct(x.risk.chance)} chance both are in the field together from today on; expected savings ${money(x.risk.expected)}.`;
   const steps = [
     "Confirm both project locations and the closest-point distance with each utility's GIS team.",
     x.tier === 0 && "Agree one outage window and crossing-structure design for where the projects meet.",
@@ -659,171 +642,111 @@ function openBrief(x0) {
     "Compare contractor and crew plans; share mobilization where the windows overlap.",
     "Name one coordinator at each utility and set a monthly check-in until both are in service.",
   ].filter(Boolean);
-  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lbl(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} to ${fmtD(p, "in_service")}${p === moved ? "<br><em>proposed</em>" : ""}</td><td>${c.est ? "est. " : ""}${money(c.v)}</td></tr>`;
+  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} to ${fmtD(p, "in_service")}${p === moved ? "<br><em>proposed</em>" : ""}</td><td>${c.est ? "est. " : ""}${money(c.v)}</td></tr>`;
   $("#briefDoc").innerHTML = `
     <header class="b-head"><div class="b-brand">SEAMLINE <span>Coordination brief</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>To</dt><dd>${esc(uA)} transmission planning<br>${esc(uB)} transmission planning</dd>
       <dt>Re</dt><dd>Coordinating ${esc(x.p.name)} and ${esc(x.q.name)}</dd></dl>
-    <p class="b-lede">These two planned projects come within <b>${km(x.km)}</b> of each other at their closest points (<b>${esc(T.label.toLowerCase())}</b>). ${esc(T.means)}. ${when} Coordinating them could save roughly <b>${(s.total ? money(s.total) : "$0")}</b>.</p>
+    <p class="b-lede">These two planned projects come within <b>${km(x.km)}</b> of each other at their closest points (<b>${esc(T.label.toLowerCase())}</b>). ${esc(T.means)}. ${when} ${risk}</p>
     <div class="b-grid"><div>${briefMap(x)}</div>
-      <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.ov > 0 ? Math.round(x.ov) + " mo" : Math.round(x.gap) + " mo gap"}</b><span>${x.ov > 0 ? "of shared build window" : "between build windows"}</span></div><div><b>${(s.total ? money(s.total) : "$0")}</b><span>rough savings</span></div></div></div>
+      <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</b><span>chance of a shared window</span></div><div><b>${money(x.risk.expected)}</b><span>expected savings (${s.total ? money(s.total) : "$0"} if dates hold)</span></div></div></div>
     <h4>The projects</h4>
     <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
-    ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total${Engine.customized() ? " (with edited cost assumptions)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>
-      ${(() => { const off = Engine.shareable(x).filter(g => !g.active).flatMap(g => g.items); return off.length || x.res.length ? `<p class="b-note">${off.length ? `Only if both are built at the same time: ${esc(off.join(", ").toLowerCase())}. ` : ""}${x.res.length ? `Also in common: ${x.res.map(esc).join(", ")}.` : ""}</p>` : ""; })()}`
-    : `<h4>What they can share</h4>
-    <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
-      ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
-    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard${c.yard.near ? " at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
+    ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total if dates hold${Engine.customized() ? " (with edited unit costs)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
+    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles and ${im.co2t.toFixed(1)} t of CO2` : ""}.</p>`; })() : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
-  $("#brief").hidden = false;
-  $("#briefClose").focus();
+  showBrief();
 }
-// Small locator map for the brief: GA and SC outlines, the seam, both projects and the closest-point link.
+function openScheduleBrief(o) {
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>Joint schedule proposal</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>To</dt><dd>${esc(lblLong(state.utilA))} transmission planning<br>${esc(lblLong(state.utilB))} transmission planning</dd><dt>Re</dt><dd>${o.moves.length} date moves that line up nearby construction</dd></dl>
+    <p class="b-lede">Moving these ${o.moves.length} projects by at most ${state.opt.maxShift} months raises the expected savings from coordinating nearby work from <b>${money(o.before)}</b> to <b>${money(o.after)}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.</p>
+    <table class="b-tab"><thead><tr><th>Project</th><th>Move</th><th>In service</th><th>Adds</th></tr></thead><tbody>${o.moves.map(m => `<tr><td><b>${esc(m.project.name)}</b><br><span>${esc(lblLong(m.project.utility))}</span></td><td>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} months</td><td>${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</td><td class="n">${money(m.gain)}</td></tr>`).join("")}</tbody></table>
+    <h4>Proposed next steps</h4><ol><li>Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.</li><li>Agree the moves that fit at the next SERTP coordination meeting.</li><li>Re-run Seamline on the next published plans to track the result.</li></ol>
+    <p class="b-foot">Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.</p>`;
+  showBrief();
+}
+function showBrief() { $("#brief").hidden = false; $("#briefClose").focus(); }
 function briefMap(x) {
   const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
   const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
   if (pr.scale() > 60000) pr.scale(60000).translate(pr.translate());
   const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
-  const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#EEF1EF" stroke="#B9C3C1" stroke-width=".8"/>`).join("");
-  const sc = seamCoords(), seam = sc ? `<path d="${path({ type: "LineString", coordinates: sc })}" fill="none" stroke="#9A6B2F" stroke-width="1.4" stroke-dasharray="4 3"/>` : "";
-  const proj1 = (p, c) => Engine.isLine(p) ? `<path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>` : `<circle cx="${P(p.coords[0])[0]}" cy="${P(p.coords[0])[1]}" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
+  const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#F1F2EE" stroke="#B9C0C4" stroke-width=".8"/>`).join("");
+  const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" stroke="#8FB6CC" stroke-width="2.5"/>` : "";
+  const one = (p, c) => Engine.isLine(p) ? `<path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>` : `<circle cx="${P(p.coords[0])[0]}" cy="${P(p.coords[0])[1]}" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
   const [a, b] = [P(x.ca), P(x.cb)];
-  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map"><rect width="${W}" height="${H}" fill="#DCE6EA"/>${st}${seam}${proj1(x.p, "#0E6F8C")}${proj1(x.q, "#B4560F")}
-    <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B0183D" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B0183D" stroke-width="1.5"/>
-    ${x.tier <= 3 ? (() => { const y = P(pairYard(x).at); return `<rect x="${y[0] - 5}" y="${y[1] - 5}" width="10" height="10" fill="#9A6B2F" stroke="#fff" stroke-width="1.5"/>`; })() : ""}
-    <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
+  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map"><rect width="${W}" height="${H}" fill="#E4EBEF"/>${st}${seam}${one(x.p, "#1668A8")}${one(x.q, "#C4540E")}
+    <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B42318" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B42318" stroke-width="1.5"/>
+    <text x="10" y="${H - 10}" font-size="10" fill="#57606A">${esc(km(x.km))} at the closest points</text></svg>`;
 }
-function closeBrief() { closeAnimated($("#brief"), () => { $("#brief").hidden = true; }); }
-// 3D quality: Standard, High (default) or Ultra, remembered between visits.
-const quality3d = () => { try { const q = localStorage.getItem("seamline.3dquality"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
-// Once the 3D view has finished opening, drop its open animation and hide the page behind it, so the browser only
-// draws the 3D canvas on each frame (see ".m3d.settled" in styles.css).
-function settle3d(on) {
-  const m = $("#m3d"), done = () => { m.classList.add("settled"); document.body.classList.add("m3d-open"); };
-  m.classList.remove("settled"); document.body.classList.remove("m3d-open");
-  if (!on) return;
-  if (still()) return done();
-  const box = $("#m3d .m3d-box"), end = e => {
-    if (e.animationName !== "boxIn") return;
-    box.removeEventListener("animationend", end);
-    if (!m.hidden && !m.classList.contains("closing")) done();
-  };
-  box.addEventListener("animationend", end);
-}
+function closeBrief() { $("#brief").hidden = true; }
+
+// ---------- 3D illustration (three.js) ----------
+const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
 function open3d(x) {
   $("#m3dQ").value = quality3d();
-  const wasOpen = !$("#m3d").hidden;
   Scene3D.open(x, {
-    title: `${x.p.name} and ${x.q.name}`,
-    subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.${x.sav.total ? " Rough savings " + money(x.sav.total) + "." : ""}`,
+    title: `${short(x.p)} and ${short(x.q)}`,
+    subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
-    nameA: `${lbl(x.p.utility).split(" (")[0]}: ${x.p.name.split(":")[0]}`, nameB: `${lbl(x.q.utility).split(" (")[0]}: ${x.q.name.split(":")[0]}`,
-    distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`,
-    quality: quality3d(),
+    nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
+    distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
   });
-  if (!wasOpen) settle3d(true);
+  $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
+function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
 
-// ---------- timeline ----------
-let TLX = null;
-function moveCursor() {
-  const svg = d3.select("#tl"); svg.select("#tcur").remove();
-  if (state.t == null || !TLX) return;
-  const X = TLX.x(Math.min(TLX.x.domain()[1], Math.max(TLX.x.domain()[0], state.t)));
-  const c = svg.append("g").attr("id", "tcur").style("pointer-events", "none");
-  c.append("line").attr("x1", X).attr("x2", X).attr("y1", TLX.top - 10).attr("y2", TLX.H).attr("stroke", css("--seam")).attr("stroke-width", 2);
-  c.append("circle").attr("cx", X).attr("cy", TLX.top - 10).attr("r", 4).attr("fill", css("--seam"));
-}
-function renderTimeline() {
-  const ids = new Set(solo() ? SOLO.slice(0, 60).map(p => p.id) : VIEW.slice(0, 60).flatMap(x => [x.p.id, x.q.id]));
-  const rows = PROJECTS.filter(p => ids.has(p.id)).sort((a, b) => (a.utility === state.utilA ? 0 : 1) - (b.utility === state.utilA ? 0 : 1) || mon(a.start) - mon(b.start));
-  const svg = d3.select("#tl"); svg.selectAll("*").remove();
-  const W = 1340, LW = 300, RH = 16, top = 26, H = Math.max(80, top + rows.length * RH + 10);
-  svg.attr("viewBox", `0 0 ${W} ${H}`).style("min-width", "820px");
-  if (!rows.length) { TLX = null; svg.append("text").attr("x", 16).attr("y", 40).attr("fill", css("--ink2")).text("No flagged projects."); return; }
-  const lo = Math.floor(d3.min(rows, p => mon(p.start)) / 12) * 12, hi = Math.ceil(d3.max(rows, p => mon(p.in_service)) / 12) * 12;
-  const x = d3.scaleLinear().domain([lo, hi]).range([LW, W - 16]);
-  TLX = { x, top, H };
-  for (let m = lo; m <= hi; m += 12) {
-    svg.append("line").attr("x1", x(m)).attr("x2", x(m)).attr("y1", top - 6).attr("y2", H).attr("stroke", css("--grid"));
-    if (m < hi) svg.append("text").attr("x", x(m) + 4).attr("y", 14).attr("font-size", 11).attr("fill", css("--ink2")).attr("font-family", css("--mono")).text(m / 12);
-  }
-  const sel = state.sel;
-  if (sel && sel.ov > 0) {
-    const a = Math.max(mon(sel.p.start), mon(sel.q.start)), b = Math.min(mon(sel.p.in_service), mon(sel.q.in_service));
-    svg.append("rect").attr("x", x(a)).attr("width", x(b) - x(a)).attr("y", top - 6).attr("height", H - top + 6).attr("fill", css("--hotsoft"));
-  }
-  const g = svg.selectAll("g.r").data(rows).join("g").attr("transform", (d, i) => `translate(0,${top + i * RH})`).style("cursor", "pointer")
-    .attr("opacity", d => sel ? (inSel(sel, d) ? 1 : .3) : 1)
-    .on("click", (ev, d) => { if (solo()) return select({ p: d, solo: true }); const pr = VIEW.find(x => x.p === d || x.q === d); if (pr) select(pr); })
-    .on("mousemove", (ev, d) => showTip(ev, d)).on("mouseleave", hideTip);
-  g.append("text").attr("x", LW - 8).attr("y", 11).attr("text-anchor", "end").attr("font-size", 11).attr("fill", d => uColor(d.utility))
-    .text(d => d.name.length > 44 ? d.name.slice(0, 43) + "…" : d.name);
-  g.append("rect").attr("x", d => x(mon(d.start))).attr("width", d => Math.max(3, x(mon(d.in_service)) - x(mon(d.start)))).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
-    .attr("fill", d => uColor(d.utility)).attr("fill-opacity", .35);
-  g.append("rect").attr("x", d => x(mon(d.in_service)) - 3).attr("width", 3).attr("y", 2).attr("height", RH - 4).attr("fill", d => uColor(d.utility));
-  moveCursor();
-}
-
-// ---------- utilities, legend, datasets ----------
+// ---------- pickers, datasets, import ----------
 function renderPickers() {
   const us = utilities();
   if (!us.includes(state.utilA)) state.utilA = us[0];
   if (!solo() && (!us.includes(state.utilB) || state.utilB === state.utilA)) state.utilB = us.find(u => u !== state.utilA) || NONE;
-  const opts = (cur, skip) => us.filter(u => u !== skip).map(u => `<option value="${esc(u)}"${u === cur ? " selected" : ""}>${esc(lbl(u))} (${PROJECTS.filter(p => p.utility === u).length})</option>`).join("");
+  const opts = (cur, skip) => us.filter(u => u !== skip).map(u => `<option value="${esc(u)}"${u === cur ? " selected" : ""}>${esc(lbl(u))} · ${PROJECTS.filter(p => p.utility === u).length}</option>`).join("");
   $("#utilA").innerHTML = opts(state.utilA);
-  $("#utilB").innerHTML = `<option value="${NONE}"${solo() ? " selected" : ""}>None (just show projects)</option>` + opts(state.utilB, state.utilA);
-  // Distance and window controls only matter when comparing two utilities.
-  document.querySelector(".controls").classList.toggle("off", solo());
-  for (const el of document.querySelectorAll(".controls input, .controls button")) el.disabled = solo();
-}
-function legend() {
-  $("#legend").innerHTML = (solo() ? [state.utilA] : [state.utilA, state.utilB]).map(u => `<span><i class="sw" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("") +
-    `<span><i class="sw" style="background:${css("--ink3")};opacity:.6"></i>existing asset</span><span><i class="sw dash"></i>approximate location</span>`;
+  $("#utilB").innerHTML = `<option value="${NONE}"${solo() ? " selected" : ""}>None: just list projects</option>` + opts(state.utilB, state.utilA);
+  $("#controls").classList.toggle("off", solo());
+  const imported = DATASETS.filter(d => !d.builtin).length;
+  $("#asof").textContent = `Plans: SCRTP 2024–28 & 2026–30 · GA IRP 2025 · SERTP 2026${imported ? ` · +${imported} imported` : ""} · as of ${new Date(TODAY + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
+  document.documentElement.style.setProperty("--ua", uColor(state.utilA));
+  document.documentElement.style.setProperty("--ub", solo() ? "transparent" : uColor(state.utilB));
 }
 function renderDatasets() {
-  $("#datasets").innerHTML = DATASETS.map(d => `<li><span><b>${esc(d.name)}</b> <span class="note">${d.count} ${d.backdrop ? "existing lines and facilities (background)" : "projects"}${d.utils ? " · " + esc(d.utils.join(", ")) : ""}</span></span>${d.builtin ? "" : `<button type="button" class="btn" data-rm="${esc(d.id)}">Remove</button>`}</li>`).join("");
+  $("#datasets").innerHTML = DATASETS.map(d => `<li><span><b>${esc(d.name)}</b> <span class="note">${d.count} ${d.backdrop ? "existing lines and facilities (background)" : "projects"}${d.utils ? " · " + esc(d.utils.join(", ")) : ""}</span></span>${d.builtin ? "" : `<button type="button" class="btn sm" data-rm="${esc(d.id)}">Remove</button>`}</li>`).join("");
   $("#datasets").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
     const id = b.dataset.rm;
     PROJECTS = PROJECTS.filter(p => p.dataset !== id);
-    for (let i = EXIST.length - 1; i >= 0; i--) if (EXIST[i].dataset === id) EXIST.splice(i, 1); dataVersion++;
+    for (let i = EXIST.length - 1; i >= 0; i--) if (EXIST[i].dataset === id) EXIST.splice(i, 1);
+    dataVersion++;
     DATASETS.splice(DATASETS.findIndex(d => d.id === id), 1);
     renderDatasets(); rebuild();
   });
 }
-
-// ---------- import ----------
-// Adds one parsed file. input is { text } | { rows } | { geojson } from Formats.read, or { error }.
 function importParsed(input, filename) {
   const id = "ds-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  // Without a utility column or a typed name, fall back to the file name so the rows still load.
   const fromName = filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
   const backdrop = $("#impExisting").checked;
   const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), in_service: $("#impIsd").value.trim() || (backdrop ? "2000" : ""), start: $("#impStart").value.trim(), batch: id, existing: backdrop };
   try {
     if (input.error) throw new Error(input.error);
-    const res = input.rows ? Ingest.parseRows(input.rows, defaults)
-      : input.geojson ? Ingest.parseGeoJSON(input.geojson, defaults)
-      : Ingest.parsePlan(input.text, filename, defaults);
+    const res = input.rows ? Ingest.parseRows(input.rows, defaults) : input.geojson ? Ingest.parseGeoJSON(input.geojson, defaults) : Ingest.parsePlan(input.text, filename, defaults);
     if (!res.projects.length) throw new Error(res.errors[0] || "no rows found");
-    res.projects.forEach(p => p.dataset = id);
+    res.projects.forEach(p => { p.dataset = id; });
     if (backdrop) {
-      // existing lines and substations: drawn under the plans for context, never paired or ranked
-      res.projects.forEach(p => { p.existing = p.backdrop = true; p.dsName = filename; EXIST.push(p); }); dataVersion++;
+      res.projects.forEach(p => { p.existing = p.backdrop = true; p.dsName = filename; EXIST.push(p); });
+      dataVersion++;
       DATASETS.push({ id, name: filename, count: res.projects.length, backdrop: true });
-      state.exist = true; $("#exOn").checked = true;
-      renderDatasets(); drawMap(); refresh();
+      state.exist = true;
+      renderDatasets(); refresh();
       return `<p class="ok">Loaded ${res.projects.length} existing lines and facilities from ${esc(filename)} as a background layer.</p>`;
     }
     PROJECTS = PROJECTS.concat(res.projects); dataVersion++;
     const utils = [...new Set(res.projects.map(p => p.utility))];
     DATASETS.push({ id, name: filename, count: res.projects.length, utils });
-    // Compare the new utility against whichever current utility is nearest to its projects.
     state.utilB = utils[0];
-    // Nearest pair wins; more flagged pairs breaks a tie (several utilities can touch the new plan).
     const score = u => { const ps = findOverlaps(PROJECTS, { utilA: u, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: "near" }).pairs; return [ps.length ? Math.min(...ps.map(x => x.km)) : Infinity, -ps.length]; };
     const others = utilities().filter(u => u !== state.utilB).map(u => [u, score(u)]).sort((a, b) => a[1][0] - b[1][0] || a[1][1] - b[1][1]);
     if (others.length && (others[0][1][0] < Infinity || state.utilA === state.utilB)) state.utilA = others[0][0];
@@ -842,9 +765,7 @@ async function importFiles(files) {
   report.innerHTML = parsed.map(r => importParsed(r, r.name)).join("");
 }
 
-// ---------- wiring ----------
-// ---------- cost assumptions ----------
-// Every unit cost behind the savings estimate, editable. Changes are remembered on this device and recompute every pair.
+// ---------- unit costs ----------
 function renderAssume() {
   let g0 = "";
   $("#asmBody").innerHTML = `<table class="asm"><thead><tr><th>Item</th><th>Value</th><th>What it covers</th></tr></thead><tbody>${Engine.ASSUMPTIONS.map(a => {
@@ -855,88 +776,99 @@ function renderAssume() {
   $("#asmBody").querySelectorAll("input").forEach(inp => inp.onchange = () => {
     const vals = {};
     $("#asmBody").querySelectorAll("input").forEach(i => { const n = parseFloat(i.value); if (isFinite(n) && n >= 0) vals[i.dataset.k] = n; });
-    saveAssume(vals, true);
+    saveAssume(vals);
   });
   $("#asmReset").hidden = !Engine.customized();
 }
-function saveAssume(vals, typing) {
+function saveAssume(vals) {
   Engine.setAssumptions(vals);
-  try { if (Engine.customized()) localStorage.setItem("seamline.assume", JSON.stringify(vals)); else localStorage.removeItem("seamline.assume"); } catch (err) { /* storage blocked: keep the numbers for this visit only */ }
-  if (typing) markAssume(); else renderAssume();
-  refresh();
+  store.set("assume", Engine.customized() ? vals : null);
+  asmVersion++; optCache.key = null;
+  renderAssume(); refresh();
 }
-function markAssume() {
-  $("#asmBody").querySelectorAll("input").forEach(i => {
-    const a = Engine.ASSUMPTIONS.find(o => o.key === i.dataset.k), tr = i.closest("tr"), changed = Engine.ASSUME[a.key] !== a.value;
-    tr.classList.toggle("chg", changed);
-    let em = tr.lastElementChild.querySelector("em");
-    if (changed && !em) { em = document.createElement("em"); tr.lastElementChild.append(" ", em); }
-    if (em) em.textContent = changed ? `default ${a.value}` : "";
-  });
-  $("#asmReset").hidden = !Engine.customized();
-}
-try { const a = JSON.parse(localStorage.getItem("seamline.assume") || "null"); if (a && typeof a === "object") Engine.setAssumptions(a); } catch (err) { /* storage blocked or bad value: use the defaults */ }
-$("#asmReset").onclick = () => saveAssume({});
-renderAssume();
+{ const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
+// ---------- modals ----------
+function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
+function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
+
+// ---------- selection and refresh ----------
 function select(x) {
-  if (!x || !state.wi || state.wi.key !== (x.p && x.q ? x.p.id + "|" + x.q.id : "")) state.wi = null;
+  if (!x || !state.wi || state.wi.key !== (x.p && x.q ? keyOf(x) : "")) state.wi = null;
   const changed = x !== state.sel;
-  state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline();
-  if (changed && x) { enterDetail(); flyTo(x); } else if (changed && zoomBehavior) d3.select("#map").transition().duration(still() ? 0 : 900).ease(d3.easeCubicInOut).call(zoomBehavior.transform, d3.zoomIdentity);
+  state.sel = x;
+  if (x && !x.moves) state.tab = "overlaps";
+  renderMap(); renderPanel(); renderTimeline();
+  if (changed && x) flyTo(x); else if (changed && !x) fitAll(700);
 }
 function refresh() {
-  $("#distv").textContent = `${state.D} km (${Math.round(state.D / 1.609)} mi)`;
-  $("#bufv").textContent = `±${state.B} mo`;
   compute();
-  if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); } else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
-  renderStats(); renderTiers(); renderMap(); renderList(); renderDetail(); renderTimeline();
+  if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); }
+  else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
+  const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
+  $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
+    `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
+  renderMap(); renderPanel(); renderTimeline();
 }
-function rebuild() { state.sel = null; renderPickers(); compute(); drawMap(); legend(); setupScrub(); refresh(); }
+function rebuild() {
+  state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
+  renderPickers(); compute(); legend(); setupScrub(); refresh(); fitAll(0);
+}
+function setBasemap(b) {
+  state.basemap = b; store.set("basemap", b);
+  document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === b));
+  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap();
+}
+function theme() {
+  SeamMap.setTheme({ water: css("--water"), land: css("--land"), county: css("--grid"), stateLine: css("--ink3"), river: css("--river"), place: css("--ink2") });
+  legend(); renderMap(); renderTimeline(); renderPanel();
+}
 
+// ---------- wiring ----------
 $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === state.utilA) state.utilB = utilities().find(u => u !== state.utilA) || NONE; rebuild(); };
-$("#utilB").onchange = e => { state.utilB = e.target.value; rebuild(); };
-$("#dist").oninput = e => { state.D = +e.target.value; refresh(); };
-$("#buf").oninput = e => { state.B = +e.target.value; refresh(); };
-let qTimer = null;
-$("#q").oninput = e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value; refresh(); }, 150); };
-for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => {
-  state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh();
-};
-for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => {
-  state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); drawMap(); refresh();
-};
-$("#basemap").innerHTML = Object.entries(BASEMAPS).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join("");
-$("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) { /* storage blocked: keep the choice for this visit only */ } drawMap(); refresh(); };
-try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) { /* storage blocked: use the default map */ }
-$("#exOn").onchange = e => { state.exist = e.target.checked; d3.select("#existing").style("display", state.exist ? null : "none"); d3.selectAll("#toplabels text.ex").style("display", state.exist ? null : "none"); };
+$("#utilB").onchange = e => { state.utilB = e.target.value; state.tab = "overlaps"; rebuild(); };
+$("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; refresh(); };
+$("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refresh(); };
+for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => { state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh(); };
+document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { state.horizon = +b.dataset.h; document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", o === b)); refresh(); });
+$("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
+for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
+$("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
+document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
+$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
+document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
 $("#briefClose").onclick = closeBrief;
 $("#briefPrint").onclick = () => print();
-$("#briefCopy").onclick = () => navigator.clipboard.writeText($("#briefDoc").innerText).then(() => { $("#briefCopy").textContent = "Copied"; setTimeout(() => $("#briefCopy").textContent = "Copy text", 1500); }, () => getSelection().selectAllChildren($("#briefDoc")));
+$("#briefCopy").onclick = () => navigator.clipboard.writeText($("#briefDoc").innerText).then(() => { $("#briefCopy").textContent = "Copied"; setTimeout(() => { $("#briefCopy").textContent = "Copy text"; }, 1500); }, () => getSelection().selectAllChildren($("#briefDoc")));
 $("#brief").addEventListener("click", e => { if (e.target.id === "brief") closeBrief(); });
-// 3D labels on or off, remembered between visits
 const setLabels3d = on => {
   $("#m3dStage").classList.toggle("nolabels", !on);
   $("#m3dLabels").setAttribute("aria-pressed", on); $("#m3dLabels").textContent = on ? "Labels on" : "Labels off";
-  try { localStorage.setItem("seamline.3dlabels", on ? "on" : "off"); } catch (err) { /* storage blocked: keep the choice for this visit only */ }
+  store.set("3dlabels", on ? "on" : "off");
 };
 $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-pressed") !== "true");
-try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
-$("#m3dQ").value = quality3d();
-$("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dquality", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
-const close3d = () => { settle3d(false); closeAnimated($("#m3d"), () => Scene3D.close()); };
+if (store.get("3dlabels", "on") === "off") setLabels3d(false);
+$("#m3dQ").onchange = e => { store.set("3dquality", e.target.value); Scene3D.reopen(e.target.value); };
 $("#m3dClose").onclick = close3d;
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") close3d(); });
-addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) close3d(); });
-$("#zin").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1.6);
-$("#zout").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.6);
-$("#zreset").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.transform, d3.zoomIdentity);
-$("#openImport").onclick = () => { const s = $("#import"); s.hidden = !s.hidden; $("#openImport").setAttribute("aria-expanded", !s.hidden); if (!s.hidden) $("#impUtil").focus(); };
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => closeModal(b.dataset.close));
+document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeModal(m.id); }));
+addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("#brief").hidden) closeBrief();
+  else if (!$("#m3d").hidden) close3d();
+  else if (!$("#import").hidden) closeModal("import");
+  else if (!$("#assume").hidden) closeModal("assume");
+  else if (state.sel) select(null);
+});
+$("#openImport").onclick = () => openModal("import");
+$("#openAssume").onclick = () => openModal("assume");
+$("#asmReset").onclick = () => saveAssume({});
 $("#tpl").textContent = Ingest.TEMPLATE;
-$("#copyTpl").onclick = () => navigator.clipboard.writeText(Ingest.TEMPLATE).then(() => $("#impReport").innerHTML = `<p class="ok">Template copied.</p>`, () => { getSelection().selectAllChildren($("#tpl")); });
+$("#copyTpl").onclick = () => navigator.clipboard.writeText(Ingest.TEMPLATE).then(() => { $("#impReport").innerHTML = `<p class="ok">Template copied.</p>`; }, () => { getSelection().selectAllChildren($("#tpl")); });
 $("#pasteHelp").onclick = () => { $("#paste").hidden = $("#loadPaste").hidden = false; $("#paste").focus(); };
 $("#loadPaste").onclick = () => { const t = $("#paste").value.trim(); if (t) $("#impReport").innerHTML = importParsed({ text: t }, "pasted rows.csv"); };
 $("#file").accept = Formats.ACCEPT;
@@ -946,20 +878,28 @@ const drop = $("#drop");
 ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => importFiles([...e.dataTransfer.files]));
 $("#copy").onclick = () => {
-  if (solo()) {
-    const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const csv = ["utility,name,kv,type,start,in_service,cost,lat,lon"].concat(SOLO.map(p => [q(p.utility), q(p.name), p.kv, p.type, p.start, p.in_service, p.cost ?? "", p.coords[0][0], p.coords[0][1]].join(","))).join("\n");
-    navigator.clipboard.writeText(csv).then(() => $("#msg").textContent = `Copied ${SOLO.length} projects as CSV.`, () => $("#msg").textContent = "The browser blocked copying.");
-    return;
-  }
-  const q = s => `"${String(s).replace(/"/g, '""')}"`;
-  const hdr = "rank,tier,distance_km,same_window,overlap_months,gap_months,utility_a,project_a,in_service_a,utility_b,project_b,in_service_b,est_savings_usd,shared_resources";
-  const csv = [hdr].concat(VIEW.map((x, i) => [i + 1, q(TIERS[x.tier].label), x.km.toFixed(2), x.sameWindow, Math.round(x.ov), Math.round(x.gap), q(x.p.utility), q(x.p.name), x.p.in_service, q(x.q.utility), q(x.q.name), x.q.in_service, Math.round(x.sav.total), q(x.res.join("; "))].join(","))).join("\n");
-  navigator.clipboard.writeText(csv).then(() => $("#msg").textContent = `Copied ${VIEW.length} pairs as CSV.`, () => $("#msg").textContent = "The browser blocked copying.");
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = solo()
+    ? ["utility,name,kv,type,start,in_service,cost,lat,lon"].concat(SOLO.map(p => [q(p.utility), q(p.name), p.kv, p.type, p.start, p.in_service, p.cost ?? "", p.coords[0][0], p.coords[0][1]].join(","))).join("\n")
+    : ["rank,tier,distance_km,same_window_on_paper,overlap_months,gap_months,chance_of_shared_window,expected_savings_usd,savings_if_dates_hold_usd,utility_a,project_a,in_service_a,source_a,utility_b,project_b,in_service_b,source_b,status"]
+      .concat(VIEW.map((x, i) => [i + 1, q(TIERS[x.tier].label), x.km.toFixed(2), x.sameWindow, Math.round(x.ov), Math.round(x.gap), x.risk.chance.toFixed(3), Math.round(x.risk.expected), Math.round(x.sav.total),
+        q(x.p.utility), q(x.p.name), x.p.in_service, q(x.p.page || x.p.source), q(x.q.utility), q(x.q.name), x.q.in_service, q(x.q.page || x.q.source), q(STATUS[keyOf(x)] || "Open")].join(","))).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const a = document.createElement("a"); a.href = url; a.download = solo() ? "seamline-projects.csv" : "seamline-overlaps.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
-const redraw = () => { drawMap(); legend(); refresh(); };
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
-new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
+addEventListener("resize", () => renderTimeline());
+
+renderAssume();
 renderDatasets();
-setupMotion();
-rebuild();
+SEAM = seamCoords();
+renderPickers(); compute(); legend(); setupScrub(); refresh();
+SeamMap.init($("#map"), BASE, {
+  click: mapClick, hover: mapHover,
+  tilesFailed: name => { setBasemap("plain"); $("#tileNote").textContent = `${SeamMap.BASEMAPS[name].label} tiles couldn't load (they need an internet connection), so the map switched to Plain.`; $("#tileNote").hidden = false; },
+}).then(() => {
+  mapReady = true;
+  SeamMap.setBasemap(state.basemap);
+  theme();
+  fitAll(0);
+});
