@@ -241,10 +241,20 @@ function renderDetail() {
   const imp = s.items.length
     ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated</td><td>${money(s.total)}</td></tr></tbody></table>`
     : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
-  el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><button type="button" class="btn" id="clr">Close</button></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
+  el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="clr">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
     <div class="advice" style="--c:${tcol(Math.min(x.tier, 4))}"><ul>${advice(x).map(a => `<li>${a}</li>`).join("")}</ul></div>
     <div><h3>Cost and impact estimate</h3>${imp}</div></div>`;
   $("#clr").onclick = () => select(null);
+  $("#v3d").onclick = () => open3d(x);
+}
+function open3d(x) {
+  Scene3D.open(x, {
+    title: `${x.p.name} and ${x.q.name}`,
+    subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.${x.sav.total ? " Rough savings " + money(x.sav.total) + "." : ""}`,
+    colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
+    nameA: `${lbl(x.p.utility).split(" (")[0]}: ${x.p.name.split(":")[0]}`, nameB: `${lbl(x.q.utility).split(" (")[0]}: ${x.q.name.split(":")[0]}`,
+    distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`,
+  });
 }
 
 // ---------- timeline ----------
@@ -347,6 +357,9 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => {
 $("#basemap").innerHTML = Object.entries(BASEMAPS).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join("");
 $("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) {} drawMap(); refresh(); };
 try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) {}
+$("#m3dClose").onclick = () => Scene3D.close();
+$("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("#m3d").hidden) Scene3D.close(); });
 $("#zin").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1.6);
 $("#zout").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.6);
 $("#zreset").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.transform, d3.zoomIdentity);

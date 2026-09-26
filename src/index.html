@@ -101,6 +101,18 @@
   </div>
 </div>
 <div class="tip" id="tip" hidden></div>
+<div class="m3d" id="m3d" hidden role="dialog" aria-modal="true" aria-labelledby="m3dTitle">
+  <div class="m3d-box">
+    <div class="m3d-head">
+      <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
+      <label class="px"><input type="checkbox" id="m3dPixel" checked> Pixel art</label>
+      <button type="button" class="btn" id="m3dClose">Close</button>
+    </div>
+    <div class="m3d-stage" id="m3dStage"></div>
+    <p class="m3d-msg" id="m3dMsg" hidden></p>
+    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible.</p>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
@@ -111,6 +123,9 @@ window.SEAMLINE_DATA = { basemap: /*BASEMAP*/null, projects: /*PROJECTS*/[] };
 </script>
 <script>
 /*INGEST*/
+</script>
+<script>
+/*SCENE3D*/
 </script>
 <script>
 /*APP*/
