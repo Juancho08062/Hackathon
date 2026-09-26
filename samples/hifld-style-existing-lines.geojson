@@ -1,0 +1,6 @@
+{"type":"FeatureCollection","name":"Example existing transmission lines in the HIFLD field layout (made-up, not real HIFLD data)","features":[
+{"type":"Feature","properties":{"ID":"EX-1","OWNER":"Example Existing Owner","VOLTAGE":230,"VOLT_CLASS":"220-287","SUB_1":"North Augusta","SUB_2":"Graniteville","STATUS":"IN SERVICE"},"geometry":{"type":"LineString","coordinates":[[-81.97,33.50],[-81.90,33.52],[-81.81,33.56]]}},
+{"type":"Feature","properties":{"ID":"EX-2","OWNER":"Example Existing Owner","VOLTAGE":500,"VOLT_CLASS":"500","SUB_1":"Vogtle","SUB_2":"Wadley","STATUS":"IN SERVICE"},"geometry":{"type":"LineString","coordinates":[[-81.76,33.14],[-81.95,33.02],[-82.19,32.87]]}},
+{"type":"Feature","properties":{"ID":"EX-3","OWNER":"Example Existing Owner","VOLTAGE":115,"VOLT_CLASS":"100-161","SUB_1":"Hardeeville","SUB_2":"Port Wentworth","STATUS":"IN SERVICE"},"geometry":{"type":"LineString","coordinates":[[-81.08,32.29],[-81.13,32.20],[-81.15,32.15]]}},
+{"type":"Feature","properties":{"ID":"EX-4","OWNER":"Example Existing Owner","VOLTAGE":230,"VOLT_CLASS":"220-287","SUB_1":"NOT AVAILABLE","SUB_2":"NOT AVAILABLE","STATUS":"IN SERVICE"},"geometry":{"type":"LineString","coordinates":[[-81.20,32.40],[-81.35,32.52],[-81.52,32.62]]}}
+]}

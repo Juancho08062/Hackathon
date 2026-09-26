@@ -87,7 +87,8 @@
 
   // row: flat object; coords: optional [[lat, lon], ...] (from GeoJSON). Returns { project } or { error }.
   function toProject(row, coords, defaults, i) {
-    const name = pick(row, "name"), utility = pick(row, "utility") || defaults.utility;
+    const ends = ["sub_1", "sub_2"].map(k => Object.entries(row).find(([c]) => norm(c) === k)).filter(e => e && e[1] && !/^not available$/i.test(e[1])).map(e => e[1]);
+    const name = pick(row, "name") || (defaults.existing && (ends.length ? ends.join(" – ") : "Existing facility")), utility = pick(row, "utility") || defaults.utility;
     if (!name) return { error: "no project name" };
     if (!utility) return { error: "no utility (add a utility column or type a name above)" };
     if (!coords) {

@@ -20,7 +20,7 @@ const BASEMAPS = {
   terrain: { label: "Terrain", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin, USGS" },
 };
 let tileErrors = 0;
-const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null };
+const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true };
 
 const fmtD = (p, which) => {
   const d = new Date(p[which] + "T00:00:00Z");
@@ -87,8 +87,9 @@ function drawMap() {
   g.selectAll(".lb").data(stl.concat(places)).join("text").attr("x", d => proj([d[2], d[1]])[0]).attr("y", d => proj([d[2], d[1]])[1])
     .attr("text-anchor", "middle").attr("fill", d => d[3] ? css("--ink3") : css("--ink2")).attr("data-fs", d => d[3] ? 14 : 11)
     .attr("letter-spacing", d => d[3] ? ".2em" : 0).attr("font-family", d => d[3] ? css("--display") : null).text(d => d[0]);
-  const eg = z.append("g").selectAll("g").data(EXIST.filter(e => shownUtil(e.utility))).join("g").style("cursor", "help")
-    .on("mousemove", (ev, d) => tip(ev, `<b>${esc(d.name)}</b><br>Existing ${esc(lbl(d.utility))} asset`)).on("mouseleave", hideTip);
+  // existing infrastructure: built-in plants and lines, plus any backdrop layer imported (for example HIFLD)
+  const eg = z.append("g").attr("id", "existing").style("display", state.exist ? null : "none").selectAll("g").data(EXIST.filter(e => e.backdrop || shownUtil(e.utility))).join("g").style("cursor", "help")
+    .on("mousemove", (ev, d) => tip(ev, `<b>${esc(d.name)}</b><br>Existing ${esc(lbl(d.utility))} ${d.coords.length > 1 ? "line" : "asset"}${d.kv > 0 ? " · " + d.kv + " kV" : ""}${d.backdrop ? "<br>From " + esc(d.dsName) : ""}`)).on("mouseleave", hideTip);
   eg.filter(d => d.coords.length > 1).append("path").attr("d", d => d3.line()(d.coords.map(pt))).attr("fill", "none").attr("stroke", css("--ink3")).attr("stroke-width", 2.5).attr("stroke-opacity", .6);
   eg.filter(d => d.coords.length === 1).append("path").attr("class", "dia").attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1])
     .attr("fill", css("--panel")).attr("stroke", d => uColor(d.utility)).attr("stroke-width", 1.5);
@@ -96,9 +97,10 @@ function drawMap() {
   z.append("g").attr("id", "projs");
   z.append("g").attr("id", "sparks");
   // existing-asset names sit above project lines, with a halo so a line never hides them
-  z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => shownUtil(e.utility) && e.coords.length === 1)).join("text").attr("class", "exl")
+  z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => !e.backdrop && shownUtil(e.utility) && e.coords.length === 1)).join("text").attr("class", "exl ex")
     .attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1]).attr("data-fs", 10).attr("fill", css("--ink2"))
     .attr("stroke", raster ? "rgba(255,255,255,.8)" : css("--land")).attr("stroke-width", 3).attr("paint-order", "stroke").attr("stroke-linejoin", "round").style("pointer-events", "none").text(d => d.name.split(" (")[0]);
+  z.selectAll("#toplabels text.ex").style("display", state.exist ? null : "none");
   // name the seam once, beside the river between Augusta and Savannah
   const sm = SEAM[Math.floor(SEAM.length * 0.72)];
   if (sm) z.select("#toplabels").append("text").attr("class", "exl").attr("data-x", sm.x + 4).attr("data-y", sm.y).attr("data-fs", 10).attr("font-weight", 600).attr("letter-spacing", ".16em")
@@ -388,6 +390,7 @@ function renderDetail() {
   if (!state.wi || state.wi.key !== key) state.wi = { key, who: "q", shift: 0 };
   el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="brf">Coordination brief</button><button type="button" class="btn" id="clr" aria-label="Close details">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
     <div class="advice" style="--c:${tcol(Math.min(x.tier, 4))}"><ul>${advice(x).map(a => `<li>${a}</li>`).join("")}</ul></div>
+    <div id="sharesBox"></div>
     <div class="whatif"><div class="dh"><h3>What if a schedule moved?</h3><span class="seg" role="group" aria-label="Project to move">
       <button type="button" data-w="q" aria-pressed="${state.wi.who === "q"}">Move ${esc(short(x.q))}</button><button type="button" data-w="p" aria-pressed="${state.wi.who === "p"}">Move ${esc(short(x.p))}</button></span></div>
       <div class="wi-ctl"><input type="range" id="wiShift" min="-36" max="36" step="1" value="${state.wi.shift}" aria-label="Months to move the project"><output id="wiOut"></output></div>
@@ -449,6 +452,7 @@ function updateWhatIf(x) {
       .attr("fill", "none").attr("stroke", c).attr("stroke-dasharray", "3 3").attr("opacity", .6);
     svg.append("rect").attr("x", X(mon(n.start))).attr("width", Math.max(2, X(mon(n.in_service)) - X(mon(n.start)))).attr("y", yy).attr("height", 14).attr("rx", 3).attr("fill", c).attr("fill-opacity", .85);
   });
+  $("#sharesBox").innerHTML = sharesHTML(y);
   const d = y.sav.total - x.sav.total;
   $("#wiRes").innerHTML = (y.ov > 0 ? `Build windows overlap <b>${Math.round(y.ov)} months</b>.` : `Build windows are <b>${Math.round(y.gap)} months apart</b>.`) +
     ` Rough savings <b>${(y.sav.total ? money(y.sav.total) : "$0")}</b>` + (shift ? (d ? ` (<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${money(Math.abs(d))}</span> vs. as planned).` : " (no change from as planned).") : ".");
@@ -461,6 +465,14 @@ function updateWhatIf(x) {
   $("#impBox").innerHTML = s.items.length
     ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}</td><td>${money(s.total)}</td></tr></tbody></table>`
     : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
+}
+
+// What the pair can share, tier by tier, in the challenge's wording. Crew and yard sharing needs a shared build window.
+function sharesHTML(x) {
+  return `<div class="shares"><h3>What they can share</h3>${Engine.shareable(x).map(g => `<div class="sg${g.active ? "" : " off"}" style="--c:${tcol(g.tier)}">
+    <span class="sl">${esc(g.label)}</span><span class="chips">${g.items.map(i => `<span class="chip">${esc(i)}</span>`).join("")}</span>
+    ${g.active ? "" : `<em>only if both are built at the same time</em>`}</div>`).join("")}
+    ${x.res.length ? `<p class="note">Also in common: ${x.res.map(esc).join(", ")}.</p>` : ""}</div>`;
 }
 
 // ---------- coordination brief ----------
@@ -491,7 +503,8 @@ function openBrief(x0) {
     <h4>The projects</h4>
     <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
     <h4>What they can share</h4>
-    <ul>${[T.means].concat(x.res.map(r => r[0].toUpperCase() + r.slice(1))).map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
+      ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>
     ${s.items.length ? `<h4>Savings estimate</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<br><span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
@@ -582,10 +595,11 @@ function legend() {
     `<span><i class="sw" style="background:${css("--ink3")};opacity:.6"></i>existing asset</span><span><i class="sw dash"></i>approximate location</span>`;
 }
 function renderDatasets() {
-  $("#datasets").innerHTML = DATASETS.map(d => `<li><span><b>${esc(d.name)}</b> <span class="note">${d.count} projects${d.utils ? " · " + esc(d.utils.join(", ")) : ""}</span></span>${d.builtin ? "" : `<button type="button" class="btn" data-rm="${esc(d.id)}">Remove</button>`}</li>`).join("");
+  $("#datasets").innerHTML = DATASETS.map(d => `<li><span><b>${esc(d.name)}</b> <span class="note">${d.count} ${d.backdrop ? "existing lines and facilities (background)" : "projects"}${d.utils ? " · " + esc(d.utils.join(", ")) : ""}</span></span>${d.builtin ? "" : `<button type="button" class="btn" data-rm="${esc(d.id)}">Remove</button>`}</li>`).join("");
   $("#datasets").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
     const id = b.dataset.rm;
     PROJECTS = PROJECTS.filter(p => p.dataset !== id);
+    for (let i = EXIST.length - 1; i >= 0; i--) if (EXIST[i].dataset === id) EXIST.splice(i, 1);
     DATASETS.splice(DATASETS.findIndex(d => d.id === id), 1);
     renderDatasets(); rebuild();
   });
@@ -597,7 +611,8 @@ function importParsed(input, filename) {
   const id = "ds-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   // Without a utility column or a typed name, fall back to the file name so the rows still load.
   const fromName = filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
-  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), in_service: $("#impIsd").value.trim(), start: $("#impStart").value.trim(), batch: id };
+  const backdrop = $("#impExisting").checked;
+  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), in_service: $("#impIsd").value.trim() || (backdrop ? "2000" : ""), start: $("#impStart").value.trim(), batch: id, existing: backdrop };
   try {
     if (input.error) throw new Error(input.error);
     const res = input.rows ? Ingest.parseRows(input.rows, defaults)
@@ -605,6 +620,14 @@ function importParsed(input, filename) {
       : Ingest.parsePlan(input.text, filename, defaults);
     if (!res.projects.length) throw new Error(res.errors[0] || "no rows found");
     res.projects.forEach(p => p.dataset = id);
+    if (backdrop) {
+      // existing lines and substations: drawn under the plans for context, never paired or ranked
+      res.projects.forEach(p => { p.existing = p.backdrop = true; p.dsName = filename; EXIST.push(p); });
+      DATASETS.push({ id, name: filename, count: res.projects.length, backdrop: true });
+      state.exist = true; $("#exOn").checked = true;
+      renderDatasets(); drawMap(); refresh();
+      return `<p class="ok">Loaded ${res.projects.length} existing lines and facilities from ${esc(filename)} as a background layer.</p>`;
+    }
     PROJECTS = PROJECTS.concat(res.projects);
     const utils = [...new Set(res.projects.map(p => p.utility))];
     DATASETS.push({ id, name: filename, count: res.projects.length, utils });
@@ -654,6 +677,7 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => {
 $("#basemap").innerHTML = Object.entries(BASEMAPS).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join("");
 $("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) { /* storage blocked: keep the choice for this visit only */ } drawMap(); refresh(); };
 try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) { /* storage blocked: use the default map */ }
+$("#exOn").onchange = e => { state.exist = e.target.checked; d3.select("#existing").style("display", state.exist ? null : "none"); d3.selectAll("#toplabels text.ex").style("display", state.exist ? null : "none"); };
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
