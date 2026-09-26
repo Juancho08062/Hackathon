@@ -520,3 +520,6 @@ body.modal-open .app{visibility:hidden}
 .mapbar .chips,.mapbar .seg{flex:none;flex-wrap:nowrap}
 /* On a 13-inch screen the tagline would push Filters and More off the header */
 @media (max-width:1360px){.appbar .tagline{display:none}}
+.mapbar .mb-g{display:inline-flex;align-items:center;gap:6px;flex:none;white-space:nowrap}
+.mapbar .mb-sep{display:none}
+.mapbar{column-gap:16px}

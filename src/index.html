@@ -67,11 +67,11 @@
     <section class="left" aria-label="Map and build windows">
       <button type="button" class="paneltog" id="panelTog" aria-controls="panel" aria-expanded="true" title="Hide the side panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="mapbar" role="group" aria-label="Map filters">
-        <span class="mb-lbl">Show routes</span><div class="chips" id="chips" role="group" aria-label="Show routes by distance"></div>
+        <span class="mb-g"><span class="mb-lbl">Show routes</span><div class="chips" id="chips" role="group" aria-label="Show routes by distance"></div></span>
         <span class="mb-sep" aria-hidden="true"></span>
-        <label class="mb-lbl" for="dist2">Within</label><select id="dist2" aria-label="Overlap distance"><option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40">40 km</option><option value="60">60 km</option><option value="100">100 km</option></select>
+        <span class="mb-g"><label class="mb-lbl" for="dist2">Within</label><select id="dist2" aria-label="Overlap distance"><option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40">40 km</option><option value="60">60 km</option><option value="100">100 km</option></select></span>
         <span class="mb-sep" aria-hidden="true"></span>
-        <span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div>
+        <span class="mb-g"><span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div></span>
         <button type="button" class="btn sm mb-more" id="moreFilters">More filters</button>
       </div>
       <div class="mapwrap">
