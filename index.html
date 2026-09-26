@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Seamline</title>
 <meta name="description" content="Compare neighboring utilities' planned transmission work and flag projects close enough to share crews, land and outages.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -571,7 +573,7 @@ const BASEMAPS = {
   streets: { label: "Streets", url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, attr: "© OpenStreetMap contributors" },
   satellite: { label: "Satellite", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, attr: "Imagery © Esri, Maxar, Earthstar Geographics" },
   terrain: { label: "Terrain", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin, USGS" },
-  dark: { label: "Dark", url: (z, x, y) => `https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`, attr: "© OpenStreetMap contributors © CARTO" },
+  dark: { label: "Dark", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin" },
 };
 let tileErrors = 0;
 const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "" };
@@ -701,20 +703,22 @@ function renderMap() {
     .map(p => ({ p, on: flagged.has(p.id), hi: focus && (focus.p === p || focus.q === p) }));
   const G = d3.select("#projs").selectAll("g.p").data(rows, d => d.p.id)
     .join(e => { const g = e.append("g").attr("class", "p"); g.append("path").attr("class", "casing"); g.append("path").attr("class", "line"); g.append("circle"); return g; });
-  const raster = !!BASEMAPS[state.basemap].url;
+  // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite and dark.
+  const raster = !!BASEMAPS[state.basemap].url, lightMap = state.basemap === "streets" || state.basemap === "terrain";
+  const wide = d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + (raster ? 1.5 : 0);
   G.select("path.casing").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
-    .attr("fill", "none").attr("stroke", raster ? "rgba(255,255,255,.85)" : css("--panel")).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
-    .attr("stroke-width", d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + 3);
+    .attr("fill", "none").attr("stroke", lightMap ? "rgba(20,24,28,.85)" : raster ? "rgba(255,255,255,.9)" : css("--panel")).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
+    .attr("stroke-width", d => wide(d) + (raster ? 4 : 3));
   G.attr("opacity", d => focus ? (d.hi ? 1 : .22) : d.on ? 1 : .3).style("cursor", "pointer")
     .on("mousemove", (ev, d) => showTip(ev, d.p)).on("mouseleave", hideTip)
     .on("click", (ev, d) => { const pr = VIEW.find(x => x.p === d.p || x.q === d.p); if (pr) select(pr); });
   G.select("path.line").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
     .attr("fill", "none").attr("stroke", d => uColor(d.p.utility)).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
-    .attr("stroke-width", d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0))
+    .attr("stroke-width", wide)
     .attr("stroke-dasharray", d => d.p.loc === "low" ? "6 4" : null);
   G.select("circle").attr("cx", d => pt(d.p.coords[0])[0]).attr("cy", d => pt(d.p.coords[0])[1])
     .attr("data-r", d => d.p.coords.length > 1 ? 0 : (d.hi ? 7 : 4.5))
-    .attr("fill", d => d.p.loc === "low" ? css("--panel") : uColor(d.p.utility)).attr("stroke", d => uColor(d.p.utility)).attr("stroke-width", 2);
+    .attr("fill", d => d.p.loc === "low" ? css("--panel") : uColor(d.p.utility)).attr("stroke", d => raster && d.p.loc !== "low" ? (lightMap ? "rgba(20,24,28,.9)" : "#fff") : uColor(d.p.utility)).attr("stroke-width", 2);
   applyK();
 }
 function tip(ev, html) { const t = $("#tip"); t.innerHTML = html; t.hidden = false; t.style.left = Math.min(ev.clientX + 12, innerWidth - 290) + "px"; t.style.top = (ev.clientY + 12) + "px"; }
