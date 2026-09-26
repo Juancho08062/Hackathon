@@ -175,7 +175,7 @@ With everything loaded, DESC (64 projects) against Georgia (161) is 10,304 pairs
 Planned dates move, so an overlap on paper is not an overlap in the field. Seamline measures how much they move, from the plans themselves:
 
 - **DESC:** 30 projects appear in both the 2024-2028 and the 2026-2030 lists. 23 of them moved later (median 12 months, up to 55); none moved earlier.
-- **Georgia:** each IRP project page says how it changed from the previous ten-year plan. Of 94 projects with a history, 65 kept their date, 16 moved later and 12 earlier (up to 3 years either way).
+- **Georgia:** each IRP project page says how it changed from the previous ten-year plan. Of 94 projects with a history, 66 kept their date, 16 moved later and 12 earlier (up to 3 years either way).
 
 `data/model.json` holds these month counts. For each flagged pair, `Engine.overlapChance` draws 2,000 times a month count for each project from its utility's list, moves both projects' windows by it, and counts how often they still share a window from today on (a window that has already closed cannot be shared). The draws are seeded from the pair, so the answer is the same every time. A project that is listed for a date that has passed and is gone from DESC's newer list is treated as likely built: no window left and nothing left to share. `Engine.expectedSavings` counts the items that need both crews in the field together (yards, deliveries, crews, cranes, contractors) by that chance, and outage, crossing, right-of-way, access-road and permit items in full.
 
