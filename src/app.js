@@ -658,6 +658,14 @@ $("#briefClose").onclick = closeBrief;
 $("#briefPrint").onclick = () => print();
 $("#briefCopy").onclick = () => navigator.clipboard.writeText($("#briefDoc").innerText).then(() => { $("#briefCopy").textContent = "Copied"; setTimeout(() => $("#briefCopy").textContent = "Copy text", 1500); }, () => getSelection().selectAllChildren($("#briefDoc")));
 $("#brief").addEventListener("click", e => { if (e.target.id === "brief") closeBrief(); });
+// 3D labels on or off, remembered between visits
+const setLabels3d = on => {
+  $("#m3dStage").classList.toggle("nolabels", !on);
+  $("#m3dLabels").setAttribute("aria-pressed", on); $("#m3dLabels").textContent = on ? "Labels on" : "Labels off";
+  try { localStorage.setItem("seamline.3dlabels", on ? "on" : "off"); } catch (err) { /* storage blocked: keep the choice for this visit only */ }
+};
+$("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-pressed") !== "true");
+try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
 $("#m3dClose").onclick = () => Scene3D.close();
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
 addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) Scene3D.close(); });
