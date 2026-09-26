@@ -1,20 +1,63 @@
-# Seamline: utility construction overlap finder
+# Seamline
 
-Compares planned transmission projects from two neighboring utilities
-(Dominion Energy South Carolina and the Georgia system: Georgia Power, GTC, MEAG)
-and flags cross-utility pairs that are physically close and/or scheduled at the same time.
+Seamline compares the planned transmission construction of two neighboring utilities and flags where their work overlaps, so they can share crews, equipment, land and outages.
 
-- `index.html`: the standalone app (open in a browser; loads d3 from cdnjs).
-- `src/app.html`: app source (map, ranked list, timeline, CSV upload, CSV copy).
-- `data/build_projects.py` -> `data/projects.json`: 90 real projects from public plans, with sources.
-- `data/basemap.json`: GA/SC county and state outlines (from the us-atlas npm package).
-- `build.py`: inlines data into `index.html`. Run `python3 data/build_projects.py && python3 build.py`.
+The built-in example compares **Dominion Energy South Carolina** with **Georgia** (Georgia Power, Georgia Transmission and MEAG) along the Savannah River. You can load any other utility's plan from a file.
 
-Method (challenge spec): distance = closest points between project geometries in km; flagged within 40 km and tiered (touching, <1.6 km, <8 km, <40 km). Ranked by tier, then same build window, then distance. Rough savings per pair shown with assumptions.
-Timing = overlap of estimated construction windows (start estimated from in-service date,
-type, voltage, length), with an adjustable buffer. Score blends proximity and timing, with a
-bonus for shareable resources (same voltage class crews, same work type, same conductor).
+## Run it
 
-Caveats: coordinates are hand-placed at named substations/towns (loc=low means best guess);
-Georgia SERTP in-service dates are year-only (assumed June 1); Georgia Power project pages give construction milestones but no in-service date (estimated). Existing assets (Thomson-Vogtle 500 kV, Stevens Creek Hydro in Martinez GA, Vogtle, McIntosh, Okatie-McIntosh tie) are a reference layer. Project lists were extracted from
-the source PDFs and should be spot-checked against them before the demo.
+Open `index.html` in a browser. The page is self-contained except for d3 and fonts, which load from a CDN.
+
+After you change anything in `src/` or `data/`, rebuild:
+
+```
+python3 data/build_projects.py   # only if you edited the built-in project list
+python3 build.py                 # inlines src/ and data/ into index.html
+node tests/engine.test.js        # engine and importer tests
+```
+
+## How overlap is defined
+
+- **Geographic (primary).** Two projects overlap if the closest points between them are within 40 km. The measurement uses the lines and points themselves, not their centers. Each overlap gets a tier:
+  - Touching or crossing: must coordinate outage timing and crossing structures
+  - Under 1.6 km: can share right-of-way, access roads and permits
+  - Under 8 km: can share laydown yards and deliveries
+  - Under 40 km: can share crews, cranes and contractors
+- **Timeline (secondary).** Two projects are in the same build window if their construction periods overlap, plus an optional buffer. Plans usually list only an in-service date, so the start date is estimated from project type, voltage and length unless the file provides one.
+- **Ranking.** Pairs are sorted by tier, then same build window first, then distance.
+- **Cost and impact.** Each pair gets a rough savings estimate with every assumption listed: shared mobilization, a shared laydown yard, shared right-of-way and permits, and one coordinated outage. The unit costs are in `src/engine.js` (`PER_KM`, `SUB`, `ASSUME`).
+
+## Loading another utility's plans
+
+Click **Add a utility's plans** and drop a file, or paste CSV rows. Supported formats are CSV, TSV, JSON and GeoJSON (Point, LineString, MultiLineString and Polygon).
+
+Column names are matched loosely. For example, `owner` works for `utility`, `voltage` for `kv`, `isd` for `in_service`, and `latitude` for `lat`. The full list is in `ALIASES` in `src/ingest.js`.
+
+| field | required | notes |
+|---|---|---|
+| name | yes | project name |
+| utility | yes* | *or type a utility name in the import panel |
+| lat, lon | yes | a line needs `lat2, lon2` too; a GeoJSON geometry replaces all four |
+| in_service | yes | `2029`, `2029-06`, `6/1/2029` or `Summer 2029` |
+| kv, type, start, cost, description | no | type is `new_line`, `rebuild`, `substation` or `generation`, and is guessed from the name if left out |
+
+After loading, pick any two utilities in the **Compare** dropdowns.
+
+## Code tour
+
+| file | what it does |
+|---|---|
+| `src/engine.js` | Core logic with no UI: closest-point distance, tiers, build windows, shared resources, cost model and `findOverlaps()` ranking. Runs in the browser and in Node. |
+| `src/ingest.js` | Importer: CSV/TSV parser, JSON and GeoJSON readers, column aliasing, date and type normalization. |
+| `src/app.js` | UI: d3 map with pan and zoom, ranked list, pair detail with the cost breakdown, timeline, and the import panel. |
+| `src/index.html`, `src/styles.css` | Markup and styling, with light and dark themes. |
+| `data/build_projects.py` | The built-in DESC and Georgia projects, with source links, hand-placed coordinates and estimated start dates. Writes `data/projects.json`. |
+| `data/basemap.json` | US state outlines and GA/SC counties, from the us-atlas package. |
+| `tests/engine.test.js` | Tests for distance, tiers, ranking, the built-in results and the importer. |
+
+## Data sources and caveats
+
+- DESC: [SCRTP 2026–2030 project descriptions ($2M and above)](https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf). This list includes costs and exact dates.
+- Georgia: [SERTP 2026 preliminary expansion plan](https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf), [2025 SERTP report](https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf), and Georgia Power's project pages for Callaway Road–Thomson and Effingham County. These give year-only dates and no costs.
+- Public plans name substations but give no coordinates, so the built-in locations are placed by hand. `loc: "low"` marks best guesses, which are drawn dashed on the map. Spot-check project rows against the source PDFs.
+- The Thomson–Vogtle 500 kV line has been in service since 2018. It appears as an existing asset for reference, along with DESC's Stevens Creek hydro plant in Martinez, Georgia.
