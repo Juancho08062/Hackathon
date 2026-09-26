@@ -18,7 +18,6 @@ const BASEMAPS = {
   streets: { label: "Streets", url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, attr: "© OpenStreetMap contributors" },
   satellite: { label: "Satellite", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, attr: "Imagery © Esri, Maxar, Earthstar Geographics" },
   terrain: { label: "Terrain", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin, USGS" },
-  dark: { label: "Dark", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin" },
 };
 let tileErrors = 0;
 const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "" };
@@ -61,7 +60,7 @@ function drawMap() {
   const path = d3.geoPath(proj), pt = c => proj([c[1], c[0]]);
   svg.selectAll("*").remove();
   svg.append("rect").attr("width", MW).attr("height", MH).attr("fill", css("--water"));
-  const raster = !!BASEMAPS[state.basemap].url, bright = state.basemap === "satellite" || state.basemap === "dark";
+  const raster = !!BASEMAPS[state.basemap].url, bright = state.basemap === "satellite";
   svg.append("g").attr("id", "tiles");
   const z = svg.append("g").attr("id", "zoomg"), g = z.append("g");
   if (!raster) {
@@ -148,7 +147,7 @@ function renderMap() {
     .map(p => ({ p, on: flagged.has(p.id), hi: focus && (focus.p === p || focus.q === p) }));
   const G = d3.select("#projs").selectAll("g.p").data(rows, d => d.p.id)
     .join(e => { const g = e.append("g").attr("class", "p"); g.append("path").attr("class", "casing"); g.append("path").attr("class", "line"); g.append("circle"); return g; });
-  // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite and dark.
+  // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite.
   const raster = !!BASEMAPS[state.basemap].url, lightMap = state.basemap === "streets" || state.basemap === "terrain";
   const wide = d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + (raster ? 1.5 : 0);
   G.select("path.casing").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)

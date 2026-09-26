@@ -49,7 +49,7 @@ After loading, pick any two utilities in the **Compare** dropdowns.
 |---|---|
 | `src/engine.js` | Core logic with no UI: closest-point distance, tiers, build windows, shared resources, cost model and `findOverlaps()` ranking. Runs in the browser and in Node. |
 | `src/ingest.js` | Importer: CSV/TSV parser, JSON and GeoJSON readers, column aliasing, date and type normalization. |
-| `src/app.js` | UI: d3 map with pan and zoom and switchable basemaps (Plain, Streets, Satellite, Terrain, Dark), ranked list, pair detail with the cost breakdown, timeline, and the import panel. |
+| `src/app.js` | UI: d3 map with pan and zoom and switchable basemaps (Plain, Streets, Satellite, Terrain), ranked list, pair detail with the cost breakdown, timeline, and the import panel. |
 | `src/index.html`, `src/styles.css` | Markup and styling, with light and dark themes. |
 | `data/build_projects.py` | The built-in DESC and Georgia projects, with source links, hand-placed coordinates and estimated start dates. Writes `data/projects.json`. |
 | `data/basemap.json` | US state outlines and GA/SC counties, from the us-atlas package. |
