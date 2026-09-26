@@ -4623,7 +4623,10 @@ function mapClick(hit) {
 // its distance, costs, what-if, brief and 3D.
 function mapOpen(hit) {
   if (!hit) return;
-  if (panelMin()) setPanel(false);
+  const wasMin = panelMin();
+  if (wasMin) setPanel(false);
+  // the first click already started framing the pair on the wider map; frame it again for the narrower one
+  if (wasMin) setTimeout(() => { if (state.sel) flyTo(state.sel); }, 0);
   if (["links", "rings", "sparks"].includes(hit.layer)) { const x = VIEW.find(v => keyOf(v) === hit.id) || RESULT.pairs.find(v => keyOf(v) === hit.id); if (x) select(x); return; }
   if (hit.layer === "yards" && hit.id && hit.id[0] === "c") return select({ cluster: CLUSTERS[+hit.id.slice(1)] });
   const p = PROJECTS.find(v => v.id === hit.id);
@@ -4825,7 +4828,8 @@ const panelMin = () => $(".work").classList.contains("min");
 function setPanel(min, quiet) {
   $(".work").classList.toggle("min", !!min);
   const t = $("#panelTog"); t.setAttribute("aria-expanded", !min); t.title = min ? "Show the side panel" : "Hide the side panel";
-  if (!quiet) { store.set("panelMin", !!min); requestAnimationFrame(() => { SeamMap.resize(); renderTimeline(); }); }
+  // resize the map now (the grid change is already laid out), so anything framed right after uses the new width
+  if (!quiet) { store.set("panelMin", !!min); SeamMap.resize(); requestAnimationFrame(renderTimeline); }
 }
 function renderOverlaps(P) {
   overlapsHead(P);
@@ -5909,15 +5913,22 @@ function pairFor(p) {
 }
 function setupPeg() {
   const peg = $("#peg");
-  let ghost = null, over = null;
-  const end = () => { if (ghost) ghost.remove(); ghost = null; peg.classList.remove("dragging"); hideTip(); };
+  // The figure that follows the pointer appears only once a drag has actually started, carries none of the button's
+  // own classes, and is always cleaned up, so the button never shows a second, faded figure over itself.
+  let ghost = null, over = null, down = null;
+  const clear = () => document.querySelectorAll(".peg.ghost").forEach(g => g.remove());
+  const end = () => { clear(); ghost = null; down = null; peg.classList.remove("dragging"); hideTip(); };
   peg.addEventListener("pointerdown", e => {
-    e.preventDefault(); peg.setPointerCapture(e.pointerId); peg.classList.add("dragging");
-    ghost = peg.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("ghost"); document.body.appendChild(ghost);
-    move(e);
+    e.preventDefault(); end(); over = null; peg.setPointerCapture(e.pointerId); down = [e.clientX, e.clientY];
   });
   const move = e => {
-    if (!ghost) return;
+    if (!down) return;
+    if (!ghost) {
+      if (Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) return;
+      peg.classList.add("dragging");
+      ghost = document.createElement("div"); ghost.className = "peg ghost"; ghost.setAttribute("aria-hidden", "true");
+      ghost.innerHTML = peg.innerHTML; document.body.appendChild(ghost);
+    }
     ghost.style.transform = `translate(${e.clientX - 14}px, ${e.clientY - 44}px)`;
     const hit = mapReady ? SeamMap.pick(e.clientX, e.clientY) : null;
     over = hit && hit.id ? { p: PROJECTS.find(v => v.id === hit.id), at: hit.at } : null;
@@ -5937,6 +5948,7 @@ function setupPeg() {
     open3d(x, { walkAt: ll });
   });
   peg.addEventListener("pointercancel", end);
+  peg.addEventListener("lostpointercapture", () => { if (ghost || down) end(); });
   peg.addEventListener("click", e => { if (e.detail === 0) tip({ clientX: peg.getBoundingClientRect().left, clientY: peg.getBoundingClientRect().top }, "Drag onto a project to walk around it in 3D"); });
 }
 
