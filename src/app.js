@@ -768,7 +768,9 @@ How Nexxo measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version — open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves — and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
+The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version — open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves — and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.
+
+The page draws a diagram under each answer from the tools you called this turn: a mini map with the closest-point gap for a distance question, the build windows against today for a timing question, the savings breakdown for a cost question, ranked bars for a list. So call the tool that holds the data for what was asked (get_overlap for one pair, list_overlaps or search_projects for a list), even when the summary already has the figure, and never draw diagrams in text yourself.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
   { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
@@ -1092,7 +1094,7 @@ function renderAsk(P) {
       <span class="muted">${esc(C.bar)}</span><span class="grow"></span>
       ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
     </div>
-    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text) + (m.fig || "")}</div>`).join("")
       : askWelcome()}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
     <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
@@ -1226,13 +1228,15 @@ const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searc
 // Answer a question without the model: the same tools, routed by pattern (agent-offline.js). Returns the answer text,
 // or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
 // saying the model is needed. reason, when given, is why the model was unavailable.
-function answerOffline(q, reason) {
+function answerOffline(q, reason, calls) {
   const lang = askLang(), plan = SeamOffline.interpret(q);
   if (!plan) return null;
   CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
   let text;
   try {
-    text = SeamOffline.render(plan.tool, runTool(plan.tool, plan.input), lang, plan.input);
+    const result = runTool(plan.tool, plan.input);
+    if (calls) calls.push({ name: plan.tool, input: plan.input || {}, result });
+    text = SeamOffline.render(plan.tool, result, lang, plan.input);
   } catch (err) {
     text = String(err && err.message || err);
   }
@@ -1244,12 +1248,13 @@ async function sendQuestion(q) {
   const mark = CHAT.messages.length; // where this turn starts, so a failed turn can be undone whole
   CHAT.busy = true; CHAT.log.push({ role: "user", text: q });
   const P = $("#panel"), again = () => { if (state.tab === "ask") renderAsk(P); };
-  const finish = text => { CHAT.log.push({ role: "assistant", text }); CHAT.busy = false; again(); if (state.tab !== "ask") renderTabs(); };
+  const calls = []; // this turn's tool calls and results, for the diagram under the answer
+  const finish = text => { CHAT.log.push({ role: "assistant", text, fig: safeDiagram(q, calls) }); CHAT.busy = false; again(); if (state.tab !== "ask") renderTabs(); };
   again();
 
   // No key: answer by pattern if the question is one the tools cover, otherwise ask for the key and say what does work.
   if (!apiKey()) {
-    const offline = answerOffline(q, null);
+    const offline = answerOffline(q, null, calls);
     const lang = askLang();
     return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key above.`);
   }
@@ -1260,7 +1265,7 @@ async function sendQuestion(q) {
     // The digest goes after the prompt and before the conversation, so the stable part of the request stays stable and
     // only changes when the data or the filters do.
     const system = `${SYSTEM}\n\n## What is loaded right now\n\n${dataDigest()}\n\n${answerIn}`;
-    const r = await SeamAgent.ask({ apiKey: apiKey(), system, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
+    const r = await SeamAgent.ask({ apiKey: apiKey(), system, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => { const result = runTool(n, input); calls.push({ name: n, input: input || {}, result }); return result; },
       onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
     finish(r.text + (r.truncated ? "\n\n(The answer was cut short.)" : ""));
   } catch (err) {
@@ -1269,9 +1274,144 @@ async function sendQuestion(q) {
     // The API is unreachable, the key was refused or the SDK would not load. Fall back to the pattern path rather than
     // leaving the question unanswered, and say which happened.
     const why = `Your API key is set, but the request failed. ${SeamAgent.explain(err)}`;
-    finish(answerOffline(q, why) || why);
+    calls.length = 0;
+    finish(answerOffline(q, why, calls) || why);
   }
 }
+
+// ---------- Geo's diagrams ----------
+// Every answer that is about something drawable gets one small inline diagram under the text, picked by what the
+// question asks: distance draws the pair on a mini map with the closest-point gap, timing draws the build windows
+// against today, cost draws the savings breakdown, and a ranking draws ranked bars. Built from the same tool results
+// the answer was written from (the calls of this turn), never from the answer's prose, so the picture and the numbers
+// cannot disagree. Colors are CSS variables so a diagram follows the theme after it is drawn.
+const GEO_TOPIC = [
+  ["timing", /\b(when|timing|timeline|schedule|window|windows|date|dates|year|years|month|months|soon|first|last|earliest|latest|built|build|cuando|cuándo|fecha|fechas|ventana|ventanas|cronograma|año|años|mes|meses|primero|ultimo|último)\b/i],
+  ["cost", /(\$|\b(cost|costs|save|saves|saving|savings|money|worth|price|expensive|cheap|budget|dollars?|share|sharing|costo|costos|cuesta|ahorro|ahorros|ahorrar|ahorrarian|ahorrarían|dinero|compartir|caro)\b)/i],
+  ["distance", /\b(far|close|closest|near|nearby|distance|distances|km|kilometers?|miles?|apart|where|map|touch|touching|cross|crossing|cerca|lejos|distancia|donde|dónde|mapa|cruzan|tocan)\b/i],
+  ["rank", /\b(which|top|most|least|biggest|largest|smallest|best|worst|rank|ranking|list|highest|lowest|longest|cuales|cuáles|mayor|menor|mejores|peores|lista|ranking|mas|más)\b/i],
+];
+const gu = u => u === state.utilA ? "var(--u0)" : u === state.utilB ? "var(--u1)" : "var(--ink3)";
+const gtrim = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
+const gfig = (title, body, h, alt) => `<figure class="geo-fig"><figcaption>${esc(title)}</figcaption><svg viewBox="0 0 320 ${h}" role="img" aria-label="${esc(alt || title)}">${body}</svg></figure>`;
+
+// Distance: both projects on a small map, with a dashed line between their closest points and the gap written on it.
+function geoPairMap(p, q, many) {
+  const all = many || [p, q], [d, ca, cb] = many ? [0, null, null] : Engine.closest(p, q);
+  const feat = v => Engine.isLine(v) ? { type: "MultiLineString", coordinates: Engine.partsOf(v).filter(c => c.length > 1).map(c => c.map(w => [w[1], w[0]])) } : { type: "Point", coordinates: [v.coords[0][1], v.coords[0][0]] };
+  const W = 320, H = 170, box = { type: "FeatureCollection", features: all.map(v => ({ type: "Feature", geometry: feat(v) })) };
+  const pr = d3.geoMercator().fitExtent([[26, 22], [W - 26, H - 30]], box);
+  if (pr.scale() > 60000) { const [[x0, y0], [x1, y1]] = d3.geoBounds(box); pr.scale(60000).center([(x0 + x1) / 2, (y0 + y1) / 2]).translate([W / 2, (H - 8) / 2]); }
+  pr.clipExtent([[-4, -4], [W + 4, H - 18]]); // outlines are clipped to the frame, which keeps the SVG small
+  const path = d3.geoPath(pr).pointRadius(4.5), P = c => pr([c[1], c[0]]), f = v => +v.toFixed(1);
+  const st = BASE.states.map(v => `<path d="${path(v.g)}" style="fill:var(--land);stroke:var(--line)" stroke-width=".7"/>`).join("");
+  const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" style="stroke:var(--river)" stroke-width="2"/>` : "";
+  const one = v => Engine.isLine(v) ? `<path d="${path(feat(v))}" fill="none" style="stroke:${gu(v.utility)}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<circle cx="${f(P(v.coords[0])[0])}" cy="${f(P(v.coords[0])[1])}" r="5" style="fill:${gu(v.utility)};stroke:var(--panel)" stroke-width="2"/>`;
+  if (many) {
+    const us = [...new Set(all.map(v => v.utility))];
+    const key = us.map((u, i) => `<g transform="translate(${8 + i * 158},${H - 12})"><rect width="10" height="4" y="-4" rx="1" style="fill:${gu(u)}"/><text x="14" y="0">${esc(lblLong(u))} (${all.filter(v => v.utility === u).length})</text></g>`).join("");
+    return gfig(`${all.length} project${all.length === 1 ? "" : "s"} on the map`, `<clipPath id="gfc${++geoSeq}"><rect width="${W}" height="${H - 22}" rx="4"/></clipPath><g clip-path="url(#gfc${geoSeq})"><rect width="${W}" height="${H - 22}" style="fill:var(--water)"/>${st}${seam}${all.map(one).join("")}</g>${key}`, H,
+      `Map of ${all.map(v => v.name).join(", ")}`);
+  }
+  const [a, b] = [P(ca), P(cb)], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const gap = d < 0.1 ? `<circle cx="${f(m[0])}" cy="${f(m[1])}" r="8" fill="none" style="stroke:var(--hot)" stroke-width="2"/>`
+    : `<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" style="stroke:var(--hot)" stroke-width="2" stroke-dasharray="4 3"/>`;
+  const lab = `<text x="${f(Math.min(W - 60, Math.max(60, m[0])))}" y="${f(Math.max(14, m[1] - 12))}" text-anchor="middle" class="gf-num" paint-order="stroke" style="stroke:var(--panel)" stroke-width="3">${esc(d < 0.1 ? "touching" : miKm(d))}</text>`;
+  const key = [p, q].map((v, i) => `<g transform="translate(${8 + i * 158},${H - 12})"><rect width="10" height="4" y="-4" rx="1" style="fill:${gu(v.utility)}"/><text x="14" y="0">${esc(gtrim(short(v), 24))}</text></g>`).join("");
+  return gfig(`${d < 0.1 ? "Touching or crossing" : km(d) + " apart"} at the closest points`, `<clipPath id="gfc${++geoSeq}"><rect width="${W}" height="${H - 22}" rx="4"/></clipPath><g clip-path="url(#gfc${geoSeq})"><rect width="${W}" height="${H - 22}" style="fill:var(--water)"/>${st}${seam}${one(p)}${one(q)}${gap}</g>${lab}${key}`, H,
+    `Map of ${p.name} and ${q.name}, ${km(d)} apart at their closest points`);
+}
+let geoSeq = 0;
+
+// Timing: each project's construction window as a bar on one time axis, with today marked.
+function geoWindows(ps, title) {
+  ps = ps.filter(p => !p.undated && p.start && p.in_service).slice(0, 8);
+  if (!ps.length) return "";
+  const now = mon(TODAY), lo = Math.min(now, ...ps.map(p => mon(p.start))) - 2, hi = Math.max(now, ...ps.map(p => mon(p.in_service))) + 2;
+  const L = 112, R = 312, X = m => L + (m - lo) / (hi - lo) * (R - L), rowH = 18, top = 8, H = top + ps.length * rowH + 26, f = v => +v.toFixed(1);
+  const years = []; for (let y = Math.ceil(lo / 12); y * 12 <= hi; y++) years.push(y);
+  const step = Math.max(1, Math.ceil(years.length / 6));
+  const grid = years.filter((y, i) => i % step === 0).map(y => `<line x1="${f(X(y * 12))}" x2="${f(X(y * 12))}" y1="${top - 2}" y2="${H - 20}" style="stroke:var(--grid)"/><text x="${f(X(y * 12))}" y="${H - 8}" text-anchor="middle" class="gf-dim">${y}</text>`).join("");
+  const bars = ps.map((p, i) => { const y = top + i * rowH, x0 = X(mon(p.start)), x1 = Math.max(x0 + 3, X(mon(p.in_service)));
+    return `<text x="${L - 6}" y="${y + 11}" text-anchor="end">${esc(gtrim(short(p), 19))}</text><rect x="${f(x0)}" y="${y + 3}" width="${f(x1 - x0)}" height="10" rx="2" style="fill:${gu(p.utility)}"${isPast(p) ? ' opacity=".45"' : ""}><title>${esc(p.name)}: ${esc(p.start)} to ${esc(p.in_service)}</title></rect>`; }).join("");
+  const t = X(now);
+  const today = `<line x1="${f(t)}" x2="${f(t)}" y1="${top - 4}" y2="${H - 20}" style="stroke:var(--hot)" stroke-width="1.5"/><text x="${f(Math.min(R - 14, t + 3))}" y="${top + 2}" class="gf-hot">today</text>`;
+  return gfig(title || "Build windows", grid + bars + today, H, `Construction windows of ${ps.length} projects with today marked`);
+}
+
+// Rankings, costs and savings: labeled horizontal bars, longest first.
+function geoBars(rows, title, fmt, color) {
+  rows = rows.filter(r => isFinite(r.v) && r.v > 0).slice(0, 8);
+  if (rows.length < 1) return "";
+  // a row with a second line (the other project of a pair) gets the height for it
+  const two = rows.some(r => r.sub), max = Math.max(...rows.map(r => r.v)), L = 128, R = 262, rowH = two ? 27 : 18, H = rows.length * rowH + 8, f = v => +v.toFixed(1);
+  const body = rows.map((r, i) => { const y = 4 + i * rowH, w = Math.max(2, (r.v / max) * (R - L));
+    return `<text x="${L - 6}" y="${y + 11}" text-anchor="end">${esc(gtrim(r.label, 21))}</text>${r.sub ? `<text x="${L - 6}" y="${y + 21}" text-anchor="end" class="gf-dim">${esc(gtrim(r.sub, 25))}</text>` : ""}<rect x="${L}" y="${y + 3}" width="${f(w)}" height="10" rx="2" style="fill:${r.color || color || "var(--blue)"}"><title>${esc(r.label)}: ${esc(fmt(r.v))}</title></rect><text x="${f(L + w + 5)}" y="${y + 11}" class="gf-num">${esc(fmt(r.v))}</text>`; }).join("");
+  return gfig(title, body, H, `${title}: ${rows.map(r => `${r.label} ${fmt(r.v)}`).join(", ")}`);
+}
+const geoCost = x => {
+  const items = Engine.savings(Object.assign({}, x, { sameWindow: true })).items;
+  return geoBars(items.map(it => ({ label: it.share, v: it.v, color: "var(--time)" })), `What ${short(x.p)} and ${short(x.q)} could share`, money);
+};
+const pairRows = (xs, how) => {
+  const m = { chance: [x => x.risk.chance, pct, "Chance of a shared build window"], distance: [x => Math.max(x.km, 0.05), km, "Distance at the closest points"] }[how] || [x => x.risk.expected, money, "Expected savings by pair"];
+  return geoBars(xs.map(x => ({ label: short(x.p), sub: `× ${short(x.q)}`, v: m[0](x), color: how === "distance" ? tcol(Math.min(x.tier, 4)) : "var(--time)" })), m[2], m[1]);
+};
+
+// Pick the diagram for one answer. q is the question; calls are this turn's tool calls with their results.
+function geoDiagram(q, calls) {
+  const topics = GEO_TOPIC.filter(([, re]) => re.test(q)).map(([t]) => t), has = t => topics.includes(t);
+  const ok = calls.filter(c => c.result && !c.error);
+  const pairs = [], projects = [];
+  const addPair = x => { if (x && !pairs.includes(x)) pairs.push(x); };
+  const proj = id => PROJECTS.find(v => v.id === String(id || "").toUpperCase());
+  let list = null, projList = null, sortBy = null, named = false;
+  for (const { name, input: i, result: r } of ok) {
+    if (["get_overlap", "open_brief"].includes(name) || (name === "show_on_map" && i.key)) addPair(findPair(i.key));
+    if (name === "show_on_map" && i.project_id && proj(i.project_id)) projects.push(proj(i.project_id));
+    if (name === "get_project" && proj(i.id)) projects.push(proj(i.id));
+    if (name === "why_not" || name === "compare_projects") {
+      const ids = name === "why_not" ? [i.project_id_a, i.project_id_b] : (i.project_ids || []);
+      const ps = ids.map(proj).filter(Boolean);
+      if (ps.length >= 2) { const f = RESULT.pairs.find(x => (x.p === ps[0] && x.q === ps[1]) || (x.p === ps[1] && x.q === ps[0])); f ? addPair(f) : pairs.push({ p: ps[0], q: ps[1], loose: true }); }
+      ps.forEach(p => projects.push(p));
+    }
+    if (name === "list_overlaps" && r.rows) { list = r.rows.map(row => findPair(row.key)).filter(Boolean); sortBy = i.sort || "expected"; named = !!i.project_query; }
+    if (name === "search_projects" && r.projects) { projList = r.projects.map(v => proj(v.id)).filter(Boolean); sortBy = i.sort || null; named = !!i.query; }
+    if (name === "optimize_schedule" && r.moves && r.moves.length)
+      return geoBars(r.moves.map(m => ({ label: `${m.months > 0 ? "+" : ""}${m.months} mo ${m.project}`, v: m.adds_usd, color: gu(m.utility) })), "What each date move adds", money);
+    if (name === "get_plan_changes" && r.how_dates_moved && !has("distance")) {
+      const rows = Object.entries(r.how_dates_moved).flatMap(([u, v]) => [{ label: `${lbl(u)} later`, v: v.later, color: gu(u) }, { label: `${lbl(u)} earlier`, v: v.earlier, color: gu(u) }, { label: `${lbl(u)} unchanged`, v: v.unchanged, color: "var(--ink3)" }]);
+      return geoBars(rows, "How dates moved between the last two plans (projects)", v => String(v));
+    }
+    if (name === "get_overview" && !pairs.length && !list)
+      return geoBars(TIERS.slice(0, 4).map((t, k) => ({ label: t.label, v: RESULT.pairs.filter(x => x.tier === k).length, color: tcol(k) })), "Flagged pairs by distance tier", v => String(v));
+  }
+  if (list && list.length) {
+    if (has("timing") && !has("cost")) return geoWindows(list.slice(0, 4).flatMap(x => [x.p, x.q]), "Build windows of the top pairs");
+    // a question that names the projects is about that pair, not a ranking of the few rows that matched
+    if (list.length === 1 || (named && list.length <= 3 && !has("rank"))) addPair(list[0]);
+    else return pairRows(list, has("distance") && !has("cost") ? "distance" : sortBy);
+  }
+  if (projList && projList.length) {
+    if (has("timing") || sortBy === "in_service") return geoWindows(projList, "Build windows");
+    if (!sortBy && (named || has("distance"))) return geoPairMap(null, null, projList.filter(p => (p.coords || []).length).slice(0, 12));
+    const m = { kv: [p => p.kv, v => v + " kV", "Voltage"], length_km: [p => Engine.lengthKm(p), km, "Length"] }[sortBy] || [p => p.cost, money, "Published cost"];
+    const bars = geoBars(projList.map(p => ({ label: short(p), v: m[0](p), color: gu(p.utility) })), m[2], m[1]);
+    return bars || geoWindows(projList, "Build windows");
+  }
+  const x = pairs[0];
+  if (x) {
+    if (has("timing") && !has("distance")) return geoWindows([x.p, x.q], "Build windows");
+    if (has("cost") && !x.loose && !has("distance")) return geoCost(x);
+    return geoPairMap(x.p, x.q);
+  }
+  if (projects.length) return has("timing") || projects.length > 1 ? geoWindows(projects, "Build windows") : geoWindows(projects, "Build window");
+  return "";
+}
+// A drawing error must never cost the answer itself.
+const safeDiagram = (q, calls) => { try { return geoDiagram(q, calls); } catch (err) { return ""; } };
 
 // ---------- coordination brief ----------
 // narrative, when given, is the assistant's one-paragraph framing. It is the only generated prose in a brief:

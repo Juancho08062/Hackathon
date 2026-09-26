@@ -440,6 +440,12 @@ body.modal-open .app{visibility:hidden}
 .msg.assistant{align-self:flex-start;background:var(--panel2);border:1px solid var(--grid);padding:9px 12px;border-radius:10px 10px 10px 2px}
 /* Answer formatting. The assistant's replies are mostly ranked lists and figures, so the numbers get tabular alignment
    and the structure gets real lists and tables instead of one paragraph of line breaks. */
+.geo-fig{margin:8px 0 2px;padding:8px 8px 6px;background:var(--panel);border:1px solid var(--grid);border-radius:8px}
+.geo-fig figcaption{font-size:11px;font-weight:600;color:var(--ink2);margin:0 0 4px}
+.geo-fig svg{display:block;width:100%;height:auto;font-family:var(--body);font-size:9.5px;fill:var(--ink)}
+.geo-fig .gf-num{font-family:var(--mono);font-size:9px;fill:var(--ink2)}
+.geo-fig .gf-dim{font-size:8.5px;fill:var(--ink3)}
+.geo-fig .gf-hot{font-size:8.5px;fill:var(--hot);font-weight:600}
 .msg.assistant h4{margin:8px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 .msg.assistant h4:first-child{margin-top:0}
 .msg.assistant ul,.msg.assistant ol{margin:4px 0;padding-left:16px;display:grid;gap:3px}
