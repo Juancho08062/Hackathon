@@ -836,18 +836,58 @@ function closeBrief() { $("#brief").hidden = true; }
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
-function open3d(x) {
+function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
-  Scene3D.open(x, {
+  Scene3D.open(x, Object.assign({
     title: `${short(x.p)} and ${short(x.q)}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
-  });
+  }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
 function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
+
+// ---------- drop-in walker ----------
+// Drag the orange figure onto a project: the 3D illustration opens at that spot in walk mode, with the project's
+// pair that is worth the most (or the selected pair, if it includes the project).
+function pairFor(p) {
+  if (state.sel && state.sel.p && state.sel.q && (state.sel.p === p || state.sel.q === p)) return state.sel;
+  return (VIEW.concat(RESULT.pairs)).filter(x => x.p === p || x.q === p).sort((a, b) => b.risk.expected - a.risk.expected)[0] || null;
+}
+function setupPeg() {
+  const peg = $("#peg");
+  let ghost = null, over = null;
+  const end = () => { if (ghost) ghost.remove(); ghost = null; peg.classList.remove("dragging"); hideTip(); };
+  peg.addEventListener("pointerdown", e => {
+    e.preventDefault(); peg.setPointerCapture(e.pointerId); peg.classList.add("dragging");
+    ghost = peg.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("ghost"); document.body.appendChild(ghost);
+    move(e);
+  });
+  const move = e => {
+    if (!ghost) return;
+    ghost.style.transform = `translate(${e.clientX - 14}px, ${e.clientY - 44}px)`;
+    const hit = mapReady ? SeamMap.pick(e.clientX, e.clientY) : null;
+    over = hit && hit.id ? { p: PROJECTS.find(v => v.id === hit.id), at: hit.at } : null;
+    const x = over && over.p && pairFor(over.p);
+    ghost.classList.toggle("ok", !!x);
+    if (over && over.p) tip(e, x ? `<b>${esc(short(over.p))}</b><br>Drop to walk here in 3D` : `<b>${esc(short(over.p))}</b><br>No overlap with ${esc(lbl(state.utilB))} for this project`);
+    else if (hit) tip(e, "Drop onto a project line or substation"); else hideTip();
+  };
+  peg.addEventListener("pointermove", move);
+  peg.addEventListener("pointerup", () => {
+    const o = over; end(); over = null;
+    if (!o || !o.p) return;
+    const x = pairFor(o.p);
+    if (!x) return;
+    const ll = Engine.closest({ coords: [o.at] }, o.p)[2]; // the point on the project nearest the drop
+    if (x !== state.sel) select(x);
+    open3d(x, { walkAt: ll });
+  });
+  peg.addEventListener("pointercancel", end);
+  peg.addEventListener("click", e => { if (e.detail === 0) tip({ clientX: peg.getBoundingClientRect().left, clientY: peg.getBoundingClientRect().top }, "Drag onto a project to walk around it in 3D"); });
+}
 
 // ---------- pickers, datasets, import ----------
 function renderPickers() {
@@ -1114,6 +1154,7 @@ addEventListener("resize", () => renderTimeline());
 
 renderAssume();
 renderDatasets();
+setupPeg();
 SEAM = seamCoords();
 readHash();
 syncControls();

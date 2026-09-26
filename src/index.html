@@ -51,6 +51,9 @@
           <div class="seg" role="group" aria-label="Basemap" id="basemaps"></div>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
+        <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
+          <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
+        </button>
         <div class="legend" id="legend"></div>
         <p class="tilenote" id="tileNote" hidden></p>
       </div>
@@ -130,6 +133,7 @@
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
       <label class="m3d-q">Quality <select id="m3dQ" aria-label="3D image quality"><option value="standard">Standard</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
+      <button type="button" class="btn" id="m3dWalk" aria-pressed="false" title="Walk around at ground level">Walk</button>
       <button type="button" class="btn" id="m3dLabels" aria-pressed="true">Labels on</button>
       <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>

@@ -217,5 +217,18 @@
     map.fitBounds([[w - pad, s - pad], [e + pad, n + pad]], { padding: opts.padding ?? 40, duration: opts.duration ?? 900, maxZoom: opts.maxZoom ?? 12.5, pitch: is3d ? 62 : 0, bearing: is3d ? map.getBearing() : 0 });
   }
 
-  root.SeamMap = { BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
+  // The project under a screen point (client pixels), for the drop-in figure: the nearest line or substation within
+  // `radius` pixels, and the map coordinates of that point.
+  function pick(clientX, clientY, radius = 22) {
+    if (!map) return null;
+    const r = map.getCanvas().getBoundingClientRect(), x = clientX - r.left, y = clientY - r.top;
+    if (x < 0 || y < 0 || x > r.width || y > r.height) return null;
+    const box = [[x - radius, y - radius], [x + radius, y + radius]];
+    const f = map.queryRenderedFeatures(box, { layers: ["proj", "proj-dash", "points"].filter(l => map.getLayer(l)) })
+      .filter(g => g.properties.opacity == null || g.properties.opacity > 0.25)[0];
+    const ll = map.unproject([x, y]);
+    return { id: f ? f.properties.id : null, at: [ll.lat, ll.lng] };
+  }
+
+  root.SeamMap = { pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
 })(this);
