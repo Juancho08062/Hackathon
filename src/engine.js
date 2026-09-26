@@ -398,6 +398,12 @@
     return { moves, before: base, after: moves.length ? totals[moves.length - 1] : base };
   }
 
-  const api = { kvOf, optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
+  // ---------- drawing ----------
+  // SVG path data for each geometry, leaving out the ones that draw nothing. A d3 path clipped to a small frame returns
+  // null for a shape wholly outside it, and a template string would print that as d="null", which the browser rejects
+  // with a console error on every render.
+  const svgPaths = (path, geoms) => geoms.map(g => path(g)).filter(d => typeof d === "string" && d.length > 0);
+
+  const api = { svgPaths, kvOf, optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);

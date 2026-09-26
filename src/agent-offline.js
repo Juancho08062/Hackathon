@@ -262,7 +262,10 @@
     if (any(s, OVERVIEW) && distanceKm(s) == null && !limitOf(s)) return plan("get_overview", {}, "overview");
 
     // "What's planned near Augusta" is a search, not a ranking — unless the question also asks about overlaps.
-    if (place && !any(s, OVERLAP_WORDS)) return plan("search_projects", { query: place }, "place");
+    // "What's planned near Augusta" lists the projects there; "What's near McIntosh?" asks what could be coordinated
+    // there, so it lists the pairs around it, closest first.
+    if (place && !any(s, OVERLAP_WORDS) && /\b(planned|planning|projects?|built|building|planead[oa]s?|proyectos?|construy)/.test(s)) return plan("search_projects", { query: place }, "place");
+    if (place && !any(s, OVERLAP_WORDS)) { const r = interpretOverlaps(q, s, place); if (r) { r.input.sort = r.input.sort || "distance"; return r; } }
 
     return interpretOverlaps(q, s, place);
   }

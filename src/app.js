@@ -1297,7 +1297,7 @@ const gtrim = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
 const gfig = (title, body, h, alt) => `<figure class="geo-fig"><figcaption>${esc(title)}</figcaption><svg viewBox="0 0 320 ${h}" role="img" aria-label="${esc(alt || title)}">${body}</svg></figure>`;
 
 // Distance: both projects on a small map, with a dashed line between their closest points and the gap written on it.
-function geoPairMap(p, q, many, links) {
+function geoPairMap(p, q, many, links, focused = true) {
   const all = many || [p, q], [d, ca, cb] = many ? [0, null, null] : Engine.closest(p, q);
   const feat = v => Engine.isLine(v) ? { type: "MultiLineString", coordinates: Engine.partsOf(v).filter(c => c.length > 1).map(c => c.map(w => [w[1], w[0]])) } : { type: "Point", coordinates: [v.coords[0][1], v.coords[0][0]] };
   const W = 320, H = 170, box = { type: "FeatureCollection", features: all.map(v => ({ type: "Feature", geometry: feat(v) })) };
@@ -1305,17 +1305,18 @@ function geoPairMap(p, q, many, links) {
   if (pr.scale() > 60000) { const [[x0, y0], [x1, y1]] = d3.geoBounds(box); pr.scale(60000).center([(x0 + x1) / 2, (y0 + y1) / 2]).translate([W / 2, (H - 8) / 2]); }
   pr.clipExtent([[-4, -4], [W + 4, H - 18]]); // outlines are clipped to the frame, which keeps the SVG small
   const path = d3.geoPath(pr).pointRadius(4.5), P = c => pr([c[1], c[0]]), f = v => +v.toFixed(1);
-  const st = BASE.states.map(v => `<path d="${path(v.g)}" style="fill:var(--land);stroke:var(--line)" stroke-width=".7"/>`).join("");
-  const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" style="stroke:var(--river)" stroke-width="2"/>` : "";
-  const one = v => Engine.isLine(v) ? `<path d="${path(feat(v))}" fill="none" style="stroke:${gu(v.utility)}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`
+  // clipped to the frame, a state outside it has no path at all (null), so it is left out rather than drawn as d="null"
+  const dOf = g => Engine.svgPaths(path, [g])[0] || "", st = Engine.svgPaths(path, BASE.states.map(v => v.g)).map(d => `<path d="${d}" style="fill:var(--land);stroke:var(--line)" stroke-width=".7"/>`).join("");
+  const sd = SEAM ? dOf({ type: "LineString", coordinates: SEAM }) : "", seam = sd ? `<path d="${sd}" fill="none" style="stroke:var(--river)" stroke-width="2"/>` : "";
+  const one = v => Engine.isLine(v) ? (d => d ? `<path d="${d}" fill="none" style="stroke:${gu(v.utility)}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>` : "")(dOf(feat(v)))
     : `<circle cx="${f(P(v.coords[0])[0])}" cy="${f(P(v.coords[0])[1])}" r="5" style="fill:${gu(v.utility)};stroke:var(--panel)" stroke-width="2"/>`;
   if (many) {
     // links: one project's pairs, each drawn with its closest-point gap and the nearest one labeled
-    const us = [...new Set(all.map(v => v.utility))], focus = links && links.length ? all[0] : null;
+    const us = [...new Set(all.map(v => v.utility))], focus = focused && links && links.length ? all[0] : null;
     const gaps = (links || []).map(x => { const [u, v] = [P(x.ca), P(x.cb)]; return `<line x1="${f(u[0])}" y1="${f(u[1])}" x2="${f(v[0])}" y2="${f(v[1])}" style="stroke:var(--hot)" stroke-width="1.4" stroke-dasharray="3 3"/>`; }).join("");
     const near = links && links[0], nm = near && P(near.ca), nl = near ? `<text x="${f(Math.min(W - 60, Math.max(60, nm[0])))}" y="${f(Math.max(14, nm[1] - 10))}" text-anchor="middle" class="gf-num" paint-order="stroke" style="stroke:var(--panel)" stroke-width="3">nearest ${esc(near.km < 0.1 ? "touching" : km(near.km))}</text>` : "";
     const key = us.map((u, i) => `<g transform="translate(${8 + i * 158},${H - 12})"><rect width="10" height="4" y="-4" rx="1" style="fill:${gu(u)}"/><text x="14" y="0">${esc(focus && u === focus.utility ? gtrim(short(focus), 24) : `${lbl(u)} (${all.filter(v => v.utility === u).length})`)}</text></g>`).join("");
-    const title = focus ? `${short(focus)} and its ${links.length} nearest pair${links.length === 1 ? "" : "s"}` : `${all.length} project${all.length === 1 ? "" : "s"} on the map`;
+    const title = focus ? `${short(focus)} and its ${links.length} nearest pair${links.length === 1 ? "" : "s"}` : links && links.length ? `${links.length} pair${links.length === 1 ? "" : "s"}, nearest first` : `${all.length} project${all.length === 1 ? "" : "s"} on the map`;
     return gfig(title, `<clipPath id="gfc${++geoSeq}"><rect width="${W}" height="${H - 22}" rx="4"/></clipPath><g clip-path="url(#gfc${geoSeq})"><rect width="${W}" height="${H - 22}" style="fill:var(--water)"/>${st}${seam}${all.slice(1).map(one).join("")}${all.slice(0, 1).map(one).join("")}${gaps}</g>${nl}${key}`, H,
       `Map of ${all.map(v => v.name).join(", ")}`);
   }
@@ -1405,6 +1406,11 @@ function geoDiagram(q, calls) {
       if (has("distance") || sortBy === "distance") return list.length === 1 ? geoPairMap(list[0].p, list[0].q) : geoPairMap(null, null, [single, ...others.slice(0, 6)], list.slice(0, 6));
     }
     if (has("timing") && !has("cost")) return geoWindows(list.slice(0, 4).flatMap(x => [x.p, x.q]), "Build windows of the top pairs");
+    // pairs around a named place: on a map, each with its gap
+    if (named && has("distance") && !has("cost") && list.length > 1) {
+      const xs = list.slice().sort((a, b) => a.km - b.km).slice(0, 6);
+      return geoPairMap(null, null, [...new Set(xs.flatMap(x => [x.p, x.q]))], xs, false);
+    }
     // a question that names the projects is about that pair, not a ranking of the few rows that matched
     if (list.length === 1 || (named && list.length <= 3 && !has("rank"))) addPair(list[0]);
     else return pairRows(list, has("distance") && !has("cost") ? "distance" : sortBy);

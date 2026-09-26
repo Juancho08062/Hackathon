@@ -250,6 +250,8 @@ t("the offline matcher hands off rather than guessing", () => {
     ["How far is Hooks - Thurmond from Georgia's work?", "list_overlaps", { project_query: "DESCP-31", sort: "distance" }],
     ["What could Hooks - Thurmond save?", "list_overlaps", { project_query: "DESCP-31" }],
     ["When is Jasper Okatie built?", "get_project", { id: "DESC-12" }],
+    // "what's near" a place asks what could be coordinated there: the pairs around it, closest first
+    ["What's near McIntosh?", "list_overlaps", { project_query: "mcintosh", sort: "distance" }],
   ];
   t("the offline matcher answers about the projects a question names", () => {
     for (const [q, tool, input] of named) {
