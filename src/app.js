@@ -337,7 +337,7 @@ function countUp(el, key) {
   const t0 = performance.now(), D = 900;
   const step = now => {
     if (shown.get(key) !== to || !el.isConnected) return; // a newer value took over
-    const k = easeOut(Math.min(1, (now - t0) / D));
+    const k = easeOut(Math.max(0, Math.min(1, (now - t0) / D))); // the first frame's time can be a little before t0
     let i = 0;
     el.textContent = to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k));
     if (k < 1) requestAnimationFrame(step); else el.textContent = to;
