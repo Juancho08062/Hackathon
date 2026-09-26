@@ -333,7 +333,7 @@ function overlapsHead(P) {
   P.innerHTML = `<div class="ph">${solo() ? "" : `<div class="kpis" id="kpis"></div>`}
       <div class="ph-row"><div class="chips" id="chips" role="group" aria-label="Filter by distance"></div></div>
       <div class="ph-row"><label class="fl">Sort <select id="sort"><option value="expected">Expected savings</option><option value="chance">Chance of a shared window</option><option value="distance">Distance</option></select></label>
-        <span class="grow"></span><input id="q" type="search" placeholder="Filter by project, substation, TEAMS id" aria-label="Filter overlaps"></div>
+        <span class="grow"></span><input id="q" type="search" placeholder="Search projects or TEAMS id" aria-label="Filter overlaps"></div>
     </div>
     <div class="yards" id="clusters"></div>
     <div class="thead" id="thead"></div>
@@ -1135,7 +1135,7 @@ $("#railTl").onclick = () => {
 // Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
 const pops = [["filtersBtn", "controls"], ["moreBtn", "moreMenu"]];
 const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });
-pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
+pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; if (open && p === "controls") $("#controls").style.right = Math.max(12, innerWidth - $("#" + b).getBoundingClientRect().right) + "px"; $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
 document.addEventListener("click", e => { if (!e.target.closest("#controls, #moreMenu")) closePops(); });
 $("#moreMenu").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; closePops(); if (b.dataset.go) $("#" + b.dataset.go).click(); });
 addEventListener("keydown", e => { if (e.key === "Escape") closePops(); });
