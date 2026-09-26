@@ -21,7 +21,6 @@
     </div>
     <span class="asof" id="asof"></span>
     <span class="grow"></span>
-    <button type="button" class="btn" id="filtersBtn" aria-expanded="false" aria-controls="controls"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 8v6l-4-2v-4z"/></svg>Filters <span class="ct" id="filtCt"></span></button>
     <div class="morewrap">
       <button type="button" class="btn" id="moreBtn" aria-expanded="false" aria-controls="moreMenu">More ▾</button>
       <div class="menu" id="moreMenu" hidden role="menu">
@@ -71,8 +70,8 @@
         <span class="mb-sep" aria-hidden="true"></span>
         <span class="mb-g"><label class="mb-lbl" for="dist2">Within</label><select id="dist2" aria-label="Overlap distance"><option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40">40 km</option><option value="60">60 km</option><option value="100">100 km</option></select></span>
         <span class="mb-sep" aria-hidden="true"></span>
-        <span class="mb-g"><span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div></span>
-        <button type="button" class="btn sm mb-more" id="moreFilters">More filters</button>
+        <span class="mb-g"><span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div>
+          <button type="button" class="btn sm mb-more" id="moreFilters" aria-expanded="false" aria-controls="controls">More filters</button></span>
       </div>
       <div class="mapwrap">
         <div id="map" role="region" aria-label="Map of planned projects"></div>

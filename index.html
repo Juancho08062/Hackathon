@@ -103,8 +103,6 @@ h1.logo{margin:0;font-size:14px}
 .filterbar{position:absolute;z-index:30;top:43px;right:92px;width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
 .filterbar .grow{display:none}
 .filterbar .summary{flex-basis:100%;border-top:1px solid var(--grid);padding-top:8px}
-#filtersBtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
-#filtersBtn .ct{font-family:var(--mono);font-size:11px;color:var(--ink2)}
 .morewrap{position:relative}
 .menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:180px;display:grid;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
 .menu button{font:inherit;text-align:left;border:0;background:none;color:var(--ink);padding:7px 10px;border-radius:4px;cursor:pointer}
@@ -525,7 +523,7 @@ body.modal-open .app{visibility:hidden}
 .mapbar .mb-lbl{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .mapbar .mb-sep{width:1px;height:18px;background:var(--line);margin:0 2px}
 .mapbar select{font:inherit;font-size:12px;height:26px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:0 4px}
-.mapbar .mb-more{margin-left:auto}
+.mapbar .mb-more{margin-left:4px}
 .mapbar .chips,.mapbar .seg{flex:none;flex-wrap:nowrap}
 /* On a 13-inch screen the tagline would push Filters and More off the header */
 @media (max-width:1360px){.appbar .tagline{display:none}}
@@ -546,7 +544,6 @@ body.modal-open .app{visibility:hidden}
     </div>
     <span class="asof" id="asof"></span>
     <span class="grow"></span>
-    <button type="button" class="btn" id="filtersBtn" aria-expanded="false" aria-controls="controls"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 8v6l-4-2v-4z"/></svg>Filters <span class="ct" id="filtCt"></span></button>
     <div class="morewrap">
       <button type="button" class="btn" id="moreBtn" aria-expanded="false" aria-controls="moreMenu">More ▾</button>
       <div class="menu" id="moreMenu" hidden role="menu">
@@ -596,8 +593,8 @@ body.modal-open .app{visibility:hidden}
         <span class="mb-sep" aria-hidden="true"></span>
         <span class="mb-g"><label class="mb-lbl" for="dist2">Within</label><select id="dist2" aria-label="Overlap distance"><option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40">40 km</option><option value="60">60 km</option><option value="100">100 km</option></select></span>
         <span class="mb-sep" aria-hidden="true"></span>
-        <span class="mb-g"><span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div></span>
-        <button type="button" class="btn sm mb-more" id="moreFilters">More filters</button>
+        <span class="mb-g"><span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div>
+          <button type="button" class="btn sm mb-more" id="moreFilters" aria-expanded="false" aria-controls="controls">More filters</button></span>
       </div>
       <div class="mapwrap">
         <div id="map" role="region" aria-label="Map of planned projects"></div>
@@ -2926,7 +2923,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q, dem);
       const ft = built.relief ? `Real ground elevation from ${built.demSource}, ${Math.round(built.relief.low)} to ${Math.round(built.relief.high)} m, heights stretched ×${built.relief.ex.toFixed(built.relief.ex < 10 ? 1 : 0)}.` : "Ground shape is illustrative (elevation tiles didn't load).";
-      document.getElementById("m3dFoot").textContent = `Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated. ${ft}`;
+      document.getElementById("m3dFoot").textContent = `Drag to fly over the scene, right-drag or Ctrl-drag to turn, scroll to climb or descend. Distances along the ground are to scale; tower heights are exaggerated. ${ft}`;
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       // nothing that casts a shadow moves, so the shadow map is drawn once instead of every frame
@@ -2990,12 +2987,26 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       controls.target.copy(f); controls.enableDamping = true; controls.dampingFactor = 0.08;
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
+      // Fly over the scene like a drone: dragging slides the view across the ground at the current height, right-drag
+      // (or Ctrl-drag) turns it, the wheel climbs and descends. On touch, one finger slides, two turn and zoom.
+      controls.mouseButtons = { LEFT: T.MOUSE.PAN, MIDDLE: T.MOUSE.DOLLY, RIGHT: T.MOUSE.ROTATE };
+      controls.touches = { ONE: T.TOUCH.PAN, TWO: T.TOUCH.DOLLY_ROTATE };
+      controls.screenSpacePanning = false; controls.panSpeed = 1.1;
+      // keep the spot under the view on the block and the camera above the ground
+      const keepIn = () => {
+        const t = controls.target, r = Math.hypot(t.x, t.z), lim = built.R * 1.1;
+        if (r > lim) { const k = lim / r, dx = t.x * (k - 1), dz = t.z * (k - 1); t.x += dx; t.z += dz; cam.position.x += dx; cam.position.z += dz; }
+        const floor = built.heightAt(cam.position.x, cam.position.z) + 2;
+        if (cam.position.y < floor) cam.position.y = floor;
+      };
+      controls.addEventListener("change", keepIn);
       controls.addEventListener("start", () => { controls.autoRotate = false; });
 
       // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
       // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
       // terrain and inside the plateau.
       const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null, vx: 0, vz: 0, look: null };
+      const canLock = !!renderer.domElement.requestPointerLock;
       const gAt = built.groundAt || built.heightAt, BODY = 0.3 * Math.min(1.6, built.TS);
       const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
       const setWalk = on => {
@@ -3009,8 +3020,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           controls.target.copy(ahead); cam.position.y += 8;
         }
         if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
-        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
-          : orbitNote;
+        if (foot) foot.textContent = on ? (canLock ? "Click the view, then move the mouse to look around (Esc frees the mouse). W A S D or the arrow keys walk, Shift runs."
+          : "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run.") + " Orbit returns to the overview." : orbitNote;
+        if (!on && document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       };
       const typing = e => /input|select|textarea/i.test(e.target.tagName);
       const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
@@ -3020,7 +3032,22 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const cv = renderer.domElement;
       // dragging sets where the view should point; the camera eases toward it each frame, so look-around is smooth
       // even when pointer events arrive in bursts
-      const onDown = e => { if (walk.on && e.button === 0) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      // Walking looks around with the mouse itself (pointer lock, as in a game): a click in the view captures the
+      // pointer and Esc releases it. Browsers without pointer lock fall back to dragging.
+      const locked = () => document.pointerLockElement === cv;
+      const onLock = () => { if (!locked()) walk.unlockAt = performance.now(); };
+      document.addEventListener("pointerlockchange", onLock);
+      const onDown = e => {
+        if (!walk.on || e.button !== 0) return;
+        if (canLock) { if (!locked()) { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } return; }
+        walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId);
+      };
+      const onMouse = e => {
+        if (!walk.on || !locked()) return;
+        const L = walk.look || (walk.look = [walk.yaw, walk.pitch]);
+        L[0] -= e.movementX * 0.0022; L[1] = Math.max(-1.2, Math.min(1.0, L[1] - e.movementY * 0.0022));
+      };
+      document.addEventListener("mousemove", onMouse);
       const onMove = e => {
         if (!walk.on || !walk.drag) return;
         const L = walk.look || (walk.look = [walk.yaw, walk.pitch]);
@@ -3031,7 +3058,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp); addEventListener("blur", onBlur);
       cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp); cv.addEventListener("pointercancel", onUp);
       if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
-      walkCtl = { on: () => walk.on, off: () => setWalk(false) };
+      // Esc that only freed the mouse must not also end the walk
+      walkCtl = { on: () => walk.on, off: () => { if (performance.now() - (walk.unlockAt || 0) > 400) setWalk(false); } };
       // Walking: speed eases up and down instead of jumping, the walker slides around structures, tree trunks and
       // ponds rather than passing through them, stays out of the river, and the eye follows the ground smoothly.
       const solids = built.solids || [];
@@ -3162,6 +3190,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
           removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp); removeEventListener("blur", onBlur);
+          document.removeEventListener("pointerlockchange", onLock); document.removeEventListener("mousemove", onMouse);
+          if (locked()) document.exitPointerLock();
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment, ...built.K.texs].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
@@ -6068,7 +6098,6 @@ function refresh() {
   else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
   renderChips();
-  $("#filtCt").textContent = `${state.D} km · ${state.horizon ? (state.horizon === 12 ? "next 12 mo" : "next " + state.horizon / 12 + " yr") : "all dates"}`;
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
@@ -6093,7 +6122,6 @@ $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === 
 $("#utilB").onchange = e => { state.utilB = e.target.value; state.tab = "overlaps"; rebuild(); };
 $("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
 $("#dist2").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
-$("#moreFilters").onclick = e => { e.stopPropagation(); $("#filtersBtn").click(); };
 $("#panelTog").onclick = () => setPanel(!panelMin());
 setPanel(store.get("panelMin", false), true);
 $("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refresh(); };
@@ -6117,9 +6145,9 @@ $("#railTl").onclick = () => {
   renderTimeline(); SeamMap.resize();
 };
 // Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
-const pops = [["filtersBtn", "controls"], ["moreBtn", "moreMenu"]];
+const pops = [["moreFilters", "controls"], ["moreBtn", "moreMenu"]];
 const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });
-pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; if (open && p === "controls") $("#controls").style.right = Math.max(12, innerWidth - $("#" + b).getBoundingClientRect().right) + "px"; $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
+pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; if (open && p === "controls") { const r = $("#" + b).getBoundingClientRect(); $("#controls").style.right = Math.max(12, innerWidth - r.right) + "px"; $("#controls").style.top = r.bottom + 6 + "px"; } $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
 document.addEventListener("click", e => { if (!e.target.closest("#controls, #moreMenu")) closePops(); });
 $("#moreMenu").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; closePops(); if (b.dataset.go) $("#" + b.dataset.go).click(); });
 $("#play").onclick = togglePlay;

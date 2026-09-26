@@ -94,8 +94,6 @@ h1.logo{margin:0;font-size:14px}
 .filterbar{position:absolute;z-index:30;top:43px;right:92px;width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
 .filterbar .grow{display:none}
 .filterbar .summary{flex-basis:100%;border-top:1px solid var(--grid);padding-top:8px}
-#filtersBtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
-#filtersBtn .ct{font-family:var(--mono);font-size:11px;color:var(--ink2)}
 .morewrap{position:relative}
 .menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:180px;display:grid;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
 .menu button{font:inherit;text-align:left;border:0;background:none;color:var(--ink);padding:7px 10px;border-radius:4px;cursor:pointer}
@@ -516,7 +514,7 @@ body.modal-open .app{visibility:hidden}
 .mapbar .mb-lbl{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .mapbar .mb-sep{width:1px;height:18px;background:var(--line);margin:0 2px}
 .mapbar select{font:inherit;font-size:12px;height:26px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:0 4px}
-.mapbar .mb-more{margin-left:auto}
+.mapbar .mb-more{margin-left:4px}
 .mapbar .chips,.mapbar .seg{flex:none;flex-wrap:nowrap}
 /* On a 13-inch screen the tagline would push Filters and More off the header */
 @media (max-width:1360px){.appbar .tagline{display:none}}

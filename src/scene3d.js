@@ -985,7 +985,7 @@
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q, dem);
       const ft = built.relief ? `Real ground elevation from ${built.demSource}, ${Math.round(built.relief.low)} to ${Math.round(built.relief.high)} m, heights stretched ×${built.relief.ex.toFixed(built.relief.ex < 10 ? 1 : 0)}.` : "Ground shape is illustrative (elevation tiles didn't load).";
-      document.getElementById("m3dFoot").textContent = `Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated. ${ft}`;
+      document.getElementById("m3dFoot").textContent = `Drag to fly over the scene, right-drag or Ctrl-drag to turn, scroll to climb or descend. Distances along the ground are to scale; tower heights are exaggerated. ${ft}`;
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       // nothing that casts a shadow moves, so the shadow map is drawn once instead of every frame
@@ -1049,12 +1049,26 @@
       controls.target.copy(f); controls.enableDamping = true; controls.dampingFactor = 0.08;
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
+      // Fly over the scene like a drone: dragging slides the view across the ground at the current height, right-drag
+      // (or Ctrl-drag) turns it, the wheel climbs and descends. On touch, one finger slides, two turn and zoom.
+      controls.mouseButtons = { LEFT: T.MOUSE.PAN, MIDDLE: T.MOUSE.DOLLY, RIGHT: T.MOUSE.ROTATE };
+      controls.touches = { ONE: T.TOUCH.PAN, TWO: T.TOUCH.DOLLY_ROTATE };
+      controls.screenSpacePanning = false; controls.panSpeed = 1.1;
+      // keep the spot under the view on the block and the camera above the ground
+      const keepIn = () => {
+        const t = controls.target, r = Math.hypot(t.x, t.z), lim = built.R * 1.1;
+        if (r > lim) { const k = lim / r, dx = t.x * (k - 1), dz = t.z * (k - 1); t.x += dx; t.z += dz; cam.position.x += dx; cam.position.z += dz; }
+        const floor = built.heightAt(cam.position.x, cam.position.z) + 2;
+        if (cam.position.y < floor) cam.position.y = floor;
+      };
+      controls.addEventListener("change", keepIn);
       controls.addEventListener("start", () => { controls.autoRotate = false; });
 
       // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
       // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
       // terrain and inside the plateau.
       const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null, vx: 0, vz: 0, look: null };
+      const canLock = !!renderer.domElement.requestPointerLock;
       const gAt = built.groundAt || built.heightAt, BODY = 0.3 * Math.min(1.6, built.TS);
       const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
       const setWalk = on => {
@@ -1068,8 +1082,9 @@
           controls.target.copy(ahead); cam.position.y += 8;
         }
         if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
-        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
-          : orbitNote;
+        if (foot) foot.textContent = on ? (canLock ? "Click the view, then move the mouse to look around (Esc frees the mouse). W A S D or the arrow keys walk, Shift runs."
+          : "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run.") + " Orbit returns to the overview." : orbitNote;
+        if (!on && document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       };
       const typing = e => /input|select|textarea/i.test(e.target.tagName);
       const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
@@ -1079,7 +1094,22 @@
       const cv = renderer.domElement;
       // dragging sets where the view should point; the camera eases toward it each frame, so look-around is smooth
       // even when pointer events arrive in bursts
-      const onDown = e => { if (walk.on && e.button === 0) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      // Walking looks around with the mouse itself (pointer lock, as in a game): a click in the view captures the
+      // pointer and Esc releases it. Browsers without pointer lock fall back to dragging.
+      const locked = () => document.pointerLockElement === cv;
+      const onLock = () => { if (!locked()) walk.unlockAt = performance.now(); };
+      document.addEventListener("pointerlockchange", onLock);
+      const onDown = e => {
+        if (!walk.on || e.button !== 0) return;
+        if (canLock) { if (!locked()) { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } return; }
+        walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId);
+      };
+      const onMouse = e => {
+        if (!walk.on || !locked()) return;
+        const L = walk.look || (walk.look = [walk.yaw, walk.pitch]);
+        L[0] -= e.movementX * 0.0022; L[1] = Math.max(-1.2, Math.min(1.0, L[1] - e.movementY * 0.0022));
+      };
+      document.addEventListener("mousemove", onMouse);
       const onMove = e => {
         if (!walk.on || !walk.drag) return;
         const L = walk.look || (walk.look = [walk.yaw, walk.pitch]);
@@ -1090,7 +1120,8 @@
       addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp); addEventListener("blur", onBlur);
       cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp); cv.addEventListener("pointercancel", onUp);
       if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
-      walkCtl = { on: () => walk.on, off: () => setWalk(false) };
+      // Esc that only freed the mouse must not also end the walk
+      walkCtl = { on: () => walk.on, off: () => { if (performance.now() - (walk.unlockAt || 0) > 400) setWalk(false); } };
       // Walking: speed eases up and down instead of jumping, the walker slides around structures, tree trunks and
       // ponds rather than passing through them, stays out of the river, and the eye follows the ground smoothly.
       const solids = built.solids || [];
@@ -1221,6 +1252,8 @@
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
           removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp); removeEventListener("blur", onBlur);
+          document.removeEventListener("pointerlockchange", onLock); document.removeEventListener("mousemove", onMouse);
+          if (locked()) document.exitPointerLock();
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment, ...built.K.texs].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();

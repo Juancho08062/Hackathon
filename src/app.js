@@ -1711,7 +1711,6 @@ function refresh() {
   else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
   renderChips();
-  $("#filtCt").textContent = `${state.D} km · ${state.horizon ? (state.horizon === 12 ? "next 12 mo" : "next " + state.horizon / 12 + " yr") : "all dates"}`;
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
@@ -1736,7 +1735,6 @@ $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === 
 $("#utilB").onchange = e => { state.utilB = e.target.value; state.tab = "overlaps"; rebuild(); };
 $("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
 $("#dist2").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
-$("#moreFilters").onclick = e => { e.stopPropagation(); $("#filtersBtn").click(); };
 $("#panelTog").onclick = () => setPanel(!panelMin());
 setPanel(store.get("panelMin", false), true);
 $("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refresh(); };
@@ -1760,9 +1758,9 @@ $("#railTl").onclick = () => {
   renderTimeline(); SeamMap.resize();
 };
 // Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
-const pops = [["filtersBtn", "controls"], ["moreBtn", "moreMenu"]];
+const pops = [["moreFilters", "controls"], ["moreBtn", "moreMenu"]];
 const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });
-pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; if (open && p === "controls") $("#controls").style.right = Math.max(12, innerWidth - $("#" + b).getBoundingClientRect().right) + "px"; $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
+pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; if (open && p === "controls") { const r = $("#" + b).getBoundingClientRect(); $("#controls").style.right = Math.max(12, innerWidth - r.right) + "px"; $("#controls").style.top = r.bottom + 6 + "px"; } $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
 document.addEventListener("click", e => { if (!e.target.closest("#controls, #moreMenu")) closePops(); });
 $("#moreMenu").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; closePops(); if (b.dataset.go) $("#" + b.dataset.go).click(); });
 $("#play").onclick = togglePlay;
