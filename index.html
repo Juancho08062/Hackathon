@@ -366,6 +366,9 @@ svg text{font-family:var(--body)}
 .m3d-head p{margin:3px 0 0;color:rgba(255,255,255,.82)}
 .m3d-head .btn{pointer-events:auto;flex:none;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25);backdrop-filter:blur(6px)}
 .m3d-head .btn:hover{background:rgba(255,255,255,.22)}
+.m3d-q{pointer-events:auto;flex:none;display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.85)}
+.m3d-q select{font:inherit;font-size:13px;height:34px;padding:0 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px)}
+.m3d-q option{color:#13222A}
 .m3d-head #m3dLabels[aria-pressed=false]{opacity:.75}
 .m3d-stage.nolabels .m3d-labels,.m3d-stage.nolabels~.m3d-foot{display:none}
 .m3d-msg{position:absolute;z-index:3;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(6,14,18,.8);padding:10px 16px;border-radius:var(--r-sm);max-width:80%}
@@ -519,6 +522,7 @@ svg text{font-family:var(--body)}
   <div class="m3d-box">
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
+      <label class="m3d-q">Quality <select id="m3dQ" aria-label="3D image quality"><option value="standard">Standard</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
       <button type="button" class="btn" id="m3dLabels" aria-pressed="true">Labels on</button>
       <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>
@@ -978,6 +982,14 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js",
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"
     ]],
+    // SSAO and SMAA for the High and Ultra 3D quality settings.
+    ThreeQuality: ["vendor/three-quality.js", [
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SSAOPass.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SMAAShader.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SMAAPass.js"
+    ]],
     XLSX: ["vendor/xlsx.full.min.js", "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"],
     toGeoJSON: ["vendor/togeojson.umd.js", "https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"],
     JSZip: ["vendor/jszip.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"],
@@ -985,6 +997,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   };
   const T = () => root.THREE || {};
   const has = name => name === "OrbitControls" ? !!T().OrbitControls
+    : name === "ThreeQuality" ? !!(T().SSAOPass && T().SMAAPass)
     : name === "ThreeExtras" ? !!(T().Sky && T().UnrealBloomPass && T().FXAAShader && T().GammaCorrectionShader)
     : !!root[name];
   const inject = src => new Promise((res, rej) => {
@@ -1115,7 +1128,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 // Seamline 3D: a realistic scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
 // the closest-point link, and the shared zone the tier allows (corridor, laydown yard or staging yard).
 // three.js loads on first use. Horizontal positions are to scale; heights are exaggerated so towers read.
-// Rendering: PBR materials, a physical sky that also lights the scene, soft shadows, HDR bloom, ACES tone mapping and FXAA.
+// Rendering: PBR materials, a physical sky that also lights the scene, soft shadows, HDR bloom and ACES tone mapping.
+// Quality presets trade speed for sharpness: pixel ratio, shadow map size, terrain and texture detail, SSAO and SMAA.
 (function (root) {
   const PAL = {
     fog: 0xa9bccb, sun: 0xfff1d6,
@@ -1124,8 +1138,16 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     fence: 0x46525c, ridge: 0x4f6b55, water: 0x24505c, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let ctx = null;
-  const ensureThree = () => root.Libs.need("THREE", "OrbitControls", "ThreeExtras");
+  let ctx = null, last = null;
+  // Standard is the lightest; High (the default) adds ambient occlusion and SMAA; Ultra renders at the full screen
+  // resolution with a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass detail.
+  const QUALITY = {
+    standard: { dpr: 1.25, shadow: 2048, seg: 130, tex: 256, ssao: 0, smaa: false },
+    high: { dpr: 2, shadow: 4096, seg: 200, tex: 512, ssao: 16, smaa: true },
+    ultra: { dpr: 3, shadow: 4096, seg: 280, tex: 1024, ssao: 32, smaa: true },
+  };
+  const ensureThree = q => root.Libs.need("THREE", "OrbitControls", "ThreeExtras")
+    .then(() => q.ssao || q.smaa ? root.Libs.need("ThreeQuality").then(() => q, () => QUALITY.standard) : q);
 
   // ---------- helpers ----------
   // PBR material helper. `rough` and `metal` set roughness and metalness; `shininess` of 40 or more means a glossy surface.
@@ -1396,7 +1418,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
 
   // ---------- build ----------
-  function build(pair, opts) {
+  function build(pair, opts, Q) {
     const T = root.THREE, rnd = rng(7);
     const c0 = [(pair.ca[0] + pair.cb[0]) / 2, (pair.ca[1] + pair.cb[1]) / 2];
     const KX = 111.32 * Math.cos(c0[0] * Math.PI / 180), KY = 110.57;
@@ -1425,13 +1447,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 
     scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, 0.2));
     const sun = new T.DirectionalLight(PAL.sun, 2.6);
-    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    sun.castShadow = true; sun.shadow.mapSize.set(Q.shadow, Q.shadow);
     const sc = sun.shadow.camera; sc.left = sc.bottom = -R * 1.4; sc.right = sc.top = R * 1.4; sc.near = 1; sc.far = R * 5;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
     scene.add(sun, sun.target);
 
     // plateau ground with vertex colors
-    const size = RG * 2.4, gGeo = new T.PlaneGeometry(size, size, 130, 130); gGeo.rotateX(-Math.PI / 2);
+    const size = RG * 2.4, gGeo = new T.PlaneGeometry(size, size, Q.seg, Q.seg); gGeo.rotateX(-Math.PI / 2);
     const pos = gGeo.attributes.position, cols = [], tmp = new T.Color();
     const cG = new T.Color(PAL.grass), cD = new T.Color(PAL.grassDark), cY = new T.Color(PAL.grassDry), cR = new T.Color(PAL.rock);
     for (let i = 0; i < pos.count; i++) {
@@ -1445,16 +1467,16 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
     // speckled grass texture, multiplied over the vertex colors
-    const GS = 256, gc = document.createElement("canvas"); gc.width = gc.height = GS;
+    const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
-    for (let i = 0; i < 9000; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
     // grass blades and a few bare patches
     {
-      for (let i = 0; i < 2200; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
-      for (let i = 0; i < 14; i++) { gx.fillStyle = "rgba(205,190,160,0.18)"; gx.beginPath(); gx.arc(gr() * GS, gr() * GS, 6 + gr() * 18, 0, 7); gx.fill(); }
+      for (let i = 0; i < 2200 * (GS / 256) ** 2; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
+      for (let i = 0; i < 14; i++) { gx.fillStyle = "rgba(205,190,160,0.18)"; gx.beginPath(); gx.arc(gr() * GS, gr() * GS, (6 + gr() * 18) * GS / 256, 0, 7); gx.fill(); }
     }
     const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(26, 26);
-    groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = 4;
+    groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = Q.aniso || 4;
     const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
 
     // basalt columns around the cliff
@@ -1654,6 +1676,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 
   // ---------- modal and render loop ----------
   function open(pair, opts) {
+    last = { pair, opts };
     const modal = document.getElementById("m3d");
     modal.hidden = false;
     document.getElementById("m3dTitle").textContent = opts.title;
@@ -1661,11 +1684,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
     msg.textContent = "Loading 3D…"; msg.hidden = false;
     document.getElementById("m3dClose").focus();
-    ensureThree().then(() => {
+    ensureThree(QUALITY[opts.quality] || QUALITY.high).then(q => {
       if (modal.hidden) return;
       close(true);
-      const T = root.THREE, built = build(pair, opts);
-      const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+      const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+      const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q);
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
@@ -1696,18 +1719,35 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       built.scene.environment = pmrem.fromScene(envScene).texture;
       const rt = new T.WebGLRenderTarget(1, 1, { type: T.HalfFloatType, format: T.RGBAFormat, minFilter: T.LinearFilter, magFilter: T.LinearFilter });
       const composer = new T.EffectComposer(renderer, rt);
-      composer.addPass(new T.RenderPass(built.scene, cam));
+      let ssao = null;
+      if (Q.ssao) {
+        // Ambient occlusion darkens creases where towers meet the ground and parts touch. The pass renders the scene
+        // itself; its beauty buffer is switched to half-float so bloom and tone mapping still get HDR input.
+        ssao = new T.SSAOPass(built.scene, cam, 1, 1);
+        ssao.beautyRenderTarget.texture.type = T.HalfFloatType;
+        ssao.normalRenderTarget.depthTexture.type = T.UnsignedIntType; // 16-bit depth bands badly over this camera range
+        ssao.kernelSize = Q.ssao; ssao.generateSampleKernel();
+        ssao.ssaoMaterial.defines.KERNEL_SIZE = Q.ssao; ssao.ssaoMaterial.uniforms.kernel.value = ssao.kernel; ssao.ssaoMaterial.needsUpdate = true;
+        ssao.kernelRadius = 1.4; ssao.minDistance = 0.000002; ssao.maxDistance = 0.0006;
+        // clouds, steam and labels are sprites: keep them out of the occlusion pass
+        const hide = ssao.overrideVisibility.bind(ssao);
+        ssao.overrideVisibility = function () { hide(); built.scene.traverse(o => { if (o.isSprite || o === built.sky) o.visible = false; }); };
+        composer.addPass(ssao);
+      } else composer.addPass(new T.RenderPass(built.scene, cam));
       composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
       const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
-      const fxaa = new T.ShaderPass(T.FXAAShader); composer.addPass(fxaa);
+      // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.
+      const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
+      composer.addPass(fxaa || smaa);
 
       const size = () => {
-        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(1.25, devicePixelRatio);
+        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
-        composer.setPixelRatio(pr); composer.setSize(w, h); fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
+        composer.setPixelRatio(pr); composer.setSize(w, h);
+        if (fxaa) fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
         cam.aspect = w / h; cam.updateProjectionMatrix();
       };
       size();
@@ -1747,6 +1787,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
+          if (ssao) ssao.dispose(); if (smaa) { smaa.edgesRT.dispose(); smaa.weightsRT.dispose(); smaa.areaTexture.dispose(); smaa.searchTexture.dispose(); }
           renderer.dispose();
         },
       };
@@ -1756,7 +1797,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     if (ctx) { ctx.stop(); ctx = null; }
     if (!keepOpen) { document.getElementById("m3d").hidden = true; document.getElementById("m3dStage").innerHTML = ""; }
   }
-  root.Scene3D = { open, close };
+  // Re-open the current pair at a new quality setting.
+  const reopen = quality => { if (last && !document.getElementById("m3d").hidden) open(last.pair, Object.assign({}, last.opts, { quality })); };
+  root.Scene3D = { open, close, reopen, QUALITY };
 })(this);
 
 </script>
@@ -1921,7 +1964,10 @@ function renderTiles(t) {
   if (!bm.url) { layer.selectAll("image").remove(); return; }
   const S = proj.scale(), [tx, ty] = proj.translate();
   const W = 2 * Math.PI * S * t.k, left = t.x + t.k * (tx - Math.PI * S), top = t.y + t.k * (ty - Math.PI * S);
-  const z = Math.max(0, Math.min(18, Math.round(Math.log2(W / 256)))), n = 2 ** z, ts = W / n;
+  // Pick the zoom for the screen's real pixels, not the SVG's: on a Retina screen this loads the next zoom level
+  // (four tiles where one would show), so labels and imagery stay sharp. None of these servers offer @2x tiles.
+  const px = Math.max(1, ($("#map").clientWidth || MW) / MW * (window.devicePixelRatio || 1));
+  const z = Math.max(0, Math.min(19, Math.round(Math.log2(W * px / 256)))), n = 2 ** z, ts = W / n;
   const tiles = [];
   for (let i = Math.max(0, Math.floor(-left / ts)); i <= Math.min(n - 1, Math.floor((MW - left) / ts)); i++)
     for (let j = Math.max(0, Math.floor(-top / ts)); j <= Math.min(n - 1, Math.floor((MH - top) / ts)); j++) tiles.push([z, i, j]);
@@ -2294,10 +2340,11 @@ function updateWhatIf(x) {
     <p class="note">${off ? "Yard, delivery, crew, crane and contractor savings count only when both are built at the same time. " : ""}Planning estimates. Change any unit cost under <a href="#assume">Cost assumptions</a> and every pair updates.</p>`;
 }
 
+const yardDist = yd => yd.dists.every(d => d < 0.1) ? "right at both sites" : yd.dists.map(km).join(" and ") + " from the two sites";
 function pairYardHTML(x) {
   if (x.tier > 3) return "";
   const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x);
-  return `<div class="ydbox"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yd.dists.map(km).join(" and ")} from the two sites.
+  return `<div class="ydbox"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yardDist(yd)}.
     ${x.sameWindow ? `It would save about <b>${miles(im.netMi)} truck-miles</b>, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2.` : "It only helps if both are built at the same time."}</p>
     ${c ? `<button type="button" class="btn" id="toCl">Part of a ${c.projects.length}-project group: see one yard for all</button>` : ""}</div>`;
 }
@@ -2343,7 +2390,7 @@ function openBrief(x0) {
     : `<h4>What they can share</h4>
     <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
       ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
-    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yd.dists.map(km).join(" and ")} from the two sites${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard ${c.yard.near ? "at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
+    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard${c.yard.near ? " at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   $("#brief").hidden = false;
@@ -2366,13 +2413,17 @@ function briefMap(x) {
     <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
 }
 function closeBrief() { $("#brief").hidden = true; }
+// 3D quality: Standard, High (default) or Ultra, remembered between visits.
+const quality3d = () => { try { const q = localStorage.getItem("seamline.3dq"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
 function open3d(x) {
+  $("#m3dQ").value = quality3d();
   Scene3D.open(x, {
     title: `${x.p.name} and ${x.q.name}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.${x.sav.total ? " Rough savings " + money(x.sav.total) + "." : ""}`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility).split(" (")[0]}: ${x.p.name.split(":")[0]}`, nameB: `${lbl(x.q.utility).split(" (")[0]}: ${x.q.name.split(":")[0]}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`,
+    quality: quality3d(),
   });
 }
 
@@ -2568,6 +2619,8 @@ const setLabels3d = on => {
 };
 $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-pressed") !== "true");
 try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
+$("#m3dQ").value = quality3d();
+$("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dq", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
 $("#m3dClose").onclick = () => Scene3D.close();
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
 addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) Scene3D.close(); });

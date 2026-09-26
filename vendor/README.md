@@ -8,6 +8,7 @@ Pinned copies of the third-party scripts Seamline loads, so the site works offli
 | `three.min.js` | [three.js](https://threejs.org) | r128 (0.128.0) | MIT |
 | `OrbitControls.js` | three.js examples | r128 (0.128.0) | MIT |
 | `three-extras.js` | three.js examples: Sky, EffectComposer, RenderPass, ShaderPass, UnrealBloomPass and the Copy, LuminosityHighPass, ACESFilmicToneMapping, GammaCorrection and FXAA shaders, concatenated | r128 (0.128.0) | MIT |
+| `three-quality.js` | three.js examples: SimplexNoise, SSAOShader, SSAOPass, SMAAShader and SMAAPass, concatenated (High and Ultra 3D quality) | r128 (0.128.0) | MIT |
 | `xlsx.full.min.js` | [SheetJS Community Edition](https://sheetjs.com) | 0.18.5 | Apache-2.0 |
 | `togeojson.umd.js` | [@tmcw/togeojson](https://github.com/placemark/togeojson) | 5.8.1 | BSD-2-Clause |
 | `jszip.min.js` | [JSZip](https://stuk.github.io/jszip/) | 3.10.1 | MIT or GPL-3.0 |

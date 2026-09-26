@@ -158,7 +158,10 @@ function renderTiles(t) {
   if (!bm.url) { layer.selectAll("image").remove(); return; }
   const S = proj.scale(), [tx, ty] = proj.translate();
   const W = 2 * Math.PI * S * t.k, left = t.x + t.k * (tx - Math.PI * S), top = t.y + t.k * (ty - Math.PI * S);
-  const z = Math.max(0, Math.min(18, Math.round(Math.log2(W / 256)))), n = 2 ** z, ts = W / n;
+  // Pick the zoom for the screen's real pixels, not the SVG's: on a Retina screen this loads the next zoom level
+  // (four tiles where one would show), so labels and imagery stay sharp. None of these servers offer @2x tiles.
+  const px = Math.max(1, ($("#map").clientWidth || MW) / MW * (window.devicePixelRatio || 1));
+  const z = Math.max(0, Math.min(19, Math.round(Math.log2(W * px / 256)))), n = 2 ** z, ts = W / n;
   const tiles = [];
   for (let i = Math.max(0, Math.floor(-left / ts)); i <= Math.min(n - 1, Math.floor((MW - left) / ts)); i++)
     for (let j = Math.max(0, Math.floor(-top / ts)); j <= Math.min(n - 1, Math.floor((MH - top) / ts)); j++) tiles.push([z, i, j]);
@@ -531,10 +534,11 @@ function updateWhatIf(x) {
     <p class="note">${off ? "Yard, delivery, crew, crane and contractor savings count only when both are built at the same time. " : ""}Planning estimates. Change any unit cost under <a href="#assume">Cost assumptions</a> and every pair updates.</p>`;
 }
 
+const yardDist = yd => yd.dists.every(d => d < 0.1) ? "right at both sites" : yd.dists.map(km).join(" and ") + " from the two sites";
 function pairYardHTML(x) {
   if (x.tier > 3) return "";
   const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x);
-  return `<div class="ydbox"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yd.dists.map(km).join(" and ")} from the two sites.
+  return `<div class="ydbox"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yardDist(yd)}.
     ${x.sameWindow ? `It would save about <b>${miles(im.netMi)} truck-miles</b>, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2.` : "It only helps if both are built at the same time."}</p>
     ${c ? `<button type="button" class="btn" id="toCl">Part of a ${c.projects.length}-project group: see one yard for all</button>` : ""}</div>`;
 }
@@ -580,7 +584,7 @@ function openBrief(x0) {
     : `<h4>What they can share</h4>
     <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
       ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
-    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yd.dists.map(km).join(" and ")} from the two sites${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard ${c.yard.near ? "at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
+    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard${c.yard.near ? " at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   $("#brief").hidden = false;
@@ -603,13 +607,17 @@ function briefMap(x) {
     <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
 }
 function closeBrief() { $("#brief").hidden = true; }
+// 3D quality: Standard, High (default) or Ultra, remembered between visits.
+const quality3d = () => { try { const q = localStorage.getItem("seamline.3dq"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
 function open3d(x) {
+  $("#m3dQ").value = quality3d();
   Scene3D.open(x, {
     title: `${x.p.name} and ${x.q.name}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.${x.sav.total ? " Rough savings " + money(x.sav.total) + "." : ""}`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility).split(" (")[0]}: ${x.p.name.split(":")[0]}`, nameB: `${lbl(x.q.utility).split(" (")[0]}: ${x.q.name.split(":")[0]}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`,
+    quality: quality3d(),
   });
 }
 
@@ -805,6 +813,8 @@ const setLabels3d = on => {
 };
 $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-pressed") !== "true");
 try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
+$("#m3dQ").value = quality3d();
+$("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dq", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
 $("#m3dClose").onclick = () => Scene3D.close();
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
 addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) Scene3D.close(); });

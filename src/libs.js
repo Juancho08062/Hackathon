@@ -17,6 +17,14 @@
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js",
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"
     ]],
+    // SSAO and SMAA for the High and Ultra 3D quality settings.
+    ThreeQuality: ["vendor/three-quality.js", [
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SSAOPass.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SMAAShader.js",
+      "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SMAAPass.js"
+    ]],
     XLSX: ["vendor/xlsx.full.min.js", "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"],
     toGeoJSON: ["vendor/togeojson.umd.js", "https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"],
     JSZip: ["vendor/jszip.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"],
@@ -24,6 +32,7 @@
   };
   const T = () => root.THREE || {};
   const has = name => name === "OrbitControls" ? !!T().OrbitControls
+    : name === "ThreeQuality" ? !!(T().SSAOPass && T().SMAAPass)
     : name === "ThreeExtras" ? !!(T().Sky && T().UnrealBloomPass && T().FXAAShader && T().GammaCorrectionShader)
     : !!root[name];
   const inject = src => new Promise((res, rej) => {
