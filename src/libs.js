@@ -17,7 +17,7 @@
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js",
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"
     ]],
-    // SSAO and SMAA for the High and Ultra 3D quality settings.
+    // SSAO and SMAA for the Detailed and Ultra-realistic 3D settings.
     ThreeQuality: ["vendor/three-quality.js", [
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js",
       "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js",

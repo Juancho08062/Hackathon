@@ -983,7 +983,7 @@ function briefMap(x) {
 function closeBrief() { $("#brief").hidden = true; }
 
 // ---------- 3D illustration (three.js) ----------
-const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
+const quality3d = () => Scene3D.qualityKey(store.get("3dquality", "detailed"));
 function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
   Scene3D.open(x, Object.assign({
