@@ -38,21 +38,29 @@ const shownUtil = u => u === state.utilA || (!solo() && u === state.utilB);
 const uColor = u => u === state.utilA ? css("--u0") : u === state.utilB ? css("--u1") : css("--ink3");
 
 // ---------- compute ----------
-let RESULT = { pairs: [], checked: 0 }, VIEW = [];
+let RESULT = { pairs: [], checked: 0 }, VIEW = [], CLUSTERS = [];
 let SOLO = [];
 function compute() {
   if (solo()) {
     const q = state.q.toLowerCase();
-    RESULT = { pairs: [], checked: 0 }; VIEW = [];
+    RESULT = { pairs: [], checked: 0 }; VIEW = []; CLUSTERS = [];
     SOLO = PROJECTS.filter(p => p.utility === state.utilA && (!q || (p.name + " " + p.desc).toLowerCase().includes(q)))
       .sort((a, b) => mon(a.start) - mon(b.start) || a.name.localeCompare(b.name));
     return;
   }
   RESULT = findOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: state.mode });
   const q = state.q.toLowerCase();
+  // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance slider says
+  CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
   VIEW = RESULT.pairs.filter(x => state.tiers.has(Math.min(x.tier, 4)) &&
     (!q || (x.p.name + " " + x.q.name + " " + x.p.desc + " " + x.q.desc).toLowerCase().includes(q)));
 }
+
+// Best shared yard for a pair (cached on the pair), and the cluster a pair belongs to.
+const pairYard = x => x.yard || (x.yard = Engine.yardFor([x.p, x.q], EXIST.filter(e => !e.backdrop), 40));
+const clusterOf = x => CLUSTERS.find(c => c.projects.includes(x.p) && c.projects.includes(x.q));
+const inSel = (sel, p) => !!sel && (sel.cluster ? sel.cluster.projects.includes(p) : sel.p === p || sel.q === p);
+const miles = v => Math.round(v).toLocaleString();
 
 // ---------- map ----------
 let proj, zoomK = 1, zoomBehavior;
@@ -96,6 +104,7 @@ function drawMap() {
   z.append("g").attr("id", "links");
   z.append("g").attr("id", "projs");
   z.append("g").attr("id", "sparks");
+  z.append("g").attr("id", "yards");
   // existing-asset names sit above project lines, with a halo so a line never hides them
   z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => !e.backdrop && shownUtil(e.utility) && e.coords.length === 1)).join("text").attr("class", "exl ex")
     .attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1]).attr("data-fs", 10).attr("fill", css("--ink2"))
@@ -176,6 +185,8 @@ function applyK() {
   z.selectAll("text.exl").attr("x", function () { return +this.dataset.x + 9 / k; }).attr("y", function () { return +this.dataset.y + 4 / k; });
   z.selectAll("path.dia").attr("d", function () { const x = +this.dataset.x, y = +this.dataset.y, s = 6 / k; return `M${x},${y - s}L${x + s},${y}L${x},${y + s}L${x - s},${y}Z`; });
   z.selectAll("circle").attr("r", function () { return this.dataset.r / k; });
+  z.selectAll("path.yd").attr("d", function () { const x = +this.dataset.x, y = +this.dataset.y, s = +this.dataset.s / k; return `M${x - s},${y - s}h${2 * s}v${2 * s}h${-2 * s}Z`; })
+    .attr("stroke-width", function () { return 2 / k; });
   // cross-stitches: short slanted ticks across the seam, the same size at every zoom
   const sl = 3.4 / k;
   z.select("#stitches").selectAll("line").attr("x1", d => d.x - (d.ty + d.tx * 0.6) * sl).attr("y1", d => d.y + (d.tx - d.ty * 0.6) * sl)
@@ -199,10 +210,10 @@ function renderMap() {
       .attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", d => focus === d ? 3.5 : 1.5).attr("stroke-dasharray", "4 3"))
     .call(g => g.select("circle").attr("cx", d => pt(d.ca)[0]).attr("cy", d => pt(d.ca)[1]).attr("data-r", d => d.tier <= 1 ? (focus === d ? 12 : 8) : 0)
       .attr("fill", "none").attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", 2))
-    .attr("opacity", d => focus ? (d === focus ? 1 : .12) : t != null ? (live(d, t) ? 1 : .08) : d.sameWindow ? .9 : .45)
+    .attr("opacity", d => focus ? (d === focus || (focus.cluster && focus.cluster.pairs.includes(d)) ? 1 : .12) : t != null ? (live(d, t) ? 1 : .08) : d.sameWindow ? .9 : .45)
     .style("cursor", "pointer").on("click", (ev, d) => select(d));
   const rows = PROJECTS.filter(p => shownUtil(p.utility))
-    .map(p => ({ p, on: solo() || flagged.has(p.id), hi: focus && (focus.p === p || focus.q === p), ph: phase(p, t) }));
+    .map(p => ({ p, on: solo() || flagged.has(p.id), hi: inSel(focus, p), ph: phase(p, t) }));
   const G = d3.select("#projs").selectAll("g.p").data(rows, d => d.p.id)
     .join(e => { const g = e.append("g").attr("class", "p"); g.append("path").attr("class", "casing"); g.append("path").attr("class", "line"); g.append("circle"); return g; });
   // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite.
@@ -228,6 +239,7 @@ function renderMap() {
     .attr("cx", d => (pt(d.ca)[0] + pt(d.cb)[0]) / 2).attr("cy", d => (pt(d.ca)[1] + pt(d.cb)[1]) / 2).attr("data-r", 11)
     .attr("fill", d => tcol(Math.min(d.tier, 4))).attr("fill-opacity", .25).attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", 2)
     .style("cursor", "pointer").on("click", (ev, d) => select(d));
+  drawYards(focus);
   if (t != null) {
     const nb = rows.filter(r => r.ph === "building").length;
     $("#tlive").textContent = `${nb} project${nb === 1 ? "" : "s"} under construction` + (solo() ? "" : ` · ${sp.length} flagged pair${sp.length === 1 ? "" : "s"} building at once`);
@@ -278,6 +290,27 @@ function showTip(ev, p) {
 function hideTip() { $("#tip").hidden = true; }
 
 // ---------- summary ----------
+// Shared yards: a square marker for every cluster's yard; for the selected pair or cluster, its yard, the 40 km
+// crew-drive ring around it and dashed spokes to each work site.
+function drawYards(focus) {
+  const pt = c => proj([c[1], c[0]]), path = d3.geoPath(proj), Y = d3.select("#yards"), col = css("--seam");
+  Y.selectAll("*").remove();
+  if (solo()) return;
+  const fx = focus && !focus.solo ? (focus.cluster ? { yd: focus.cluster.yard } : focus.tier <= 3 ? { yd: pairYard(focus) } : null) : null;
+  if (fx) {
+    Y.append("path").attr("d", path(d3.geoCircle().center([fx.yd.at[1], fx.yd.at[0]]).radius(40 / 111.2)())).attr("fill", col).attr("fill-opacity", .06)
+      .attr("stroke", col).attr("stroke-width", 1.5).attr("stroke-dasharray", "6 4").attr("vector-effect", "non-scaling-stroke").style("pointer-events", "none");
+    const a = pt(fx.yd.at);
+    fx.yd.spokes.forEach(s => { const b = pt(s); Y.append("line").attr("x1", a[0]).attr("y1", a[1]).attr("x2", b[0]).attr("y2", b[1]).attr("stroke", col).attr("stroke-width", 1.5).attr("stroke-dasharray", "2 3").attr("vector-effect", "non-scaling-stroke"); });
+  }
+  const marks = CLUSTERS.map((c, i) => ({ yd: c.yard, c, i, on: focus && focus.cluster === c }));
+  if (fx && !focus.cluster) marks.push({ yd: fx.yd, on: true });
+  Y.selectAll("path.yd").data(marks).join("path").attr("class", "yd").attr("data-x", d => pt(d.yd.at)[0]).attr("data-y", d => pt(d.yd.at)[1]).attr("data-s", d => d.on ? 7 : 5)
+    .attr("fill", d => d.on ? col : css("--panel")).attr("stroke", col).attr("opacity", d => focus && !d.on ? .35 : 1).style("cursor", d => d.c ? "pointer" : "default")
+    .on("mousemove", (ev, d) => tip(ev, d.c ? `<b>Shared yard for ${d.c.projects.length} projects</b><br>${d.yd.near ? "At " + esc(d.yd.near) : "Open site"} · all within ${km(d.yd.max)}<br>About ${miles(d.c.impact.netMi)} truck-miles saved` : `<b>Best shared yard for this pair</b><br>${d.yd.near ? "At " + esc(d.yd.near) : "Open site"}`))
+    .on("mouseleave", hideTip).on("click", (ev, d) => { if (d.c) select({ cluster: d.c }); });
+}
+
 function renderStats() {
   if (solo()) {
     const ps = PROJECTS.filter(p => p.utility === state.utilA), costs = ps.map(Engine.estCost);
@@ -319,6 +352,37 @@ function renderTiers() {
 
 // ---------- list and detail ----------
 const pn = (p, cls) => `<span class="${cls}">${esc(p.name)}</span> <i>${fmtD(p, "in_service")}</i>`;
+function renderClusters() {
+  const C = $("#clusters");
+  C.hidden = solo() || !CLUSTERS.length;
+  if (C.hidden) return;
+  C.innerHTML = `<div class="cl-h">Shared yards <em>groups of 3 or more projects, both utilities, built at the same time, that one staging yard can serve</em></div>` +
+    CLUSTERS.map((c, i) => `<button type="button" class="cl${state.sel && state.sel.cluster === c ? " sel" : ""}" data-i="${i}"><b>${c.projects.length} projects</b><span>one yard ${c.yard.near ? "at " + esc(c.yard.near) : "on open land"} · ${miles(c.impact.netMi)} truck-miles saved</span></button>`).join("");
+  C.querySelectorAll(".cl").forEach(b => b.onclick = () => select({ cluster: CLUSTERS[+b.dataset.i] }));
+}
+function yardMath(yd, im) {
+  const A = Engine.ASSUME;
+  return `<table class="imp"><tbody>
+    <tr><td>Heavy loads that share trips<small>${A.loads} loads × ${im.n - 1} extra project${im.n === 2 ? "" : "s"} × 2 × ${A.haulKm} km from the depot</small></td><td>${miles(im.haulMi)} mi</td></tr>
+    <tr><td>Added yard-to-site driving<small>${A.shuttles} round trips per project × ${A.circuity} × each site's distance from the yard</small></td><td>−${miles(im.shuttleMi)} mi</td></tr>
+    <tr class="tot"><td>Net truck-miles saved</td><td>${miles(im.netMi)} mi</td></tr>
+    <tr><td>Driver hours saved<small>at ${A.mph} mph</small></td><td>${miles(im.hours)} h</td></tr>
+    <tr><td>CO2 avoided<small>${A.mpg} mpg × ${A.co2Gal} kg CO2 per gallon of diesel (EPA)</small></td><td>${im.co2t.toFixed(1)} t</td></tr></tbody></table>`;
+}
+function yardPlace(yd) {
+  const ll = yd.at.map(v => v.toFixed(3)).join(", ");
+  return `${yd.near ? `next to <b>${esc(yd.near)}</b>` : "on open land"} (<a href="https://www.google.com/maps?q=${yd.at[0].toFixed(5)},${yd.at[1].toFixed(5)}" target="_blank" rel="noopener">${ll}</a>)`;
+}
+function renderCluster(c, el) {
+  const im = c.impact;
+  el.innerHTML = `<div class="detail"><div class="dh"><h3>One yard for ${c.projects.length} projects</h3><span class="row"><button type="button" class="btn" id="clr">Close</button></span></div>
+    <p class="yd-lede">These projects are all built during overlapping windows and chain together through nearby pairs. The best single staging yard is ${yardPlace(c.yard)}, which puts every work site within ${km(c.yard.max)}, inside a crew's 40 km daily drive.</p>
+    <table class="imp yd-list"><tbody>${c.projects.map((p, i) => `<tr><td><span class="dot" style="background:${uColor(p.utility)}"></span>${esc(p.name)}<small>${esc(lbl(p.utility))} · ${fmtD(p, "start")} to ${fmtD(p, "in_service")}</small></td><td>${km(c.yard.dists[i])}</td></tr>`).join("")}</tbody></table>
+    <div class="yd-kpis"><div><b>${miles(im.netMi)}</b><span>truck-miles saved</span></div><div><b>${miles(im.hours)} h</b><span>driver time saved</span></div><div><b>${im.co2t.toFixed(1)} t</b><span>CO2 avoided</span></div><div><b>${money(im.dollars)}</b><span>${im.yardsAvoided} yard${im.yardsAvoided === 1 ? "" : "s"} not built</span></div></div>
+    <div><h3>How the road savings add up</h3>${yardMath(c.yard, im)}</div>
+    <p class="note">The yard is the point with the least total distance to every site (a geometric median), moved to an existing substation or plant when one is almost as good, since those already have road access. Distances are straight lines times the road factor; roads and zoning aren't checked. Change the numbers under <a href="#assume">Cost assumptions</a>.</p></div>`;
+  $("#clr").onclick = () => select(null);
+}
 function renderSoloList() {
   $("#listTitle").textContent = "Projects";
   $("#cnt").textContent = `${SOLO.length} shown`;
@@ -340,6 +404,7 @@ function renderList() {
   if (solo()) return renderSoloList();
   $("#listTitle").textContent = "Coordination opportunities";
   $("#cnt").textContent = `${VIEW.length} flagged`;
+  renderClusters();
   const L = $("#list");
   if (!VIEW.length) { L.innerHTML = `<div class="empty">No pairs match. Most planned projects don't overlap, so try a wider threshold, a build-window buffer, or turn tiers back on.</div>`; return; }
   L.innerHTML = VIEW.slice(0, 60).map((x, i) => `<div class="pair${state.sel === x ? " sel" : ""}" tabindex="0" data-i="${i}" style="--c:${tcol(Math.min(x.tier, 4))}">
@@ -376,6 +441,7 @@ function advice(x) {
 function renderDetail() {
   const x = state.sel, el = $("#detail");
   if (!x) { el.innerHTML = ""; return; }
+  if (x.cluster) return renderCluster(x.cluster, el);
   if (x.solo) {
     el.innerHTML = `<div class="detail"><div class="dh"><h3>Project</h3><span class="row"><button type="button" class="btn" id="clr">Close</button></span></div>${projBlock(x.p, Engine.estCost(x.p))}
       <p class="note">Pick a second utility under Compare to find projects near this one.</p></div>`;
@@ -388,6 +454,7 @@ function renderDetail() {
   el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="brf">Coordination brief</button><button type="button" class="btn" id="clr" aria-label="Close details">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
     <div class="advice" style="--c:${tcol(Math.min(x.tier, 4))}"><ul>${advice(x).map(a => `<li>${a}</li>`).join("")}</ul></div>
     <div id="sharesBox"></div>
+    ${pairYardHTML(x)}
     <div class="whatif"><div class="dh"><h3>What if a schedule moved?</h3><span class="seg" role="group" aria-label="Project to move">
       <button type="button" data-w="q" aria-pressed="${state.wi.who === "q"}">Move ${esc(short(x.q))}</button><button type="button" data-w="p" aria-pressed="${state.wi.who === "p"}">Move ${esc(short(x.p))}</button></span></div>
       <div class="wi-ctl"><input type="range" id="wiShift" min="-36" max="36" step="1" value="${state.wi.shift}" aria-label="Months to move the project"><output id="wiOut"></output></div>
@@ -398,6 +465,7 @@ function renderDetail() {
   $("#clr").onclick = () => select(null);
   $("#v3d").onclick = () => open3d(x);
   $("#brf").onclick = () => openBrief(x);
+  if ($("#toCl")) $("#toCl").onclick = () => select({ cluster: clusterOf(x) });
   el.querySelectorAll(".whatif [data-w]").forEach(b => b.onclick = () => {
     state.wi.who = b.dataset.w; state.wi.shift = 0; $("#wiShift").value = 0;
     el.querySelectorAll(".whatif [data-w]").forEach(o => o.setAttribute("aria-pressed", o === b));
@@ -463,6 +531,13 @@ function updateWhatIf(x) {
     <p class="note">${off ? "Yard, delivery, crew, crane and contractor savings count only when both are built at the same time. " : ""}Planning estimates. Change any unit cost under <a href="#assume">Cost assumptions</a> and every pair updates.</p>`;
 }
 
+function pairYardHTML(x) {
+  if (x.tier > 3) return "";
+  const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x);
+  return `<div class="ydbox"><h3>Shared yard</h3><p>Best spot for one staging yard: ${yardPlace(yd)}, ${yd.dists.map(km).join(" and ")} from the two sites.
+    ${x.sameWindow ? `It would save about <b>${miles(im.netMi)} truck-miles</b>, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2.` : "It only helps if both are built at the same time."}</p>
+    ${c ? `<button type="button" class="btn" id="toCl">Part of a ${c.projects.length}-project group: see one yard for all</button>` : ""}</div>`;
+}
 // What the pair can share, tier by tier, in the challenge's wording. Crew and yard sharing needs a shared build window.
 // Each item carries its own estimated saving and the math behind it.
 function sharesHTML(x) {
@@ -505,6 +580,7 @@ function openBrief(x0) {
     : `<h4>What they can share</h4>
     <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
       ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
+    ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2), c = clusterOf(x0); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yd.dists.map(km).join(" and ")} from the two sites${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles, ${miles(im.hours)} driver-hours and ${im.co2t.toFixed(1)} t of CO2` : ""}.${c ? ` Both projects also belong to a group of ${c.projects.length} that one yard ${c.yard.near ? "at " + esc(c.yard.near) : ""} could serve, saving about ${miles(c.impact.netMi)} truck-miles.` : ""}</p>`; })() : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   $("#brief").hidden = false;
@@ -523,7 +599,8 @@ function briefMap(x) {
   const [a, b] = [P(x.ca), P(x.cb)];
   return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map"><rect width="${W}" height="${H}" fill="#DCE6EA"/>${st}${seam}${proj1(x.p, "#0E6F8C")}${proj1(x.q, "#B4560F")}
     <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B0183D" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B0183D" stroke-width="1.5"/>
-    <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points</text></svg>`;
+    ${x.tier <= 3 ? (() => { const y = P(pairYard(x).at); return `<rect x="${y[0] - 5}" y="${y[1] - 5}" width="10" height="10" fill="#9A6B2F" stroke="#fff" stroke-width="1.5"/>`; })() : ""}
+    <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
 }
 function closeBrief() { $("#brief").hidden = true; }
 function open3d(x) {
@@ -566,7 +643,7 @@ function renderTimeline() {
     svg.append("rect").attr("x", x(a)).attr("width", x(b) - x(a)).attr("y", top - 6).attr("height", H - top + 6).attr("fill", css("--hotsoft"));
   }
   const g = svg.selectAll("g.r").data(rows).join("g").attr("transform", (d, i) => `translate(0,${top + i * RH})`).style("cursor", "pointer")
-    .attr("opacity", d => sel ? (sel.p === d || sel.q === d ? 1 : .3) : 1)
+    .attr("opacity", d => sel ? (inSel(sel, d) ? 1 : .3) : 1)
     .on("click", (ev, d) => { if (solo()) return select({ p: d, solo: true }); const pr = VIEW.find(x => x.p === d || x.q === d); if (pr) select(pr); })
     .on("mousemove", (ev, d) => showTip(ev, d)).on("mouseleave", hideTip);
   g.append("text").attr("x", LW - 8).attr("y", 11).attr("text-anchor", "end").attr("font-size", 11).attr("fill", d => uColor(d.utility))
@@ -693,7 +770,7 @@ function refresh() {
   $("#distv").textContent = `${state.D} km (${Math.round(state.D / 1.609)} mi)`;
   $("#bufv").textContent = `±${state.B} mo`;
   compute();
-  if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
+  if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); } else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   renderStats(); renderTiers(); renderMap(); renderList(); renderDetail(); renderTimeline();
 }
 function rebuild() { state.sel = null; renderPickers(); compute(); drawMap(); legend(); setupScrub(); refresh(); }
