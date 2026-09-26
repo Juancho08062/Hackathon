@@ -92,5 +92,56 @@ t("shared yard: geometric median, snapped to a substation, and 3+ project cluste
   const far = sub("D", "Y", 35, -80.8); // 220 km away: not in any cluster
   assert.strictEqual(E.clusters(E.findOverlaps([a, b, far], { utilA: "X", utilB: "Y", maxKm: 400, bufferMonths: 0, mode: "near" }).pairs, [], 40).length, 0);
 });
+t("dates: impossible months are refused, day-first dates are read, and one bad row doesn't sink the file", () => {
+  assert.strictEqual(I.toDate("2029-13"), null);
+  assert.strictEqual(I.toDate("13/13/2029"), null);
+  assert.strictEqual(I.toDate("25/12/2029").iso, "2029-12-25"); // day first, since 25 can't be a month
+  assert.strictEqual(I.toDate("12/25/2029").iso, "2029-12-25");
+  assert.strictEqual(I.toDate("2/31/2029").iso, "2029-02-28");
+  const csv = "utility,name,in_service,start,lat,lon\nU,Good,2029,,33,-81\nU,Bad month,2029-13,,33,-81\nU,Bad start,2029,2028-14,33,-81\nU,Day first,25/12/2029,,33,-81";
+  const r = I.parsePlan(csv, "t.csv", {});
+  assert.deepStrictEqual(r.projects.map(p => p.name), ["Good", "Day first"]);
+  assert.ok(r.projects.every(p => !isNaN(E.monthIndex(p.start)) && !isNaN(E.monthIndex(p.in_service))));
+  assert.strictEqual(r.errors.length, 2);
+  assert.ok(/2029-13/.test(r.errors[0]) && /2028-14/.test(r.errors[1]));
+});
+t("multi-part lines keep their parts apart for distance, length and cost", () => {
+  // two short east-west parts about 110 km apart, and a substation halfway between (about 55 km from each)
+  const gj = { type: "FeatureCollection", features: [{ type: "Feature", properties: { name: "Two parts", utility: "U", in_service: "2029", kv: 230, type: "new_line" },
+    geometry: { type: "MultiLineString", coordinates: [[[-81.0, 33.0], [-80.9, 33.0]], [[-81.0, 34.0], [-80.9, 34.0]]] } },
+    { type: "Feature", properties: { name: "Collection", utility: "U", in_service: "2029" },
+    geometry: { type: "GeometryCollection", geometries: [{ type: "LineString", coordinates: [[-81.0, 33.0], [-80.9, 33.0]] }, { type: "Point", coordinates: [-81.0, 34.0] }] } }] };
+  const [ml, gc] = I.parsePlan(JSON.stringify(gj), "t.geojson", {}).projects;
+  assert.strictEqual(ml.parts.length, 2);
+  const mid = { type: "substation", kv: 230, coords: [[33.5, -80.95]] };
+  assert.ok(E.closest(ml, mid)[0] > 50, "a point in the gap is not touching");
+  assert.ok(Math.abs(E.lengthKm(ml) - 2 * 9.3) < 0.5, "length is the two parts, not the gap");
+  assert.strictEqual(gc.parts.length, 2); // the collection keeps its line and its point
+  assert.ok(E.closest(gc, { coords: [[34.0, -81.0]] })[0] < 0.1);
+});
+t("From and To substation columns are not read as utilities", () => {
+  const csv = "name,from,to,in_service,lat,lon\nLine A,Graniteville,Vogtle,2029,33.5,-81.8\nLine B,Hardeeville,Port Wentworth,2030,32.2,-81.1";
+  const r = I.parsePlan(csv, "t.csv", { utility: "Typed Utility" });
+  assert.deepStrictEqual(r.projects.map(p => p.utility), ["Typed Utility", "Typed Utility"]);
+  assert.ok(!I.ALIASES.utility.includes("to"));
+});
+t("pair comparison is cached: same inputs reuse it, a data or option change reruns it", () => {
+  const a = { id: "a", utility: "X", name: "a", type: "substation", kv: 115, coords: [[33, -81]], start: "2027-01-01", in_service: "2028-01-01" };
+  const b = Object.assign({}, a, { id: "b", utility: "Y", coords: [[33, -80.9]] });
+  const o = { utilA: "X", utilB: "Y", maxKm: 40, bufferMonths: 0, mode: "near" };
+  const r1 = E.cachedOverlaps([a, b], o, 1);
+  assert.strictEqual(E.cachedOverlaps([a, b], Object.assign({}, o), 1), r1);
+  assert.notStrictEqual(E.cachedOverlaps([a, b], o, 2), r1);
+  assert.notStrictEqual(E.cachedOverlaps([a, b], Object.assign({}, o, { maxKm: 8 }), 2).pairs, r1.pairs);
+});
+t("suggested shift is worked out once per pair, not once per slider tick", () => {
+  const p = { id: "p1", start: "2026-01-01", in_service: "2027-01-01" }, q = { id: "q1", start: "2028-01-01", in_service: "2029-01-01" };
+  const x = { p, q }, before = E.recommendShift.computed;
+  const m = E.recommendShift(x, "q");
+  assert.strictEqual(m, -18); // moving q 18 months earlier gives 6 shared months
+  for (let i = 0; i < 100; i++) E.recommendShift(x, "q");
+  assert.strictEqual(E.recommendShift.computed - before, 1);
+  assert.strictEqual(E.shiftISO("2029-01-31", 1), "2029-02-28");
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);

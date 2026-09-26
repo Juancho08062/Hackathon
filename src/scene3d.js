@@ -389,9 +389,12 @@
       const kvH = (p.kv >= 500 ? 4.4 : p.kv >= 230 ? 3.4 : 2.6) * TS;
       const colorHex = new T.Color(color).getHex();
       let pts = [];
-      if (p.coords.length > 1) {
-        for (let i = 1; i < p.coords.length; i++) {
-          const a = toV(p.coords[i - 1]), b = toV(p.coords[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
+      // a multi-part line shows the part nearest the pair's meeting point, so no span is drawn across a gap
+      const d0 = c => Math.min(...c.map(([la, lo]) => Math.hypot(la - c0[0], lo - c0[1])));
+      const lc = (p.parts || [p.coords]).filter(c => c.length > 1).sort((a, b) => d0(a) - d0(b))[0] || [];
+      if (lc.length > 1) {
+        for (let i = 1; i < lc.length; i++) {
+          const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
         pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3);
