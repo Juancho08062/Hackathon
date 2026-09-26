@@ -92,7 +92,7 @@ select{padding-right:4px}
 .summary{color:var(--ink2);font-size:12px}
 .summary b{color:var(--ink);font-weight:600}
 .work{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,560px);min-height:0}
-.left{display:grid;grid-template-rows:minmax(0,1fr) 238px;min-height:0;border-right:1px solid var(--line)}
+.left{display:grid;grid-template-rows:minmax(0,1fr) 238px;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 
 /* ---------- map ---------- */
@@ -113,6 +113,15 @@ select{padding-right:4px}
 .maplibregl-ctrl-group{border-radius:var(--r-sm)!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important}
 .maplibregl-ctrl-scale{border-color:var(--ink2)!important;color:var(--ink2)!important;background:rgba(255,255,255,.8)!important;font:11px var(--body)!important}
 .maplibregl-ctrl-attrib{font:10px var(--body)}
+/* recenter and ruler buttons, the ruler readout, and distance labels on pair links and ruler legs */
+.seam-tools button svg{width:18px;height:18px;margin:auto;display:block;color:#333}
+.seam-tools button[aria-pressed=true]{background:var(--seam)!important}
+.seam-tools button[aria-pressed=true] svg{color:#fff}
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale{margin-top:4px}.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale+.maplibregl-ctrl-scale{margin-top:2px}
+.mread{position:absolute;z-index:3;left:50%;top:58px;transform:translateX(-50%);background:#fff;color:#1f2a30;border-radius:999px;padding:5px 14px;font:13px var(--body);box-shadow:0 1px 4px rgba(0,0,0,.3);white-space:nowrap}
+.mread b{font-variant-numeric:tabular-nums}
+.ml-gap{display:none;pointer-events:none;font:600 11px var(--body);color:#1f2a30;background:rgba(255,255,255,.88);padding:1px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.ml-gap.on,.gaps-all .ml-gap,.ml-gap.ml-leg{display:block}
 
 /* ---------- timeline ---------- */
 .timeline{display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--line)}

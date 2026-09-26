@@ -40,6 +40,8 @@ const fmtD = (p, which) => {
 };
 const monthLabel = m => new Date(Date.UTC(Math.floor(m / 12), Math.floor(m % 12), 1)).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const km = d => d < 0.1 ? "0 km" : d < 10 ? d.toFixed(1) + " km" : Math.round(d) + " km";
+// A distance in miles and kilometers, for labels on the map ("1.2 mi · 1.9 km").
+const miKm = d => { const f = v => v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString(); return `${f(d / 1.609344)} mi · ${f(d)} km`; };
 const pct = v => Math.round(v * 100) + "%";
 const tcol = i => css(TIERS[i].tok);
 const utilities = () => [...new Set(PROJECTS.map(p => p.utility))];
@@ -145,7 +147,8 @@ function renderMap() {
       width: (p.kv >= 500 ? 3.4 : p.kv >= 230 ? 2.6 : p.kv >= 115 ? 1.9 : 1.4) + (hi ? 2 : 0) + (phase(p, t) === "building" ? 1.2 : 0), r: hi ? 7 : 4.5 };
   });
   const pairOp = d => focus ? (d === focus || (focus.cluster && focus.cluster.pairs.includes(d)) ? 1 : .1) : t != null ? (live(d, t) ? 1 : .08) : .75;
-  const links = solo() ? [] : shown.filter(d => d.km >= 0.1).map(d => ({ id: keyOf(d), a: d.ca, b: d.cb, color: tcol(Math.min(d.tier, 4)), width: focus === d ? 3 : 1.4, opacity: pairOp(d) }));
+  const links = solo() ? [] : shown.filter(d => d.km >= 0.1).map(d => ({ id: keyOf(d), a: d.ca, b: d.cb, color: tcol(Math.min(d.tier, 4)), width: focus === d ? 3 : 1.4, opacity: pairOp(d),
+    label: miKm(d.km) + " apart", focus: focus === d }));
   const rings = solo() ? [] : shown.filter(d => d.tier <= 2 || d === focus).map(d => ({ id: keyOf(d), at: [(d.ca[0] + d.cb[0]) / 2, (d.ca[1] + d.cb[1]) / 2],
     color: tcol(Math.min(d.tier, 4)), r: d === focus ? 13 : d.tier <= 1 ? 9 : 6, w: d.tier === 0 ? 2.6 : 1.8, opacity: pairOp(d) }));
   const sparks = t == null ? [] : shown.filter(x => live(x, t)).map(x => ({ id: keyOf(x), at: [(x.ca[0] + x.cb[0]) / 2, (x.ca[1] + x.cb[1]) / 2], color: tcol(Math.min(x.tier, 4)) }));
@@ -1044,7 +1047,7 @@ renderDatasets();
 SEAM = seamCoords();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
-  click: mapClick, hover: mapHover,
+  click: mapClick, hover: mapHover, recenter: () => fitAll(700),
   tilesFailed: name => { setBasemap("plain"); $("#tileNote").textContent = `${SeamMap.BASEMAPS[name].label} tiles couldn't load (they need an internet connection), so the map switched to Plain.`; $("#tileNote").hidden = false; },
 }).then(() => {
   mapReady = true;
