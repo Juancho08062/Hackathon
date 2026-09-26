@@ -1,0 +1,2449 @@
+[
+ {
+  "id": "DESC-01",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Summerville 115kV Loop: Rebuild",
+  "desc": "Replace several wood pole sections on the Summerville 115 kV Loop",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-04-30",
+  "start": "2025-04-01",
+  "date_precision": "day",
+  "cost": 15775885,
+  "coords": [
+   [
+    33.018,
+    -80.176
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 1"
+ },
+ {
+  "id": "DESC-02",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Columbia Canal 115kV: Rebuild",
+  "desc": "Replace poles on Columbia side of canal",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-05-31",
+  "start": "2025-05-01",
+  "date_precision": "day",
+  "cost": 1150364,
+  "coords": [
+   [
+    34.0,
+    -81.05
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 2"
+ },
+ {
+  "id": "DESC-03",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Scout 230kV Sub and Fold-in: Construct",
+  "desc": "230 kV line for Scout customer substation; modify VCS1 and Killian terminals",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-05-31",
+  "start": "2025-05-01",
+  "date_precision": "day",
+  "cost": 19418000,
+  "coords": [
+   [
+    34.2,
+    -81.1
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 3"
+ },
+ {
+  "id": "DESC-04",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Eastover - Sumter 115kV DEP Tie: Rebuild",
+  "desc": "Upgrade DESC section (~1 mi) of tie line to 1272 ACSR",
+  "kv": 115,
+  "miles": 1,
+  "type": "rebuild",
+  "in_service": "2026-05-31",
+  "start": "2025-07-01",
+  "date_precision": "day",
+  "cost": 1238443,
+  "coords": [
+   [
+    33.877,
+    -80.695
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 4"
+ },
+ {
+  "id": "DESC-05",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Batesburg - Saluda County 115kV: Rebuild",
+  "desc": "Rebuild 13.5 miles of conductor",
+  "kv": 115,
+  "miles": 13.5,
+  "type": "rebuild",
+  "in_service": "2026-06-30",
+  "start": "2025-02-01",
+  "date_precision": "day",
+  "cost": 13040765,
+  "coords": [
+   [
+    33.908,
+    -81.547
+   ],
+   [
+    34.001,
+    -81.772
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 5"
+ },
+ {
+  "id": "DESC-06",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Summerville - Boone Hill 115kV: Move Line",
+  "desc": "Move ~1.2 mi (23 poles) for SCDOT road widening",
+  "kv": 115,
+  "miles": 1.2,
+  "type": "rebuild",
+  "in_service": "2026-07-31",
+  "start": "2025-09-01",
+  "date_precision": "day",
+  "cost": 12475000,
+  "coords": [
+   [
+    33.018,
+    -80.176
+   ],
+   [
+    32.99,
+    -80.23
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 6"
+ },
+ {
+  "id": "DESC-07",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Urquhart - Toolebeck 115kV: Rebuild",
+  "desc": "Upgrade 477 ACSR to 1272 ACSR, single-pole double-circuit, ~12.5 mi",
+  "kv": 115,
+  "miles": 12.5,
+  "type": "rebuild",
+  "in_service": "2026-08-12",
+  "start": "2025-04-01",
+  "date_precision": "day",
+  "cost": 15948620,
+  "coords": [
+   [
+    33.435,
+    -81.923
+   ],
+   [
+    33.53,
+    -81.8
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 7"
+ },
+ {
+  "id": "DESC-08",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Dawson 230kV Sub and Fold-in: Construct and Rebuild",
+  "desc": "New Dawson 230 kV sub, fold in Canadys lines, rebuild Canadys-Dawson #1/#2",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-10-01",
+  "start": "2025-10-01",
+  "date_precision": "day",
+  "cost": 93603207,
+  "coords": [
+   [
+    33.06,
+    -80.62
+   ],
+   [
+    32.88,
+    -80.3
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 8"
+ },
+ {
+  "id": "DESC-09",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Cainhoy - Hamlin 115kV: Rebuild and Construct",
+  "desc": "Upgrade 954 ACSR to B795; new Cainhoy-Hamlin 115 kV #2",
+  "kv": 115,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2026-12-02",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": 40858628,
+  "coords": [
+   [
+    32.93,
+    -79.83
+   ],
+   [
+    32.86,
+    -79.8
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 9"
+ },
+ {
+  "id": "DESC-10",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Coit - Gills Creek 115kV: Construct",
+  "desc": "Convert 33 kV line to 115 kV, ~1.25 mi",
+  "kv": 115,
+  "miles": 1.25,
+  "type": "rebuild",
+  "in_service": "2026-12-31",
+  "start": "2026-02-01",
+  "date_precision": "day",
+  "cost": 5773202,
+  "coords": [
+   [
+    33.99,
+    -80.97
+   ],
+   [
+    33.97,
+    -80.95
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 10"
+ },
+ {
+  "id": "DESC-11",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Okatie 230-115kV Substation, Jasper-Yemassee #1 Fold-in",
+  "desc": "Expand Okatie sub, add 230-115 autobank, fold in Jasper-Yemassee 230 kV #1",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-12-31",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": 11630257,
+  "coords": [
+   [
+    32.3,
+    -80.93
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 11"
+ },
+ {
+  "id": "DESC-12",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Jasper - Okatie 230kV #2: Construct",
+  "desc": "New 230 kV line, B1272 ACSR, ~6.5 mi",
+  "kv": 230,
+  "miles": 6.5,
+  "type": "new_line",
+  "in_service": "2026-12-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": 19280474,
+  "coords": [
+   [
+    32.3,
+    -81.08
+   ],
+   [
+    32.3,
+    -80.93
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 12"
+ },
+ {
+  "id": "DESC-13",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Riverport 115kV Tap: Construct",
+  "desc": "230 kV tap from Okatie to Riverport",
+  "kv": 230,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2026-12-01",
+  "start": "2025-06-01",
+  "date_precision": "day",
+  "cost": 41389047,
+  "coords": [
+   [
+    32.3,
+    -80.93
+   ],
+   [
+    32.25,
+    -81.05
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 13"
+ },
+ {
+  "id": "DESC-14",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Flat Rock 115kV Sub and Tap: Construct",
+  "desc": "115 kV tap off Belvedere Sw Sta - Graniteville 115 kV #1",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-12-31",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": 3950000,
+  "coords": [
+   [
+    33.53,
+    -81.87
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 14"
+ },
+ {
+  "id": "DESC-15",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Saluda Hydro - Bush River 115kV #1 & #2 Tie Rebuild",
+  "desc": "Rebuild tie lines to SPDC 1272",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-12-31",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": 20400000,
+  "coords": [
+   [
+    34.05,
+    -81.21
+   ],
+   [
+    34.03,
+    -81.1
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 15"
+ },
+ {
+  "id": "DESC-16",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Church Creek - Faber Place - Charleston: Add 230kV Line",
+  "desc": "New 230 kV Church Creek-Charleston line, rebuild Church Creek-Faber Place, add transformer",
+  "kv": 230,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2027-05-01",
+  "start": "2025-11-01",
+  "date_precision": "day",
+  "cost": 22788174,
+  "coords": [
+   [
+    32.82,
+    -80.07
+   ],
+   [
+    32.8,
+    -79.95
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 16"
+ },
+ {
+  "id": "DESC-17",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Yemassee - Ritter 230kV #1 & #2: Construct SPDC",
+  "desc": "Ritter-Yemassee 230 kV #1/#2 SPDC, B1272 ACSR",
+  "kv": 230,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2027-06-01",
+  "start": "2025-12-01",
+  "date_precision": "day",
+  "cost": 39066742,
+  "coords": [
+   [
+    32.69,
+    -80.85
+   ],
+   [
+    32.73,
+    -80.58
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 17"
+ },
+ {
+  "id": "DESC-18",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Fairfax - Yemassee 115kV: Upgrade",
+  "desc": "Upgrade 336 ACSR portion to 1272 ACSR (generator interconnection)",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-09-07",
+  "start": "2026-09-01",
+  "date_precision": "day",
+  "cost": 20350000,
+  "coords": [
+   [
+    32.96,
+    -81.24
+   ],
+   [
+    32.69,
+    -80.85
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 18"
+ },
+ {
+  "id": "DESC-19",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "St George - Sumter 230kV Tie: Rebuild Line",
+  "desc": "Rebuild Santee Sub - Duke/Progress tie",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 4569331,
+  "coords": [
+   [
+    33.48,
+    -80.49
+   ],
+   [
+    33.6,
+    -80.4
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 19"
+ },
+ {
+  "id": "DESC-20",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Hooks - Modoc 115/46kV Rebuild",
+  "desc": "Upgrade 6.5 mi aging conductor to 1272 ACSR, SPDC",
+  "kv": 115,
+  "miles": 6.5,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-11-01",
+  "date_precision": "day",
+  "cost": 10534285,
+  "coords": [
+   [
+    33.72,
+    -82.21
+   ],
+   [
+    33.65,
+    -82.13
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 20"
+ },
+ {
+  "id": "DESC-21",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Burton - St Helena 115kV: Rebuild Frogmore Section",
+  "desc": "Steel structures, restring 1272 ACSR",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 18129932,
+  "coords": [
+   [
+    32.43,
+    -80.68
+   ],
+   [
+    32.39,
+    -80.58
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 21"
+ },
+ {
+  "id": "DESC-22",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Wagener 115kV Tap: Construct",
+  "desc": "115 kV tap off Edmund Sw Sta - Owens Corning 115 kV",
+  "kv": 115,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2027-12-31",
+  "start": "2026-06-01",
+  "date_precision": "day",
+  "cost": 7540000,
+  "coords": [
+   [
+    33.65,
+    -81.36
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 22"
+ },
+ {
+  "id": "DESC-23",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Cameron Jct - Elloree 46kV Rebuild",
+  "desc": "Rebuild 7.3 mi",
+  "kv": 46,
+  "miles": 7.3,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-11-01",
+  "date_precision": "day",
+  "cost": 8075000,
+  "coords": [
+   [
+    33.56,
+    -80.71
+   ],
+   [
+    33.53,
+    -80.57
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 23"
+ },
+ {
+  "id": "DESC-24",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Atomic Road 115/12kV Sub: Construct",
+  "desc": "New 115-12 kV sub, 28 MVA transformer",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 3646027,
+  "coords": [
+   [
+    33.4,
+    -81.85
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 24"
+ },
+ {
+  "id": "DESC-25",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Elloree - Santee City 46kV: Rebuild",
+  "desc": "Rebuild 8.35 mi",
+  "kv": 46,
+  "miles": 8.35,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-10-01",
+  "date_precision": "day",
+  "cost": 10294609,
+  "coords": [
+   [
+    33.53,
+    -80.57
+   ],
+   [
+    33.48,
+    -80.49
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 25"
+ },
+ {
+  "id": "DESC-26",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Urquhart - Aiken PSA 46kV: Rebuild",
+  "desc": "Rebuild 4.5 mi",
+  "kv": 46,
+  "miles": 4.5,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 3000000,
+  "coords": [
+   [
+    33.435,
+    -81.923
+   ],
+   [
+    33.47,
+    -81.86
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 26"
+ },
+ {
+  "id": "DESC-27",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Wateree - Hopkins 230kV #1: Rebuild",
+  "desc": "Rebuild SPSC with 1272 ACSR",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 22400000,
+  "coords": [
+   [
+    33.83,
+    -80.62
+   ],
+   [
+    33.9,
+    -80.88
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 27"
+ },
+ {
+  "id": "DESC-28",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Adams Run - Red House Road 46kV: Replace River Crossing",
+  "desc": "Dawhoo River crossing, 58 structures in marsh",
+  "kv": 46,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 11000000,
+  "coords": [
+   [
+    32.62,
+    -80.35
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 28"
+ },
+ {
+  "id": "DESC-29",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Lyles - Kilbourne Park 115kV: Replace Structures",
+  "desc": "Rebuild 2.85 mi",
+  "kv": 115,
+  "miles": 2.85,
+  "type": "rebuild",
+  "in_service": "2027-12-01",
+  "start": "2027-01-01",
+  "date_precision": "day",
+  "cost": 4770000,
+  "coords": [
+   [
+    34.01,
+    -81.02
+   ],
+   [
+    33.98,
+    -80.99
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 29"
+ },
+ {
+  "id": "DESC-30",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Winnsboro West 230-115kV Sub and Fold-in: Construct",
+  "desc": "New sub, fold in Parr-Winnsboro 115 kV #1 and VCS1-Killian 230 kV",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-01-31",
+  "start": "2027-01-01",
+  "date_precision": "day",
+  "cost": 23272000,
+  "coords": [
+   [
+    34.37,
+    -81.12
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 30"
+ },
+ {
+  "id": "DESC-31",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Williams - Summerville 230kV: Upgrade to SPDC",
+  "desc": "Rebuild Ladson Jct - Williams to B-1272, ~10 mi",
+  "kv": 230,
+  "miles": 10,
+  "type": "rebuild",
+  "in_service": "2028-05-01",
+  "start": "2027-02-01",
+  "date_precision": "day",
+  "cost": 31100000,
+  "coords": [
+   [
+    32.99,
+    -79.93
+   ],
+   [
+    32.98,
+    -80.1
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 31"
+ },
+ {
+  "id": "DESC-32",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Church Creek - Ritter 230kV: Replace Structures",
+  "desc": "Replace ~38 guyed wood structures",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 11424330,
+  "coords": [
+   [
+    32.82,
+    -80.07
+   ],
+   [
+    32.73,
+    -80.58
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 32"
+ },
+ {
+  "id": "DESC-33",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Jackson 115kV: Construct Distribution Substation",
+  "desc": "115-12 kV sub replacing Jackson 46 kV",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 3003760,
+  "coords": [
+   [
+    33.33,
+    -81.79
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 33"
+ },
+ {
+  "id": "DESC-34",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Harleyville 115kV Tap: Construct",
+  "desc": "Extend 115 kV line 1.4 mi to Harleyville",
+  "kv": 115,
+  "miles": 1.4,
+  "type": "new_line",
+  "in_service": "2028-12-31",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": 2750000,
+  "coords": [
+   [
+    33.21,
+    -80.45
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 34"
+ },
+ {
+  "id": "DESC-35",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Orangeburg #1 - Cameron Jct 46kV: Rebuild",
+  "desc": "Rebuild 7.5 mi, steel poles, 1272 ACSR",
+  "kv": 46,
+  "miles": 7.5,
+  "type": "rebuild",
+  "in_service": "2028-12-31",
+  "start": "2027-11-01",
+  "date_precision": "day",
+  "cost": 7912400,
+  "coords": [
+   [
+    33.49,
+    -80.86
+   ],
+   [
+    33.56,
+    -80.71
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 35"
+ },
+ {
+  "id": "DESC-36",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "VCS1 - Denny Terrace & VCS1 - Pineland 230kV: Rebuild",
+  "desc": "Steel structures, restring 1272 ACSR",
+  "kv": 230,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 13285118,
+  "coords": [
+   [
+    34.298,
+    -81.315
+   ],
+   [
+    34.05,
+    -81.03
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 36"
+ },
+ {
+  "id": "DESC-37",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Coast Guard 115kV Substation and Tap: Construct",
+  "desc": "115-23.9 kV sub, 37.3 MVA, plus 115 kV line",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-12-31",
+  "start": "2026-12-01",
+  "date_precision": "day",
+  "cost": 5560000,
+  "coords": [
+   [
+    32.78,
+    -79.93
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 37"
+ },
+ {
+  "id": "DESC-38",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Millrace 115kV Tap: Construct",
+  "desc": "Tap from Dunbar Road - Lyles 115 kV, 1272 ACSR",
+  "kv": 115,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2028-12-31",
+  "start": "2027-06-01",
+  "date_precision": "day",
+  "cost": 3200000,
+  "coords": [
+   [
+    33.97,
+    -81.1
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 38"
+ },
+ {
+  "id": "DESC-39",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Williams St, AM Williams, McMeekin Subs: Replace/Add",
+  "desc": "Switch houses, equipment and relay panels",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 11182924,
+  "coords": [
+   [
+    34.0,
+    -81.04
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 39"
+ },
+ {
+  "id": "DESC-40",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Cameron Jct - St Matthews 46kV: Rebuild",
+  "desc": "Rebuild 9.8 mi",
+  "kv": 46,
+  "miles": 9.8,
+  "type": "rebuild",
+  "in_service": "2028-12-31",
+  "start": "2027-10-01",
+  "date_precision": "day",
+  "cost": 11700000,
+  "coords": [
+   [
+    33.56,
+    -80.71
+   ],
+   [
+    33.66,
+    -80.78
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 40"
+ },
+ {
+  "id": "DESC-41",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Okatie - McIntosh 115kV Tie: Add Series Reactor",
+  "desc": "New Deerfield switching station and 9% series reactor on the DESC-Georgia tie",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 5376418,
+  "coords": [
+   [
+    32.3,
+    -80.93
+   ],
+   [
+    32.357,
+    -81.169
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 41"
+ },
+ {
+  "id": "DESC-42",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "CAE Industrial Park - Springdale 115kV: Replace Poles",
+  "desc": "Replace 28 laminated wood poles",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2028-12-31",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 4450000,
+  "coords": [
+   [
+    33.95,
+    -81.12
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 42"
+ },
+ {
+  "id": "DESC-43",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "St George - Holly Hill 115kV: Rebuild Structures",
+  "desc": "Rebuild structures 83-108, 3.4 mi",
+  "kv": 115,
+  "miles": 3.4,
+  "type": "rebuild",
+  "in_service": "2028-12-31",
+  "start": "2028-01-01",
+  "date_precision": "day",
+  "cost": 8125000,
+  "coords": [
+   [
+    33.25,
+    -80.5
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 43"
+ },
+ {
+  "id": "DESC-44",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Canadys - Ritter 115kV: Rebuild SPDC",
+  "desc": "Rebuild as SPDC with 1272 ACSR, 17.5 mi",
+  "kv": 115,
+  "miles": 17.5,
+  "type": "rebuild",
+  "in_service": "2029-06-01",
+  "start": "2027-12-01",
+  "date_precision": "day",
+  "cost": 38121795,
+  "coords": [
+   [
+    33.06,
+    -80.62
+   ],
+   [
+    32.73,
+    -80.58
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 44"
+ },
+ {
+  "id": "DESC-45",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Wateree - Killian 230kV: Rebuild",
+  "desc": "Rebuild 35 mi",
+  "kv": 230,
+  "miles": 35,
+  "type": "rebuild",
+  "in_service": "2029-12-31",
+  "start": "2027-09-01",
+  "date_precision": "day",
+  "cost": 44517719,
+  "coords": [
+   [
+    33.83,
+    -80.62
+   ],
+   [
+    34.13,
+    -80.95
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 45"
+ },
+ {
+  "id": "DESC-46",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Church Creek - Dawson 230kV: Rebuild",
+  "desc": "Rebuild Dawson - Long Savannah SPSC B1272, ~13.6 mi",
+  "kv": 230,
+  "miles": 13.6,
+  "type": "rebuild",
+  "in_service": "2029-12-31",
+  "start": "2028-08-01",
+  "date_precision": "day",
+  "cost": 42375000,
+  "coords": [
+   [
+    32.88,
+    -80.3
+   ],
+   [
+    32.83,
+    -80.1
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 46"
+ },
+ {
+  "id": "DESC-47",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Long Savannah 115kV Tap: Construct",
+  "desc": "Long Savannah 115 kV tap with Church Creek - Dawson rebuild",
+  "kv": 115,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2029-12-31",
+  "start": "2028-06-01",
+  "date_precision": "day",
+  "cost": 5100000,
+  "coords": [
+   [
+    32.83,
+    -80.1
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 47"
+ },
+ {
+  "id": "DESC-48",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Modoc - McCormick 115/46kV Rebuild",
+  "desc": "Rebuild Modoc - McCormick as SPDC",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2029-12-31",
+  "start": "2028-12-01",
+  "date_precision": "day",
+  "cost": 19800000,
+  "coords": [
+   [
+    33.72,
+    -82.21
+   ],
+   [
+    33.91,
+    -82.29
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 48"
+ },
+ {
+  "id": "DESC-49",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Stevens Creek - Graniteville 115kV: Rebuild",
+  "desc": "Rebuild 15 mi",
+  "kv": 115,
+  "miles": 15,
+  "type": "rebuild",
+  "in_service": "2029-12-31",
+  "start": "2028-07-01",
+  "date_precision": "day",
+  "cost": 18200000,
+  "coords": [
+   [
+    33.56,
+    -82.05
+   ],
+   [
+    33.56,
+    -81.81
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 49"
+ },
+ {
+  "id": "DESC-50",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Calhoun County - North 46kV Rebuild",
+  "desc": "Rebuild 9.5 mi",
+  "kv": 46,
+  "miles": 9.5,
+  "type": "rebuild",
+  "in_service": "2029-12-31",
+  "start": "2028-10-01",
+  "date_precision": "day",
+  "cost": 10200000,
+  "coords": [
+   [
+    33.62,
+    -81.1
+   ],
+   [
+    33.7,
+    -80.85
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 50"
+ },
+ {
+  "id": "DESC-51",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Union Pier 115-13.8kV Sub: Tap",
+  "desc": "115 kV tap (or feed from Charlotte St) to Union Pier sub",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2030-12-31",
+  "start": "2029-12-01",
+  "date_precision": "day",
+  "cost": 22400000,
+  "coords": [
+   [
+    32.79,
+    -79.925
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 51"
+ },
+ {
+  "id": "DESC-52",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Faber Place - Bayfront 115kV: Rebuild Section",
+  "desc": "Rebuild N. Bridge Terrace - Bayfront with 1272 ACSR",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2030-12-31",
+  "start": "2029-12-01",
+  "date_precision": "day",
+  "cost": 18964478,
+  "coords": [
+   [
+    32.86,
+    -79.97
+   ],
+   [
+    32.81,
+    -79.94
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 52"
+ },
+ {
+  "id": "DESC-53",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "Clements Ferry Rd Sub: 115kV Tap",
+  "desc": "Tap from Cainhoy to Clements Ferry, ~2.8 mi",
+  "kv": 115,
+  "miles": 2.8,
+  "type": "new_line",
+  "in_service": "2031-12-31",
+  "start": "2030-06-01",
+  "date_precision": "day",
+  "cost": 9750000,
+  "coords": [
+   [
+    32.93,
+    -79.83
+   ],
+   [
+    32.9,
+    -79.87
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 53"
+ },
+ {
+  "id": "DESC-54",
+  "utility": "DESC",
+  "owner": "DESC",
+  "name": "VCS2 - Ward 230kV: Rebuild Line",
+  "desc": "Rebuild 40 mi of 230 kV line",
+  "kv": 230,
+  "miles": 40,
+  "type": "rebuild",
+  "in_service": "2032-12-31",
+  "start": "2030-06-01",
+  "date_precision": "day",
+  "cost": 18875000,
+  "coords": [
+   [
+    34.298,
+    -81.315
+   ],
+   [
+    33.86,
+    -81.73
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
+  "page": "item 54"
+ },
+ {
+  "id": "GA-01",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "East Moultrie - Highway 112 230kV",
+  "desc": "~27 mi new 230 kV line, 1351 ACSS",
+  "kv": 230,
+  "miles": 27,
+  "type": "new_line",
+  "in_service": "2027-06-01",
+  "start": "2025-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    31.18,
+    -83.77
+   ],
+   [
+    31.35,
+    -83.55
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "128-129"
+ },
+ {
+  "id": "GA-02",
+  "utility": "GPC",
+  "owner": "GPC/GTC/MEAG",
+  "name": "East Walton 500/230kV Area Project",
+  "desc": "Switching stations, 500/230 kV sub and 230 kV lines",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-06-01",
+  "start": "2025-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.78,
+    -83.65
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "130"
+ },
+ {
+  "id": "GA-03",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Tomochichi 500/230kV Substation",
+  "desc": "New 500/230 kV switching station, two 230 kV lines",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-06-01",
+  "start": "2025-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.8,
+    -83.4
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "132-133"
+ },
+ {
+  "id": "GA-04",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Rum Creek 500kV Switching Station",
+  "desc": "Breaker-and-half station; Big Smarr - Rum Creek 500 kV (~30 mi)",
+  "kv": 500,
+  "miles": 30,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2026-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.07,
+    -83.81
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "134"
+ },
+ {
+  "id": "GA-05",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Deer Creek 500/230kV Substation",
+  "desc": "Split Bonaire - Scherer 500 kV; two 230 kV lines to Little Deer Creek",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2026-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.8,
+    -83.7
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "135"
+ },
+ {
+  "id": "GA-06",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "East Villa Rica 230kV Substation",
+  "desc": "7-rung 230 kV breaker-and-half switching station",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.73,
+    -84.88
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "136"
+ },
+ {
+  "id": "GA-07",
+  "utility": "GPC",
+  "owner": "GPC/MEAG/GTC",
+  "name": "Hampton Area 230/115kV Improvements",
+  "desc": "Line conversions and new 230/115 kV substation",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.39,
+    -84.28
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "137-138"
+ },
+ {
+  "id": "GA-08",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Dresden - Talbot 500kV Line",
+  "desc": "New Talbot 500/230 kV sub; 75 mi 500 kV line",
+  "kv": 500,
+  "miles": 75,
+  "type": "new_line",
+  "in_service": "2029-06-01",
+  "start": "2026-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.53,
+    -85.06
+   ],
+   [
+    32.68,
+    -84.54
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "141"
+ },
+ {
+  "id": "GA-09",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Rum Creek - Tomochichi 500kV",
+  "desc": "~30 mi new 500 kV line",
+  "kv": 500,
+  "miles": 30,
+  "type": "new_line",
+  "in_service": "2029-06-01",
+  "start": "2026-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.07,
+    -83.81
+   ],
+   [
+    32.8,
+    -83.4
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "141-142"
+ },
+ {
+  "id": "GA-10",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Hartwell Energy - Middle Fork 230kV Line",
+  "desc": "~35 mi new 230 kV line, 1351 ACSS",
+  "kv": 230,
+  "miles": 35,
+  "type": "new_line",
+  "in_service": "2030-06-01",
+  "start": "2028-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    34.35,
+    -82.93
+   ],
+   [
+    34.28,
+    -83.45
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "152-153"
+ },
+ {
+  "id": "GA-11",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Rockville - Mink Creek - Warthen 500kV Lines",
+  "desc": "Two new 500 kV lines (~20 and ~9 mi); Tiger Creek 500/230 kV",
+  "kv": 500,
+  "miles": 29,
+  "type": "new_line",
+  "in_service": "2030-06-01",
+  "start": "2027-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.35,
+    -83.3
+   ],
+   [
+    33.2,
+    -83.0
+   ],
+   [
+    33.1,
+    -82.8
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "153"
+ },
+ {
+  "id": "GA-12",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Athena - Union Point - Warrenton Primary 230kV Conversion",
+  "desc": "Convert ~32 mi of 115 kV to 230 kV",
+  "kv": 230,
+  "miles": 32,
+  "type": "rebuild",
+  "in_service": "2030-06-01",
+  "start": "2028-04-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.95,
+    -83.38
+   ],
+   [
+    33.615,
+    -83.07
+   ],
+   [
+    33.41,
+    -82.66
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "155"
+ },
+ {
+  "id": "GA-13",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Goshen Area 230kV Solution",
+  "desc": "New 230 kV switching station on Waynesboro - Wilson; ~12 mi 230 kV to Goshen",
+  "kv": 230,
+  "miles": 12,
+  "type": "new_line",
+  "in_service": "2030-06-01",
+  "start": "2028-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.2,
+    -81.98
+   ],
+   [
+    33.36,
+    -82.05
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "156"
+ },
+ {
+  "id": "GA-14",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Pio Nono 230/115kV Area Solution",
+  "desc": "New 230 kV sub with lines from Dorsett, South Griffin, Pitts; 400 MVA auto",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2031-06-01",
+  "start": "2030-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.8,
+    -83.66
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "159"
+ },
+ {
+  "id": "GA-15",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Hatch - Wadley 500kV Line",
+  "desc": "~65 mi new 500 kV line, Hatch to Wadley Primary",
+  "kv": 500,
+  "miles": 65,
+  "type": "new_line",
+  "in_service": "2031-06-01",
+  "start": "2028-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    31.93,
+    -82.34
+   ],
+   [
+    32.87,
+    -82.4
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "161"
+ },
+ {
+  "id": "GA-16",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "McGrau Ford - Middle Fork 500kV",
+  "desc": "~65 mi new 500 kV line; new Middle Fork 500 kV switchyard",
+  "kv": 500,
+  "miles": 65,
+  "type": "new_line",
+  "in_service": "2033-06-01",
+  "start": "2030-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    34.36,
+    -84.37
+   ],
+   [
+    34.28,
+    -83.45
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf",
+  "page": "162"
+ },
+ {
+  "id": "GA-17",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Gainesville #2: Equipment Replacement",
+  "desc": "Replace autotransformers",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    34.3,
+    -83.82
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-18",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Conyers - Cornish Mountain 115kV: Upgrade",
+  "desc": "Raise line rating to 125C",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.67,
+    -84.02
+   ],
+   [
+    33.58,
+    -83.93
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-19",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Dresden 500kV Bus Expansion",
+  "desc": "Expand 500 kV bus",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2024-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.53,
+    -85.06
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-20",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Gordon - Sandersville #1 115kV: Rebuild",
+  "desc": "Rebuild ~1.87 mi",
+  "kv": 115,
+  "miles": 1.87,
+  "type": "rebuild",
+  "in_service": "2026-06-01",
+  "start": "2025-08-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.9,
+    -83.3
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-21",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "LaGrange - North Opelika 230kV: Construct",
+  "desc": "New 230 kV line",
+  "kv": 230,
+  "miles": null,
+  "type": "new_line",
+  "in_service": "2026-06-01",
+  "start": "2024-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.04,
+    -85.03
+   ],
+   [
+    32.68,
+    -85.37
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-22",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Robins Spring 115kV Bus and Capacitor Bank",
+  "desc": "Bus upgrade and 2-stage capacitor bank",
+  "kv": 115,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2026-06-01",
+  "start": "2025-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.6,
+    -83.6
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-23",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Arkwright - Lloyd Shoals 115kV: Rebuild",
+  "desc": "Rebuild with 795 ACSR",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.86,
+    -83.68
+   ],
+   [
+    33.32,
+    -83.84
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-24",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Adamsville - Buzzard Roost 230kV: Rebuild",
+  "desc": "Rebuild ~5 mi, 1351 ACSS",
+  "kv": 230,
+  "miles": 5,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.76,
+    -84.5
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-25",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Douglasville - Villa Rica 230kV: Rebuild",
+  "desc": "Rebuild 2.5 mi section",
+  "kv": 230,
+  "miles": 2.5,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-07-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.73,
+    -84.75
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-26",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Eatonton Primary - Lick Creek 115kV: Rebuild",
+  "desc": "Rebuild ~7.5 mi",
+  "kv": 115,
+  "miles": 7.5,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-05-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.33,
+    -83.39
+   ],
+   [
+    33.25,
+    -83.45
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-27",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Garrett Rd - Villa Rica 230kV: Reconductor",
+  "desc": "Reconductor/rebuild ~14 mi",
+  "kv": 230,
+  "miles": 14,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-01-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.73,
+    -84.88
+   ],
+   [
+    33.7,
+    -84.65
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-28",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Hickory Level - Villa Rica 230kV: Reconductor",
+  "desc": "Reconductor 8.6 mi",
+  "kv": 230,
+  "miles": 8.6,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-04-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.66,
+    -84.97
+   ],
+   [
+    33.73,
+    -84.88
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-29",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "South Hazlehurst - New Lacy 230kV: Construct",
+  "desc": "New ~25 mi 230 kV line",
+  "kv": 230,
+  "miles": 25,
+  "type": "new_line",
+  "in_service": "2027-06-01",
+  "start": "2025-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    31.85,
+    -82.6
+   ],
+   [
+    31.95,
+    -82.9
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-30",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "Fortson Substation Modernization",
+  "desc": "Modernize 500/230/115 kV yards",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2027-06-01",
+  "start": "2025-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.58,
+    -84.95
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-31",
+  "utility": "GPC",
+  "owner": "MEAG",
+  "name": "Ray Place Rd - Warrenton Primary 115kV: Rebuild",
+  "desc": "Rebuild ~10 mi",
+  "kv": 115,
+  "miles": 10,
+  "type": "rebuild",
+  "in_service": "2027-06-01",
+  "start": "2026-03-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.45,
+    -82.5
+   ],
+   [
+    33.41,
+    -82.66
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-32",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Barneyville - East Moultrie 115kV: Construct",
+  "desc": "~20 mi new 115 kV line",
+  "kv": 115,
+  "miles": 20,
+  "type": "new_line",
+  "in_service": "2028-06-01",
+  "start": "2026-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    31.05,
+    -83.55
+   ],
+   [
+    31.18,
+    -83.77
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-33",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Bonaire Primary 500/230kV Transformer Replacement",
+  "desc": "Replace auto and relays",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2026-12-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.55,
+    -83.6
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-34",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "Bostwick - East Social Circle 230kV: Reconductor",
+  "desc": "Reconductor ~10.8 mi to ACCR",
+  "kv": 230,
+  "miles": 10.8,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-03-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.74,
+    -83.51
+   ],
+   [
+    33.65,
+    -83.69
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-35",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "McDonough - South Griffin 115kV: Rebuild",
+  "desc": "Rebuild with 1351 ACSS",
+  "kv": 115,
+  "miles": null,
+  "type": "rebuild",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    33.45,
+    -84.15
+   ],
+   [
+    33.22,
+    -84.26
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-36",
+  "utility": "GPC",
+  "owner": "GTC",
+  "name": "North Dublin 230/115kV Transformer Replacement",
+  "desc": "Replace two autos and breakers",
+  "kv": 230,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2028-06-01",
+  "start": "2027-06-01",
+  "date_precision": "year",
+  "cost": null,
+  "coords": [
+   [
+    32.56,
+    -82.9
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
+  "page": ""
+ },
+ {
+  "id": "GA-37",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Callaway Road - Thomson Primary 500kV",
+  "desc": "New Callaway Road 500/230 kV substation (Columbia Co.) and two new 500 kV lines to Thomson, ~10 and ~7 mi. Substation clearing Winter 2026, line construction Summer 2027",
+  "kv": 500,
+  "miles": 17,
+  "type": "new_line",
+  "in_service": "2029-06-01",
+  "start": "2026-12-01",
+  "date_precision": "estimated",
+  "start_published": true,
+  "cost": null,
+  "coords": [
+   [
+    33.48,
+    -82.3
+   ],
+   [
+    33.43,
+    -82.45
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/callaway-thomson.html",
+  "page": ""
+ },
+ {
+  "id": "GA-38",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Effingham County 500/230kV Substation",
+  "desc": "New 500/230 kV substation and 500 kV facilities in Effingham County. Clearing Spring 2027, construction Fall 2027",
+  "kv": 500,
+  "miles": null,
+  "type": "substation",
+  "in_service": "2029-06-01",
+  "start": "2027-03-01",
+  "date_precision": "estimated",
+  "start_published": true,
+  "cost": null,
+  "coords": [
+   [
+    32.33,
+    -81.3
+   ]
+  ],
+  "loc": "low",
+  "source": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/effingham-county.html",
+  "page": ""
+ },
+ {
+  "id": "GA-39",
+  "utility": "GPC",
+  "owner": "GPC",
+  "name": "Plant McIntosh Unit 12 Combined Cycle",
+  "desc": "~800 MW gas combined-cycle unit at Plant McIntosh, Rincon (pre-construction, planned 2030)",
+  "kv": 500,
+  "miles": null,
+  "type": "generation",
+  "in_service": "2030-06-01",
+  "start": "2027-06-01",
+  "date_precision": "estimated",
+  "start_published": false,
+  "cost": null,
+  "coords": [
+   [
+    32.357,
+    -81.169
+   ]
+  ],
+  "loc": "med",
+  "source": "https://www.gem.wiki/McIntosh_Combined_Cycle_Facility",
+  "page": ""
+ },
+ {
+  "id": "EX-01",
+  "utility": "GPC",
+  "existing": true,
+  "name": "Thomson - Vogtle 500kV (in service 2018)",
+  "coords": [
+   [
+    33.43,
+    -82.45
+   ],
+   [
+    33.14,
+    -81.76
+   ]
+  ],
+  "source": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/thomson-vogtle.html"
+ },
+ {
+  "id": "EX-02",
+  "utility": "DESC",
+  "existing": true,
+  "name": "Stevens Creek Hydro (DESC-owned, Martinez GA)",
+  "coords": [
+   [
+    33.56,
+    -82.05
+   ]
+  ],
+  "source": ""
+ },
+ {
+  "id": "EX-03",
+  "utility": "GPC",
+  "existing": true,
+  "name": "Plant Vogtle",
+  "coords": [
+   [
+    33.14,
+    -81.76
+   ]
+  ],
+  "source": ""
+ },
+ {
+  "id": "EX-04",
+  "utility": "GPC",
+  "existing": true,
+  "name": "Plant McIntosh",
+  "coords": [
+   [
+    32.357,
+    -81.169
+   ]
+  ],
+  "source": ""
+ },
+ {
+  "id": "EX-05",
+  "utility": "DESC",
+  "existing": true,
+  "name": "Okatie - McIntosh 115kV tie (DESC-Georgia)",
+  "coords": [
+   [
+    32.3,
+    -80.93
+   ],
+   [
+    32.357,
+    -81.169
+   ]
+  ],
+  "source": ""
+ }
+]
