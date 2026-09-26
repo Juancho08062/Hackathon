@@ -101,6 +101,22 @@ const inSel = (sel, p) => !!sel && (sel.cluster ? sel.cluster.projects.includes(
 
 // ---------- optimizer (cached per inputs) ----------
 let optCache = { key: null, r: null };
+// Pairs that just missed the distance screen, within 5% of it. They stay out of every ranking, tier count and savings
+// total on purpose: the point is only to show that 40 km is a chosen threshold rather than a cliff, since a pair at
+// 40.3 km is not materially different from one at 39.8 km. Cached on its own key, because Engine.cachedOverlaps holds
+// a single result and searching wider would evict the comparison the whole page is built on.
+let bandKey = null, bandPairs = [];
+function borderline() {
+  if (solo()) return [];
+  const key = [state.utilA, state.utilB, state.D, state.B, state.mode, dataVersion, asmVersion].join("|");
+  if (key !== bandKey) {
+    bandKey = key;
+    bandPairs = Engine.findOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D * 1.05, bufferMonths: state.B, mode: state.mode })
+      .pairs.filter(x => x.km > state.D).sort((a, b) => a.km - b.km);
+  }
+  return bandPairs;
+}
+
 function optimize() {
   if (solo()) return null;
   const who = state.opt.who === "both" ? null : [state.opt.who === "a" ? state.utilA : state.utilB];
@@ -391,6 +407,11 @@ function renderOverlaps(P) {
     el.onmouseleave = () => { state.hover = null; renderMap(); };
   });
   if ($("#more")) $("#more").onclick = () => { state.shown += 60; renderMap(); renderOverlaps(P); };
+  const band = borderline();
+  if (band.length) {
+    const close = band.slice(0, 3).map(x => `${esc(short(x.p))} / ${esc(short(x.q))} at ${x.km.toFixed(1)} km`).join("; ");
+    R.insertAdjacentHTML("beforeend", `<p class="band">${band.length} more pair${band.length === 1 ? "" : "s"} sit just outside the ${state.D} km screen &mdash; closest ${close}. Kept out of the ranking and the totals; shown because ${state.D} km is a chosen threshold, not a cliff.</p>`);
+  }
 }
 function renderSoloRows() {
   $("#chips").innerHTML = `<span class="muted">${SOLO.length} ${esc(lbl(state.utilA))} projects</span>`;
@@ -678,7 +699,7 @@ How Seamline measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it.`;
+Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
   { name: "search_projects", description: "Find planned projects by words in their name, description, substation names, TEAMS number or source page. Returns up to `limit` matches with id, utility, kV, type, construction window, in-service date, cost and location confidence.", input_schema: { type: "object", properties: { query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'" }, utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" }, limit: { type: "integer", description: "Max results, default 10" } }, required: ["query"] } },
@@ -696,6 +717,15 @@ const TOOLS = [
   { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
   { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
   { name: "show_on_map", description: "Select a pair or a project in Seamline so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
+  { name: "why_not", description: "Why two specific projects are NOT flagged as an opportunity: too far apart, the same utility, a location that could not be established, or one of them already likely built. Most pairs do not overlap, so use this whenever the user asks about a pair that is missing from the list rather than guessing at the reason.", input_schema: { type: "object", properties: {
+    project_id_a: { type: "string", description: "A project id, e.g. DESC-12" },
+    project_id_b: { type: "string", description: "The other project id, e.g. IRP-20277" } }, required: ["project_id_a", "project_id_b"] } },
+  { name: "open_brief", description: "Open the printable coordination brief for one pair: the memo a planner would take to the other utility, with both projects, the distance, the build windows, what can be shared with the arithmetic behind each figure, the best shared yard and the proposed next steps. Use it when the user asks for a brief, a memo, a write-up or something to send or print.", input_schema: { type: "object", properties: {
+    key: { type: "string", description: "Pair key from list_overlaps, 'PROJECTID|PROJECTID'" },
+    narrative: { type: "string", description: "One short paragraph, in the user's language, framing why this pair is worth coordinating. This is the only text in the brief you write; every figure in it is computed from the plans." } }, required: ["key"] } },
+  { name: "open_schedule_brief", description: "Open the printable joint schedule proposal: the date moves that most raise expected savings, with each move and what it adds. Use it when the user asks for a brief or memo about rescheduling rather than about one pair.", input_schema: { type: "object", properties: {
+    narrative: { type: "string", description: "One short paragraph, in the user's language, framing the proposal. The only text in the brief you write." },
+    max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" } } } },
 ];
 const projOut = p => ({ id: p.id, utility: p.utility, name: p.name, kv: p.kv, type: TYPE[p.type] || p.type, construction: `${p.start} to ${p.in_service}`, start_published: !!p.start_published,
   in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built, cost_usd: p.cost || null, location_confidence: p.loc, source: p.page ? `${p.source} (${p.page})` : p.source });
@@ -710,7 +740,7 @@ function runTool(name, i) {
     const tiers = {}; TIERS.slice(0, 4).forEach((t, k) => { tiers[t.label] = RESULT.pairs.filter(x => x.tier === k).length; });
     return { utilities: solo() ? [lblLong(state.utilA)] : [lblLong(state.utilA), lblLong(state.utilB)], projects: Object.fromEntries(utilities().map(u => [u, PROJECTS.filter(p => p.utility === u).length])),
       filters: { distance_km: state.D, window_buffer_months: state.B, match: state.mode, build_period_months_from_today: state.horizon || "all", include_dates_passed: state.past },
-      pairs_checked: RESULT.checked, pairs_flagged: RESULT.pairs.length, pairs_shown_with_filters: VIEW.length, by_tier: tiers,
+      pairs_checked: RESULT.checked, pairs_flagged: RESULT.pairs.length, pairs_shown_with_filters: VIEW.length, by_tier: tiers, just_outside: borderline().length,
       same_window_on_paper: RESULT.pairs.filter(x => x.sameWindow).length, expected_savings_usd: Math.round(RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0)),
       savings_if_dates_hold_usd: Math.round(RESULT.pairs.reduce((a, x) => a + x.sav.total, 0)), as_of: TODAY, sources: $("#asof").textContent };
   }
@@ -776,6 +806,38 @@ function runTool(name, i) {
     if (y) { if (!y.solo && !VIEW.includes(y)) clearFilters(); show(y.solo ? y : (VIEW.find(v => v === y) || y)); } else SeamMap.fit(p.coords, { padKm: 6 });
     return { shown: p.name };
   }
+  if (name === "why_not") {
+    const p = PROJECTS.find(v => v.id === String(i.project_id_a).toUpperCase()), q = PROJECTS.find(v => v.id === String(i.project_id_b).toUpperCase());
+    if (!p || !q) { const missing = !p ? i.project_id_a : i.project_id_b; throw new Error(`No project with id ${missing}. Use search_projects to find its id.`); }
+    const base = { project_id_a: p.id, project_id_b: q.id, pair: `${p.name} × ${q.name}` };
+    const flagged = RESULT.pairs.find(x => (x.p === p && x.q === q) || (x.p === q && x.q === p));
+    if (flagged) return Object.assign(base, { rejected: false, reason: "flagged", key: keyOf(flagged), distance_km: +flagged.km.toFixed(2),
+      explanation: `This pair IS flagged, as ${keyOf(flagged)}, at ${flagged.km.toFixed(1)} km.` });
+    if (p.utility === q.utility) return Object.assign(base, { rejected: true, reason: "same_utility",
+      explanation: `Both projects belong to ${lblLong(p.utility)}. Seamline compares work across two different utilities.` });
+    if (!(p.coords || []).length || !(q.coords || []).length) return Object.assign(base, { rejected: true, reason: "unlocated",
+      explanation: `${(p.coords || []).length ? q.id : p.id} has no location, so no distance can be measured.` });
+    const km = Engine.closest(p, q)[0];
+    if (km > state.D) return Object.assign(base, { rejected: true, reason: "too_far", distance_km: +km.toFixed(2),
+      explanation: km <= state.D * 1.05 ? `Their closest points are ${km.toFixed(1)} km apart, just beyond the ${state.D} km screen. That is a chosen threshold, so widening the distance filter would include them.`
+        : `Their closest points are ${km.toFixed(1)} km apart, beyond the ${state.D} km screen, so sharing a crew or a staging yard is not plausible.`,
+      just_outside: km <= state.D * 1.05 });
+    return Object.assign(base, { rejected: true, reason: "filtered", distance_km: +km.toFixed(2),
+      explanation: `They are ${km.toFixed(1)} km apart, inside the screen, but the current match mode (${state.mode}) or the build-window filter excludes them.` });
+  }
+  if (name === "open_brief") {
+    const x = findPair(i.key);
+    if (!x) throw new Error(`No flagged pair ${i.key}. Use list_overlaps to get keys.`);
+    openBrief(x, i.narrative);
+    return { opened: "coordination brief", pair: pairOut(x).project_a + " and " + pairOut(x).project_b };
+  }
+  if (name === "open_schedule_brief") {
+    if (i.max_shift_months) state.opt.maxShift = i.max_shift_months;
+    const o = optimize();
+    if (!o || !o.moves.length) throw new Error("No date move of that size is worth the threshold, so there is no schedule brief to open.");
+    openScheduleBrief(o, i.narrative);
+    return { opened: "joint schedule proposal", moves: o.moves.length, adds_usd: Math.round(o.after - o.before) };
+  }
   throw new Error("Unknown tool " + name);
 }
 const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
@@ -793,45 +855,76 @@ function renderAsk(P) {
     <div class="ask-key${has ? " set" : ""}">${has ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
       : `<label for="kIn"><b>Anthropic API key</b></label><div class="ph-row"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" class="btn sm primary" id="kSave">Use key</button></div>
       <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
-      <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`}</div>
+      <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else. Without a key you can still ask the common questions &mdash; they are answered from the same data by pattern, with no model.</span>`}</div>
     <div class="ask-log" id="askLog">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
       : `<div class="msg hint"><p>Ask about the planned projects, overlaps, plan changes or data quality. Answers come from the same data the map and tables show.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
       ${CHAT.busy ? `<div class="msg tool">Thinking…</div>` : ""}</div>
-    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="Ask about the plans…" aria-label="Question"${has ? "" : " disabled"}></textarea><button type="submit" class="btn primary"${has && !CHAT.busy ? "" : " disabled"}>Ask</button></form></div>`;
+    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="Ask about the plans…" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
   if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); renderAsk(P); $("#askQ").focus(); } };
   if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } renderAsk(P); };
-  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (apiKey()) sendQuestion(b.textContent); else $("#kIn").focus(); });
+  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => sendQuestion(b.textContent));
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
-  get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map" };
+  get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
+  open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal" };
+// Answer a question without the model: the same tools, routed by pattern (agent-offline.js). Returns the answer text,
+// or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
+// saying the model is needed. reason, when given, is why the model was unavailable.
+function answerOffline(q, reason) {
+  const lang = SeamOffline.language(q), plan = SeamOffline.interpret(q);
+  if (!plan) return null;
+  CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
+  let text;
+  try {
+    text = SeamOffline.render(plan.tool, runTool(plan.tool, plan.input), lang, plan.input);
+  } catch (err) {
+    text = String(err && err.message || err);
+  }
+  return `${text}\n\n${SeamOffline.note(lang, reason)}`;
+}
+
 async function sendQuestion(q) {
   if (CHAT.busy) return;
   const mark = CHAT.messages.length; // where this turn starts, so a failed turn can be undone whole
-  CHAT.busy = true; CHAT.log.push({ role: "user", text: q }); CHAT.messages.push({ role: "user", content: q });
+  CHAT.busy = true; CHAT.log.push({ role: "user", text: q });
   const P = $("#panel"), again = () => { if (state.tab === "ask") renderAsk(P); };
+  const finish = text => { CHAT.log.push({ role: "assistant", text }); CHAT.busy = false; again(); if (state.tab !== "ask") renderTabs(); };
   again();
+
+  // No key: answer by pattern if the question is one the tools cover, otherwise ask for the key and say what does work.
+  if (!apiKey()) {
+    const offline = answerOffline(q, null);
+    const lang = SeamOffline.language(q);
+    return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key above.`);
+  }
+
+  CHAT.messages.push({ role: "user", content: q });
   try {
     const r = await SeamAgent.ask({ apiKey: apiKey(), system: SYSTEM, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
       onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
-    CHAT.log.push({ role: "assistant", text: r.text + (r.truncated ? "\n\n(The answer was cut short.)" : "") });
+    finish(r.text + (r.truncated ? "\n\n(The answer was cut short.)" : ""));
   } catch (err) {
     // drop the whole turn (question, tool calls and results) so the history never ends on an unanswered tool call
     CHAT.messages.length = mark;
-    CHAT.log.push({ role: "assistant", text: SeamAgent.explain(err) });
+    // The API is unreachable, the key was refused or the SDK would not load. Fall back to the pattern path rather than
+    // leaving the question unanswered, and say which happened.
+    finish(answerOffline(q, SeamAgent.explain(err)) || SeamAgent.explain(err));
   }
-  CHAT.busy = false; again();
-  if (state.tab !== "ask") renderTabs();
 }
 
 // ---------- coordination brief ----------
-function openBrief(x0) {
-  const y = whatIf(x0, state.wi.who, state.wi.shift), better = state.wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
-  const x = better ? y : x0, moved = better ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
+// narrative, when given, is the assistant's one-paragraph framing. It is the only generated prose in a brief:
+// every figure, date, table and next step below is computed from the plans.
+function openBrief(x0, narrative) {
+  // the what-if applies only when it was set on this pair; the assistant can open a brief for a pair nobody selected
+  const wi = state.wi && state.wi.key === keyOf(x0) ? state.wi : { who: "q", shift: 0 };
+  const y = whatIf(x0, wi.who, wi.shift), better = wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
+  const x = better ? y : x0, moved = better ? x[wi.who] : null, s = x.sav, T = TIERS[x.tier];
   const uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(state.wi.shift)}` : ""}.`
+  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(wi.shift)}` : ""}.`
     : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = Engine.recommendShift(x0, "q", TODAY); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
   const risk = x.risk.why === "built" ? "One of the projects is likely built already." : `Given how both utilities' dates have moved between plans, there is a ${pct(x.risk.chance)} chance both are in the field together from today on; expected savings ${money(x.risk.expected)}.`;
   const steps = [
@@ -847,6 +940,7 @@ function openBrief(x0) {
     <header class="b-head"><div class="b-brand">SEAMLINE <span>Coordination brief</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>To</dt><dd>${esc(uA)} transmission planning<br>${esc(uB)} transmission planning</dd>
       <dt>Re</dt><dd>Coordinating ${esc(x.p.name)} and ${esc(x.q.name)}</dd></dl>
+    ${briefNote(narrative)}
     <p class="b-lede">These two planned projects come within <b>${km(x.km)}</b> of each other at their closest points (<b>${esc(T.label.toLowerCase())}</b>). ${esc(T.means)}. ${when} ${risk}</p>
     <div class="b-grid"><div>${briefMap(x)}</div>
       <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</b><span>chance of a shared window</span></div><div><b>${money(x.risk.expected)}</b><span>expected savings (${s.total ? money(s.total) : "$0"} if dates hold)</span></div></div></div>
@@ -858,22 +952,25 @@ function openBrief(x0) {
     <p class="b-foot">Prepared with Seamline from public plans (${esc([...new Set([x.p, x.q].map(srcName))].join("; "))}). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   showBrief();
 }
-function openScheduleBrief(o) {
+function openScheduleBrief(o, narrative) {
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>Joint schedule proposal</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>To</dt><dd>${esc(lblLong(state.utilA))} transmission planning<br>${esc(lblLong(state.utilB))} transmission planning</dd><dt>Re</dt><dd>${o.moves.length} date moves that line up nearby construction</dd></dl>
+    ${briefNote(narrative)}
     <p class="b-lede">Moving these ${o.moves.length} projects by at most ${state.opt.maxShift} months raises the expected savings from coordinating nearby work from <b>${money(o.before)}</b> to <b>${money(o.after)}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.</p>
     <table class="b-tab"><thead><tr><th>Project</th><th>Move</th><th>In service</th><th>Adds</th></tr></thead><tbody>${o.moves.map(m => `<tr><td><b>${esc(m.project.name)}</b><br><span>${esc(lblLong(m.project.utility))}</span></td><td>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} months</td><td>${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</td><td class="n">${money(m.gain)}</td></tr>`).join("")}</tbody></table>
     <h4>Proposed next steps</h4><ol><li>Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.</li><li>Agree the moves that fit at the next SERTP coordination meeting.</li><li>Re-run Seamline on the next published plans to track the result.</li></ol>
     <p class="b-foot">Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.</p>`;
   showBrief();
 }
+const briefNote = text => text ? `<p class="b-note"><span>Assistant summary</span>${esc(String(text).slice(0, 1200))}</p>` : "";
 function showBrief() { $("#brief").hidden = false; $("#briefClose").focus(); }
 function briefMap(x) {
   const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
   const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
-  if (pr.scale() > 60000) pr.scale(60000).translate(pr.translate());
+  // very close pairs would zoom in past street level; cap the zoom and keep the pair centered
+  if (pr.scale() > 60000) { const [[x0, y0], [x1, y1]] = d3.geoBounds(box); pr.scale(60000).center([(x0 + x1) / 2, (y0 + y1) / 2]).translate([W / 2, H / 2]); }
   const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
   const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#F1F2EE" stroke="#B9C0C4" stroke-width=".8"/>`).join("");
   const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" stroke="#8FB6CC" stroke-width="2.5"/>` : "";

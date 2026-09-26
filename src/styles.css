@@ -319,7 +319,13 @@ svg text{font-family:var(--body)}
 .b-tab .n{text-align:right;white-space:nowrap}
 .b-tab .tot td{font-weight:600;border-bottom:0}
 .brief ul,.brief ol{margin:0;padding-left:20px;display:grid;gap:3px}
+/* The just-outside band under the ranked list: deliberately quiet, since these pairs were rejected. */
+.band{margin:10px 12px 0;padding:8px 10px;border-left:2px solid var(--ink3);background:var(--panel2);font-size:11.5px;color:var(--ink2);line-height:1.5}
 .b-yard{margin:8px 0 0;padding:6px 10px;border-left:2px solid #8A5A1E;background:#F7F2EA}
+/* The assistant's framing paragraph. Marked apart from the rest of the brief on purpose: everything else on the
+   page is filed or computed, and a reader is entitled to see which sentences a model wrote. */
+.b-note{margin:0 0 14px;padding:8px 11px;border-left:2px solid #57606A;background:#F6F8FA;font-size:13px}
+.b-note span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#57606A;margin-bottom:3px}
 .b-foot{margin:18px 0 0;padding-top:10px;border-top:1px solid #EAEEF2;font-size:11px;color:#57606A}
 @media print{
   body{background:#fff;height:auto}
