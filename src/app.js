@@ -28,6 +28,7 @@ try {
     }
   }
 } catch (err) { /* storage blocked: nothing to carry over */ }
+const MARK = `<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="7.5" fill="#132130" stroke="#fff" stroke-opacity=".1"/><circle cx="16" cy="16" r="10.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width=".9" stroke-dasharray="1.6 1.6"/><path d="M7.2 7.2 24.8 24.8" stroke="#F0883E" stroke-width="2.8" stroke-linecap="round"/><path d="M7.2 24.8 24.8 7.2" stroke="#4C9BE0" stroke-width="2.8" stroke-linecap="round"/><g stroke="#132130" stroke-width="1.2"><rect x="4.6" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="22.2" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="4.6" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/><rect x="22.2" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/></g><circle cx="16" cy="16" r="3.9" fill="#132130" stroke="#fff" stroke-width="1.9"/><circle cx="16" cy="16" r="1.3" fill="#fff"/></svg>`;
 const store = {
   get: (k, d) => { try { const v = localStorage.getItem("nexxo." + k); return v == null ? d : JSON.parse(v); } catch (err) { return d; } },
   set: (k, v) => { try { localStorage.setItem("nexxo." + k, JSON.stringify(v)); } catch (err) { /* storage blocked: keep it for this visit */ } },
@@ -1306,7 +1307,7 @@ function openBrief(x0, narrative) {
   const steps = [D.steps[0], x.tier === 0 && D.steps[1], x.tier <= 1 && D.steps[2], x.tier <= 2 && D.steps[3], D.steps[4], D.steps[5]].filter(Boolean);
   const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} ${esc(D.to2)} ${fmtD(p, "in_service")}${p === moved ? `<br><em>${esc(D.proposed)}</em>` : ""}</td><td>${c.est ? esc(D.est) : ""}${money(c.v)}</td></tr>`;
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">NEXXO <span>${esc(D.brandBrief)}</span></div><div class="b-date">${today}</div></header>
+    <header class="b-head"><div class="b-brand">${MARK}NEXXO <span>${esc(D.brandBrief)}</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(uA)} ${esc(D.planning)}<br>${esc(uB)} ${esc(D.planning)}</dd>
       <dt>${esc(D.re)}</dt><dd>${esc(D.reCoord(x.p.name, x.q.name))}</dd></dl>
     ${briefNote(narrative)}
@@ -1448,7 +1449,7 @@ function openReport(opts, narrative) {
   const totals = { expected: RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0), hold: RESULT.pairs.reduce((a, x) => a + x.sav.total, 0) };
 
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">NEXXO <span>${esc(D.brandReport)}</span></div><div class="b-date">${today}</div></header>
+    <header class="b-head"><div class="b-brand">${MARK}NEXXO <span>${esc(D.brandReport)}</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}${solo() ? "" : `<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}`}</dd>
       <dt>${esc(D.re)}</dt><dd>${esc(D.reReport(PROJECTS.length, o.utility ? lblLong(o.utility) : null, MEASURE[o.sort] || o.sort))}</dd></dl>
     ${briefNote(narrative)}
@@ -1472,7 +1473,7 @@ function openReport(opts, narrative) {
 
 function openScheduleBrief(o, narrative) {
   const D = doc(), today = docDate();
-  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">NEXXO <span>${esc(D.brandSchedule)}</span></div><div class="b-date">${today}</div></header>
+  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">${MARK}NEXXO <span>${esc(D.brandSchedule)}</span></div><div class="b-date">${today}</div></header>
     <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}</dd><dt>${esc(D.re)}</dt><dd>${esc(D.reMoves(o.moves.length))}</dd></dl>
     ${briefNote(narrative)}
     <p class="b-lede">${D.ledeSchedule(o.moves.length, state.opt.maxShift, money(o.before), money(o.after))}</p>
