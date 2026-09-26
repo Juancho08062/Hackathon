@@ -1,6 +1,0 @@
-utility,name,kv,type,start,in_service,cost,lat,lon,lat2,lon2,description
-Example Electric Cooperative,Clearwater - North Augusta 230 kV Line,230,new_line,2027-02-01,2028-11-30,38000000,33.53,-81.93,33.48,-82,New 9 mi line on existing easement
-Example Electric Cooperative,Beech Island 115 kV Substation Expansion,115,substation,,2028,9500000,33.43,-81.88,,,Add second 115/25 kV transformer
-Example Electric Cooperative,Hardeeville - Purrysburg 115 kV Rebuild,115,rebuild,2028-01-15,2029-05-31,14200000,32.29,-81.08,32.21,-81.12,Rebuild 6 mi on steel poles
-Example Electric Cooperative,Port Wentworth 230 kV Switching Station,230,substation,,Summer 2029,21000000,32.16,-81.16,,,New 6-breaker ring bus
-Example Electric Cooperative,Jackson - Kathwood 115 kV Line,115,new_line,,2030,11000000,33.33,-81.79,33.3,-81.74,New 4 mi line

@@ -328,7 +328,10 @@ function importParsed(input, filename) {
     DATASETS.push({ id, name: filename, count: res.projects.length, utils });
     // Compare the new utility against whichever current utility is nearest to its projects.
     state.utilB = utils[0];
-    if (state.utilA === state.utilB) state.utilA = utilities().find(u => u !== state.utilB);
+    // Nearest pair wins; more flagged pairs breaks a tie (several utilities can touch the new plan).
+    const score = u => { const ps = findOverlaps(PROJECTS, { utilA: u, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: "near" }).pairs; return [ps.length ? Math.min(...ps.map(x => x.km)) : Infinity, -ps.length]; };
+    const others = utilities().filter(u => u !== state.utilB).map(u => [u, score(u)]).sort((a, b) => a[1][0] - b[1][0] || a[1][1] - b[1][1]);
+    if (others.length && (others[0][1][0] < Infinity || state.utilA === state.utilB)) state.utilA = others[0][0];
     renderDatasets(); rebuild();
     return `<p class="ok">Loaded ${res.projects.length} of ${res.total} rows from ${esc(filename)} (${esc(utils.join(", "))}). Now comparing with ${esc(lbl(state.utilA))}.</p>` +
       (res.errors.length ? `<p class="warn">Skipped ${res.errors.length}: ${res.errors.slice(0, 4).map(esc).join("; ")}${res.errors.length > 4 ? "…" : ""}</p>` : "");

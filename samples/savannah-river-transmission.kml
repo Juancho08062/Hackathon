@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Savannah River Transmission Co. plan (sample)</name>
+<Placemark><name>Augusta Crossing 230 kV Line</name><description><![CDATA[<table><tr><td>OWNER</td><td>Savannah River Transmission Co.</td></tr><tr><td>VOLTAGE</td><td>230</td></tr><tr><td>PROJ_TYPE</td><td>new_line</td></tr><tr><td>ISD</td><td>2028-12-31</td></tr><tr><td>COST</td><td>29000000</td></tr></table>]]></description><LineString><coordinates>-82.02,33.47 -81.95,33.46 -81.9,33.45</coordinates></LineString></Placemark>
+<Placemark><name>Vogtle Road 500 kV Switchyard Expansion</name><description><![CDATA[<table><tr><td>OWNER</td><td>Savannah River Transmission Co.</td></tr><tr><td>VOLTAGE</td><td>500</td></tr><tr><td>PROJ_TYPE</td><td>substation</td></tr><tr><td>ISD</td><td>2029-06-30</td></tr></table>]]></description><Point><coordinates>-81.77,33.14</coordinates></Point></Placemark>
+<Placemark><name>Jackson - Beech Island 115 kV Rebuild</name><description><![CDATA[<table><tr><td>OWNER</td><td>Savannah River Transmission Co.</td></tr><tr><td>VOLTAGE</td><td>115</td></tr><tr><td>PROJ_TYPE</td><td>rebuild</td></tr><tr><td>ISD</td><td>2027</td></tr></table>]]></description><LineString><coordinates>-81.79,33.33 -81.88,33.4</coordinates></LineString></Placemark>
+</Document></kml>

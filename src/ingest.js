@@ -8,8 +8,8 @@
     utility: ["utility", "owner", "company", "transmission_owner", "to", "utility_name", "entity", "member"],
     name: ["name", "project", "project_name", "title", "description_short", "project_title", "facility", "facility_name", "proj_name"],
     desc: ["desc", "description", "scope", "details", "notes"],
-    kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv"],
-    type: ["type", "project_type", "category", "work_type"],
+    kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv", "kv_nominal"],
+    type: ["type", "project_type", "category", "work_type", "proj_type"],
     start: ["start", "start_date", "construction_start", "begin", "const_start", "start_year"],
     in_service: ["in_service", "in_service_date", "isd", "expected_in_service", "completion", "year", "in_service_year", "in_serv", "inservice", "expected_isd", "projected_isd", "isd_year", "planned_isd"],
     cost: ["cost", "cost_usd", "estimated_cost", "est_cost", "budget", "cost_estimate", "project_cost"],
@@ -76,11 +76,13 @@
     let m;
     if ((m = s.match(/^(\d{4})$/))) return { iso: `${m[1]}-06-01`, precision: "year" };
     if ((m = s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/))) return { iso: `${m[1]}-${m[2].padStart(2, "0")}-${(m[3] || "01").padStart(2, "0")}`, precision: m[3] ? "day" : "month" };
-    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return { iso: `${y}-${m[1].padStart(2, "0")}-${String(Math.min(28, +m[2])).padStart(2, "0")}`, precision: "day" }; }
+    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; const last = new Date(Date.UTC(+y, +m[1], 0)).getUTCDate(); return { iso: `${y}-${m[1].padStart(2, "0")}-${String(Math.min(last, +m[2])).padStart(2, "0")}`, precision: "day" }; }
     if ((m = s.match(/(spring|summer|fall|autumn|winter)\s+(\d{4})/i))) { const mo = { spring: "04", summer: "07", fall: "10", autumn: "10", winter: "01" }[m[1].toLowerCase()]; return { iso: `${m[2]}-${mo}-01`, precision: "season" }; }
     const d = new Date(s); return isNaN(d) ? null : { iso: d.toISOString().slice(0, 10), precision: "day" };
   }
   const num = v => { const n = parseFloat(String(v ?? "").replace(/[$,\s]/g, "").replace(/(\d)k$/i, "$1e3").replace(/(\d)m$/i, "$1e6")); return isFinite(n) ? n : null; };
+  // KML descriptions can be HTML or {"@type": "html", value}; keep readable text only.
+  const plainText = v => { if (v == null) return ""; if (typeof v === "object") v = v.value ?? ""; return String(v).replace(/<(br|\/p|\/tr)[^>]*>/gi, " ").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim(); };
   function minusMonths(iso, m) { const d = new Date(iso + "T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() - m); return d.toISOString().slice(0, 10); }
 
   // row: flat object; coords: optional [[lat, lon], ...] (from GeoJSON). Returns { project } or { error }.
@@ -103,7 +105,7 @@
     return {
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),
-        name: String(name).trim(), desc: String(pick(row, "desc") || ""), kv, miles, type,
+        name: String(name).trim(), desc: plainText(pick(row, "desc")), kv, miles, type,
         in_service: isd.iso, date_precision: isd.precision === "day" ? "day" : "year",
         start: st ? st.iso : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
         cost: num(pick(row, "cost")), coords, loc: "med", source: defaults.source || "", page: "", imported: true,

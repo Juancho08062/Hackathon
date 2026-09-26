@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@xmldom/xmldom": "^0.9.12",
     "eslint": "^9.39.0",
     "globals": "^17.0.0"
   }

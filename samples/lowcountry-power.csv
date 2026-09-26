@@ -1,0 +1,6 @@
+utility,name,kv,type,start,in_service,cost,lat,lon,lat2,lon2,description
+Lowcountry Power Cooperative,Hardeeville - Okatie 115 kV Line,115,new_line,2027-03-01,2028-10-31,16500000,32.29,-81.08,32.31,-80.94,New line crossing the Jasper - Okatie corridor
+Lowcountry Power Cooperative,Bluffton Parkway 115 kV Substation,115,substation,,2028-06-30,7800000,32.24,-80.86,,,New distribution substation
+Lowcountry Power Cooperative,Yemassee North 69 kV Rebuild,69,rebuild,2026-11-01,2027-12-31,5200000,32.72,-80.87,32.78,-80.92,Replace wood poles with steel
+Lowcountry Power Cooperative,Lady's Island 115 kV Tap,115,new_line,,2029,4100000,32.44,-80.66,32.42,-80.62,Tap near Burton
+Lowcountry Power Cooperative,Ridgeland Battery Storage,115,generation,2028-01-01,2029-06-30,42000000,32.48,-80.99,,,20 MW battery at the Ridgeland substation
