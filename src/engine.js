@@ -109,6 +109,12 @@
     { key: "craneDays", group: "Under 40 km", label: "Crane days shared", unit: "days", value: 20, check: "days a crane can move between the two sites instead of two rentals" },
     { key: "craneDay", group: "Under 40 km", label: "Crane rental", unit: "$ per day", value: 6.5e3, check: "crawler or truck crane with operator, compare with local rental rates" },
     { key: "contractorPct", group: "Under 40 km", label: "Contractor overhead", unit: "% of project cost", value: 1, check: "bidding, supervision and site setup a shared contractor avoids" },
+    { key: "haulKm", group: "Shared yard", label: "Haul distance to the yard", unit: "km one way", value: 160, check: "from the supplier or equipment depot; with one shared yard, heavy loads for every project ride the same trips" },
+    { key: "shuttles", group: "Shared yard", label: "Yard-to-site trips", unit: "round trips per project", value: 40, check: "material and equipment runs from the yard to each work site over the build" },
+    { key: "circuity", group: "Shared yard", label: "Road distance factor", unit: "× straight line", value: 1.3, check: "roads are longer than a straight line; 1.2 to 1.4 is typical in rural areas" },
+    { key: "mph", group: "Shared yard", label: "Average truck speed", unit: "mph", value: 45, check: "mixed highway and county roads" },
+    { key: "mpg", group: "Shared yard", label: "Heavy truck fuel economy", unit: "miles per gallon", value: 6, check: "loaded Class 8 diesel trucks usually get 5 to 7 mpg" },
+    { key: "co2Gal", group: "Shared yard", label: "CO2 per gallon of diesel", unit: "kg", value: 10.21, check: "EPA GHG Emission Factors Hub, diesel fuel" },
     { key: "share", group: "All", label: "Each side’s share of a shared cost", unit: "%", value: 50, check: "a shared cost is split, so half of one side's cost is saved" },
   ];
   const DEFAULTS = Object.fromEntries(ASSUMPTIONS.map(a => [a.key, a.value]));
@@ -151,6 +157,68 @@
   const customized = () => ASSUMPTIONS.some(a => ASSUME[a.key] !== a.value);
   const fmtMoney = c => c == null ? "" : c >= 1e6 ? "$" + (c / 1e6).toFixed(1) + "M" : c >= 1e4 || c === 0 ? "$" + Math.round(c / 1e3) + "K" : c >= 1e3 ? "$" + +(c / 1e3).toFixed(1) + "K" : "$" + Math.round(c);
 
+  // ---------- shared yard finder ----------
+  // Distance (km) from a point (x, y km) to a project's nearest point, and that point.
+  function toProject(y, p) {
+    let best = [Infinity, null];
+    for (const [a, b] of segments(p)) { const r = segDist(y, a, b); if (r[0] < best[0]) best = r; }
+    return best;
+  }
+  // One staging yard for a group of projects: the point with the smallest total straight-line distance to every
+  // project's nearest point (a geometric median, by Weiszfeld's method). If an existing substation or plant, or one of
+  // the projects' own substations, is almost as good (within 15% more total distance and still inside maxKm of every
+  // site), the yard moves there, since those sites already have road access and fenced land.
+  function yardFor(ps, anchors, maxKm = 40) {
+    const mid = p => { const c = p.coords.map(xy); return [c.reduce((s, v) => s + v[0], 0) / c.length, c.reduce((s, v) => s + v[1], 0) / c.length]; };
+    let y = ps.map(mid).reduce((s, v) => [s[0] + v[0] / ps.length, s[1] + v[1] / ps.length], [0, 0]);
+    for (let it = 0; it < 80; it++) {
+      let nx = 0, ny = 0, w = 0;
+      for (const p of ps) { const [d, q] = toProject(y, p), k = 1 / Math.max(d, 0.05); nx += q[0] * k; ny += q[1] * k; w += k; }
+      const n = [nx / w, ny / w], moved = Math.hypot(n[0] - y[0], n[1] - y[1]);
+      y = n; if (moved < 0.01) break;
+    }
+    const measure = pt => { const d = ps.map(p => toProject(pt, p)[0]); return { d, total: d.reduce((s, v) => s + v, 0), max: Math.max(...d) }; };
+    let best = Object.assign({ pt: y, near: null }, measure(y));
+    const opt = best.total;
+    const cands = ps.filter(p => p.coords.length === 1).concat((anchors || []).filter(a => a.coords && a.coords.length === 1));
+    let pick = null;
+    for (const c of cands) {
+      const pt = xy(c.coords[0]), m = measure(pt);
+      if (m.total <= opt * 1.15 + 1 && m.max <= maxKm && (!pick || m.total < pick.total)) pick = Object.assign({ pt, near: c.name.split(" (")[0] }, m);
+    }
+    if (pick) best = pick;
+    return { at: unxy(best.pt), near: best.near, dists: best.d, total: best.total, max: best.max, spokes: ps.map(p => unxy(toProject(best.pt, p)[1])) };
+  }
+  // What one shared yard saves on the road. Heavy loads for every project after the first ride shared trips from the
+  // depot; the yard-to-site runs the shared yard adds are subtracted. Miles are net of both.
+  function yardImpact(yd, n) {
+    const A = ASSUME, km2mi = 1 / 1.609;
+    const haulMi = A.loads * (n - 1) * 2 * A.haulKm * km2mi;
+    const shuttleMi = yd.dists.reduce((s, d) => s + d * A.circuity * 2 * A.shuttles, 0) * km2mi;
+    const netMi = haulMi - shuttleMi;
+    return { n, haulMi, shuttleMi, netMi, hours: netMi / A.mph, co2t: netMi / A.mpg * A.co2Gal / 1000, yardsAvoided: n - 1, dollars: A.yard * (n - 1) };
+  }
+  // Coordination clusters: chains of cross-utility pairs that are near and built in the same window, joined into
+  // groups of 3 or more projects. Each group gets one yard; a project farther than maxKm from it is dropped (farthest
+  // first) until everyone left is within a day's drive. Only groups with both utilities and 3+ projects are kept.
+  function clusters(pairs, anchors, maxKm = 40) {
+    const cand = pairs.filter(x => x.near && x.sameWindow && x.km <= maxKm), par = new Map();
+    const find = p => { while (par.get(p) !== p) p = par.get(p); return p; };
+    for (const x of cand) for (const p of [x.p, x.q]) if (!par.has(p)) par.set(p, p);
+    for (const x of cand) par.set(find(x.p), find(x.q));
+    const groups = new Map();
+    for (const p of par.keys()) { const r = find(p); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(p); }
+    const out = [];
+    for (let ps of groups.values()) {
+      if (ps.length < 3) continue;
+      let yd = yardFor(ps, anchors, maxKm);
+      while (ps.length >= 3 && yd.max > maxKm) { const i = yd.dists.indexOf(yd.max); ps = ps.filter((_, j) => j !== i); yd = yardFor(ps, anchors, maxKm); }
+      if (ps.length < 3 || new Set(ps.map(p => p.utility)).size < 2) continue;
+      out.push({ projects: ps, yard: yd, impact: yardImpact(yd, ps.length), pairs: cand.filter(x => ps.includes(x.p) && ps.includes(x.q)) });
+    }
+    return out.sort((a, b) => b.projects.length - a.projects.length || b.impact.netMi - a.impact.netMi);
+  }
+
   // ---------- pairing and ranking ----------
   // opts: { utilA, utilB, maxKm, bufferMonths, mode: "near" | "both" | "time" }
   function findOverlaps(projects, opts) {
@@ -174,6 +242,6 @@
     return { pairs: out, checked: A.length * B.length };
   }
 
-  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
+  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);

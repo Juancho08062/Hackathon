@@ -79,5 +79,18 @@ t("savings: one line per shareable item, with the math, and editable unit costs"
   E.setAssumptions({});
   assert.ok(!E.customized() && E.savings(x).total === s.total);
 });
+t("shared yard: geometric median, snapped to a substation, and 3+ project clusters", () => {
+  const sub = (id, u, lat, lon) => ({ id, utility: u, name: id, type: "substation", kv: 115, coords: [[lat, lon]], start: "2027-01-01", in_service: "2028-01-01" });
+  const a = sub("A", "X", 33, -81), b = sub("B", "Y", 33, -80.8), c = sub("C", "X", 33.15, -80.9);
+  const yd = E.yardFor([a, b, c], [], 40);
+  assert.ok(yd.max < 20 && yd.near); // snapped to one of the three substations, all within a day's drive
+  const im = E.yardImpact({ dists: [0, 0] }, 2);
+  assert.ok(Math.abs(im.haulMi - 12 * 2 * 160 / 1.609) < 0.01 && im.shuttleMi === 0 && im.co2t > 0);
+  const r = E.findOverlaps([a, b, c], { utilA: "X", utilB: "Y", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const cl = E.clusters(r.pairs, [], 40);
+  assert.strictEqual(cl.length, 1); assert.strictEqual(cl[0].projects.length, 3);
+  const far = sub("D", "Y", 35, -80.8); // 220 km away: not in any cluster
+  assert.strictEqual(E.clusters(E.findOverlaps([a, b, far], { utilA: "X", utilB: "Y", maxKm: 400, bufferMonths: 0, mode: "near" }).pairs, [], 40).length, 0);
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);
