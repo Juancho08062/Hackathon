@@ -255,8 +255,10 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
   .b-kpis b{font-size:20px}
   .brief h4{font-size:12.5px;margin:8px 0 2px}
   .b-tab td span{font-size:9.5px}
-  .brief ol{columns:2;column-gap:20px;display:block}
-  .brief ol li{break-inside:avoid;margin-bottom:2px}
+  /* two columns of steps; numbers live inside each column so they never reach into the neighbor */
+  .brief ol{columns:2;column-gap:28px;display:block;padding-left:0;list-style:none;counter-reset:step}
+  .brief ol li{break-inside:avoid;margin-bottom:3px;position:relative;padding-left:18px;counter-increment:step}
+  .brief ol li::before{content:counter(step) ".";position:absolute;left:0;font-weight:600}
   .b-tab td{padding:3px 8px 3px 0}
   .brief ul,.brief ol{gap:1px}
   .b-foot{margin-top:10px;padding-top:6px;font-size:10px}
