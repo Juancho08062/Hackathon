@@ -111,7 +111,8 @@ select{padding-right:4px}
 .tilenote{position:absolute;top:48px;right:10px;z-index:2;max-width:320px;margin:0;padding:6px 10px;font-size:12px;background:var(--amberbg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm)}
 .ml-place{font:500 11px var(--body);color:var(--ml-place,#57606A);text-shadow:0 0 3px var(--land),0 0 3px var(--land);pointer-events:none;white-space:nowrap}
 .maplibregl-ctrl-group{border-radius:var(--r-sm)!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important}
-.maplibregl-ctrl-scale{border-color:var(--ink2)!important;color:var(--ink2)!important;background:rgba(255,255,255,.8)!important;font:11px var(--body)!important}
+/* scale bars: solid and dark so they read on any basemap or theme */
+.maplibregl-ctrl-scale{border-color:#fff!important;color:#fff!important;background:#1F2A30!important;font:600 11px var(--body)!important;padding:1px 6px!important;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .maplibregl-ctrl-attrib{font:10px var(--body)}
 /* recenter and ruler buttons, the ruler readout, and distance labels on pair links and ruler legs */
 .seam-tools button svg{width:18px;height:18px;margin:auto;display:block;color:#333}
