@@ -49,6 +49,7 @@ After loading, pick any two utilities in the **Compare** dropdowns.
 |---|---|
 | `src/engine.js` | Core logic with no UI: closest-point distance, tiers, build windows, shared resources, cost model and `findOverlaps()` ranking. Runs in the browser and in Node. |
 | `src/ingest.js` | Importer: CSV/TSV parser, JSON and GeoJSON readers, column aliasing, date and type normalization. |
+| `src/scene3d.js` | 3D view of a selected pair (three.js, loaded on demand): towers, wires, substations and plants for both utilities, the closest-point link, and the shared corridor, laydown yard or staging yard its tier allows. Pixel-art mode renders at 1/3 resolution. |
 | `src/app.js` | UI: d3 map with pan and zoom and switchable basemaps (Plain, Streets, Satellite, Terrain), ranked list, pair detail with the cost breakdown, timeline, and the import panel. |
 | `src/index.html`, `src/styles.css` | Markup and styling, with light and dark themes. |
 | `data/build_projects.py` | The built-in DESC and Georgia projects, with source links, hand-placed coordinates and estimated start dates. Writes `data/projects.json`. |

@@ -7,6 +7,7 @@ for key, text in {
     "/*STYLES*/": src("styles.css"),
     "/*ENGINE*/": src("engine.js"),
     "/*INGEST*/": src("ingest.js"),
+    "/*SCENE3D*/": src("scene3d.js"),
     "/*APP*/": src("app.js"),
     "/*BASEMAP*/null": (root / "data/basemap.json").read_text(),
     "/*PROJECTS*/[]": json.dumps(json.load(open(root / "data/projects.json")), separators=(",", ":")),
