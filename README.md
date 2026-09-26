@@ -22,14 +22,14 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 
 One screen, laid out like the coordination tools planners already use (Esri Capital Project Coordination, one.network): a map, the ranked overlaps beside it, and the build windows underneath, all linked.
 
-- **Map** (MapLibre GL): Plain (works offline), Light, Satellite and Topo basemaps. **3D** tilts the same map over real terrain (Terrarium elevation tiles from USGS 3DEP data) and raises a tower every ~450 m along each planned line, so a pair can be seen where it really is, across the Savannah River. Line width is voltage, dashed is an approximate location, faded is a date that has passed, rings mark how close a pair is.
+- **Map** (MapLibre GL): Plain (works offline), Light, Satellite and Topo basemaps. **3D** tilts the same map over real terrain (Terrarium elevation tiles from USGS 3DEP data) and raises a tower every ~450 m along each planned line, so a pair can be seen where it really is, across the Savannah River. Line width is voltage, dashed is an approximate location, faded is a date that has passed, rings mark how close a pair is. Bottom-right controls work like a web map: recenter, a click-to-measure ruler (each leg and the total in miles and km), zoom and compass, and scale bars in miles and km. Each listed pair's link is labeled with its gap (the open pair always, all of them from zoom 9).
 - **Overlaps**: ranked by expected savings (or chance, or distance), with each pair's chance of sharing a build window, what it would save if the dates held, and filters for distance tier, build period (next 12 months, next 3 years) and dates already passed.
 - **Pair panel**: both projects side by side (work, window, plan drift, cost, how each end point was located, source page), the chance and why, what they can share item by item, the shared yard, a schedule what-if, a coordination status and a printable brief.
 - **Plan changes**: how far each utility's dates moved between its last two plans, and which shared windows the latest updates opened or closed.
 - **Optimize**: the few date moves that most raise expected savings, with a joint schedule proposal to print.
 - **Data checks**: the validation report from the data pipeline, each check with the records it caught, downloadable as JSON.
 - **Ask**: an assistant that answers plain-language questions ("which overlaps near Augusta are most likely to happen?", "what changed in DESC's plan?") from the same data, and can fly the map to what it's talking about. It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with nine tools that read Seamline's own data (`src/agent.js` runs the loop; the tools are in `src/app.js`). Since the site has no server, each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API.
-- The three.js pair scene is kept as a "3D illustration" from the pair panel.
+- The three.js pair scene is kept as a "3D illustration" from the pair panel. Its ground is a cut-out terrain block with earthen sides, shaped from the same elevation tiles; heights are stretched so the flat river country reads, and the footer gives the real range in meters and the factor. Offline it falls back to an illustrative ground.
 
 ## Features
 

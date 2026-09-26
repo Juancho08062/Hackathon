@@ -291,21 +291,78 @@
   }
 
   // ---------- build ----------
-  function build(pair, opts, Q) {
-    const T = root.THREE, rnd = rng(7);
+  // Where the pair sits in the scene: centered between the closest points, S scene units per km, a square block
+  // 2H units across.
+  function frame(pair) {
     const c0 = [(pair.ca[0] + pair.cb[0]) / 2, (pair.ca[1] + pair.cb[1]) / 2];
-    const KX = 111.32 * Math.cos(c0[0] * Math.PI / 180), KY = 110.57;
-    const Rkm = Math.max(2.5, pair.km * 1.5);
-    const S = 32 / Rkm;                                        // scene units per km
-    const R = 40, RG = R * 1.7, LOW = -14;
+    const KX = 111.32 * Math.cos(c0[0] * Math.PI / 180), KY = 110.57, Rkm = Math.max(2.5, pair.km * 1.5), S = 32 / Rkm;
+    const R = 40, RG = R * 1.7, H = RG * 0.92;
+    return { c0, KX, KY, S, R, RG, H, lonAt: x => c0[1] + x / (KX * S), latAt: z => c0[0] - z / (KY * S) };
+  }
+
+  // Real ground elevation from the public AWS Terrain Tiles (Terrarium PNGs: SRTM and USGS data, no key needed).
+  // Returns a sampler in meters, or null when the tiles can't be reached (offline, or a preview that blocks images).
+  const demCache = new Map();
+  function loadDEM(pair) {
+    const F = frame(pair), key = pair.ca.concat(pair.cb).join(",");
+    if (demCache.has(key)) return demCache.get(key);
+    const halfKm = F.H / F.S, lat = F.c0[0], cos = Math.cos(lat * Math.PI / 180);
+    // about 600 elevation pixels across the block
+    const z = Math.max(7, Math.min(13, Math.round(Math.log2(156543 * cos * 600 / (2000 * halfKm)))));
+    const n = 2 ** z, gx = lon => (lon + 180) / 360 * n * 256;
+    const gy = la => { const r = la * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n * 256; };
+    const x0 = gx(F.lonAt(-F.H)), x1 = gx(F.lonAt(F.H)), y0 = gy(F.latAt(-F.H)), y1 = gy(F.latAt(F.H));
+    const tx0 = Math.floor(x0 / 256), tx1 = Math.floor(x1 / 256), ty0 = Math.floor(y0 / 256), ty1 = Math.floor(y1 / 256);
+    const W = (tx1 - tx0 + 1) * 256, Hh = (ty1 - ty0 + 1) * 256;
+    const tiles = [];
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) tiles.push(new Promise((ok, bad) => {
+      const im = new Image(); im.crossOrigin = "anonymous";
+      im.onload = () => ok({ im, tx, ty }); im.onerror = bad;
+      im.src = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${tx}/${ty}.png`;
+    }));
+    const timeout = new Promise((ok, bad) => setTimeout(() => bad(new Error("timeout")), 6000));
+    const p = Promise.race([Promise.all(tiles), timeout]).then(list => {
+      const c = document.createElement("canvas"); c.width = W; c.height = Hh;
+      const g = c.getContext("2d");
+      list.forEach(t => g.drawImage(t.im, (t.tx - tx0) * 256, (t.ty - ty0) * 256));
+      const px = g.getImageData(0, 0, W, Hh).data, m = new Float32Array(W * Hh);
+      for (let i = 0; i < m.length; i++) m[i] = px[i * 4] * 256 + px[i * 4 + 1] + px[i * 4 + 2] / 256 - 32768;
+      const at = (la, lo) => {
+        const X = Math.max(0, Math.min(W - 1.001, gx(lo) - tx0 * 256)), Y = Math.max(0, Math.min(Hh - 1.001, gy(la) - ty0 * 256));
+        const i = Math.floor(X), j = Math.floor(Y), fx = X - i, fy = Y - j, o = j * W + i;
+        return (m[o] * (1 - fx) + m[o + 1] * fx) * (1 - fy) + (m[o + W] * (1 - fx) + m[o + W + 1] * fx) * fy;
+      };
+      return { at, source: "AWS Terrain Tiles (SRTM, USGS)" };
+    }).catch(() => null);
+    demCache.set(key, p);
+    return p;
+  }
+
+  function build(pair, opts, Q, dem) {
+    const T = root.THREE, rnd = rng(7);
+    const F = frame(pair), { c0, KX, KY, S, R, RG, H } = F, LOW = -14;
     const TS = Math.max(1, Math.min(2.2, pair.km / 8));        // exaggerate structures when the pair is far apart
 
-    // Deterministic terrain: gentle roll in the middle, hills toward the rim, a cliff down to the lowland.
-    const heightAt = (x, z) => {
-      const r = Math.hypot(x, z), k = smooth(R * 0.75, R * 1.45, r);
-      return 0.35 * Math.sin(x * 0.11) * Math.cos(z * 0.09) + 0.2 * Math.sin((x + z) * 0.23) + k * (2.2 + 1.6 * Math.sin(x * 0.07 + 1) * Math.cos(z * 0.06 - 0.5));
-    };
-    const edge = a => RG * (1 + 0.05 * Math.sin(5 * a + 1) + 0.03 * Math.sin(11 * a));
+    // Ground height. With real elevation: meters above the block's low ground, stretched so the relief reads (the
+    // Savannah River lowlands are flat), and the factor is shown in the footer. Without it: a gentle made-up roll.
+    let heightAt, relief = null;
+    if (dem) {
+      const ss = [];
+      for (let i = 0; i < 48; i++) for (let j = 0; j < 48; j++) ss.push(dem.at(F.latAt((j / 47 * 2 - 1) * H), F.lonAt((i / 47 * 2 - 1) * H)));
+      ss.sort((a, b) => a - b);
+      const base = ss[Math.floor(ss.length * 0.03)], top = ss[Math.floor(ss.length * 0.99)], span = Math.max(1, top - base);
+      const ex = Math.max(2, Math.min(25, 6 / (span / 1000 * S)));
+      const k = S / 1000 * ex;
+      heightAt = (x, z) => Math.max(-1.2, (dem.at(F.latAt(z), F.lonAt(x)) - base) * k - 0.15); // lowest ground sits just under the water
+      relief = { ex, low: base, high: top };
+    } else {
+      heightAt = (x, z) => {
+        const r = Math.hypot(x, z), k = smooth(R * 0.75, R * 1.45, r);
+        return 0.35 * Math.sin(x * 0.11) * Math.cos(z * 0.09) + 0.2 * Math.sin((x + z) * 0.23) + k * (2.2 + 1.6 * Math.sin(x * 0.07 + 1) * Math.cos(z * 0.06 - 0.5));
+      };
+    }
+    // distance from the center to the block's square edge, in direction a
+    const edge = a => H / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)));
     const toV = ([lat, lon]) => { const x = (lon - c0[1]) * KX * S, z = -(lat - c0[0]) * KY * S; return new T.Vector3(x, heightAt(x, z), z); };
 
     const scene = new T.Scene();
@@ -321,20 +378,19 @@
     scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, 0.2));
     const sun = new T.DirectionalLight(PAL.sun, 2.6);
     sun.castShadow = true; sun.shadow.mapSize.set(Q.shadow, Q.shadow);
-    const sc = sun.shadow.camera; sc.left = sc.bottom = -R * 1.4; sc.right = sc.top = R * 1.4; sc.near = 1; sc.far = R * 5;
+    const sc = sun.shadow.camera; sc.left = sc.bottom = -H * 1.05; sc.right = sc.top = H * 1.05; sc.near = 1; sc.far = R * 5;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
     scene.add(sun, sun.target);
 
-    // plateau ground with vertex colors
-    const size = RG * 2.4, gGeo = new T.PlaneGeometry(size, size, Q.seg, Q.seg); gGeo.rotateX(-Math.PI / 2);
+    // the block's top: ground with vertex colors
+    const gGeo = new T.PlaneGeometry(H * 2, H * 2, Q.seg, Q.seg); gGeo.rotateX(-Math.PI / 2);
     const pos = gGeo.attributes.position, cols = [], tmp = new T.Color();
     const cG = new T.Color(PAL.grass), cD = new T.Color(PAL.grassDark), cY = new T.Color(PAL.grassDry), cR = new T.Color(PAL.rock);
     for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i), z = pos.getZ(i), r = Math.hypot(x, z), inside = r < edge(Math.atan2(z, x));
-      const y = inside ? heightAt(x, z) : LOW - 0.5; pos.setY(i, y);
+      const x = pos.getX(i), z = pos.getZ(i), y = heightAt(x, z); pos.setY(i, y);
       const n = 0.5 + 0.5 * Math.sin(x * 0.31 + Math.cos(z * 0.27) * 2) * Math.cos(z * 0.19 - x * 0.07);
       tmp.copy(cG).lerp(cD, Math.max(0, 0.6 - n) * 1.3).lerp(cY, smooth(1.6, 3.6, y) * 0.7 + Math.max(0, n - 0.8) * 1.5);
-      if (!inside) tmp.copy(cR);
+      if (dem && y < 0.15) tmp.lerp(cR, 0.35); // wet river banks
       cols.push(tmp.r, tmp.g, tmp.b);
     }
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
@@ -352,16 +408,27 @@
     groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = Q.aniso || 4;
     const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
 
-    // basalt columns around the cliff
-    const colGeo = new T.CylinderGeometry(1, 1, 1, 6); colGeo.translate(0, 0.5, 0);
-    const NC = 340, cols3 = new T.InstancedMesh(colGeo, pbr(T, 0xffffff), NC), mtx = new T.Matrix4(), q = new T.Quaternion(), sv = new T.Vector3(), pv = new T.Vector3();
-    for (let i = 0; i < NC; i++) {
-      const a = i / NC * Math.PI * 2 + rnd() * 0.02, rr = edge(a) - 1.2 + rnd() * 2.6, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-      const top = heightAt(Math.cos(a) * (edge(a) - 1.5), Math.sin(a) * (edge(a) - 1.5)) - 0.2 - (rr > edge(a) ? rnd() * 5 : rnd() * 0.8), rad = 0.9 + rnd() * 0.7;
-      mtx.compose(pv.set(x, LOW - 1, z), q.setFromAxisAngle(sv.set(0, 1, 0), rnd() * 1.1), sv.clone().set(rad, top - LOW + 1, rad)); cols3.setMatrixAt(i, mtx);
-      cols3.setColorAt(i, tmp.setHex(PAL.rock).offsetHSL(0, 0, (rnd() - 0.5) * 0.08));
-    }
-    cols3.castShadow = true; cols3.receiveShadow = true; scene.add(cols3);
+    // earthen side walls, like a cut-out terrain model: topsoil, then clay and sand layers down to the base
+    const wallGeo = () => {
+      const N = Q.seg, rows = [0, 0.06, 0.25, 0.5, 0.75, 1], P = [], C = [], I = [];
+      const band = [new T.Color(0x4a3a26), new T.Color(0x6e5436), new T.Color(0x8a6a44), new T.Color(0x7a5c3a), new T.Color(0x5e4a33), new T.Color(0x4a3b2c)];
+      for (let side = 0; side < 4; side++) {
+        const b0 = P.length / 3;
+        for (let i = 0; i <= N; i++) {
+          const t = -H + 2 * H * i / N, x = [t, H, -t, -H][side], z = [H, -t, -H, t][side];
+          const top = Math.max(heightAt(x, z), dem ? 0.02 : -9);
+          rows.forEach((r, k) => { P.push(x, top + (LOW - top) * r, z); const c = band[k]; C.push(c.r, c.g, c.b); });
+        }
+        for (let i = 0; i < N; i++) for (let k = 0; k < rows.length - 1; k++) {
+          const a = b0 + i * rows.length + k, b = a + rows.length;
+          I.push(a, a + 1, b, b, a + 1, b + 1);
+        }
+      }
+      const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(P, 3)); g.setAttribute("color", new T.Float32BufferAttribute(C, 3)); g.setIndex(I); g.computeVertexNormals();
+      return g;
+    };
+    const walls = new T.Mesh(wallGeo(), pbr(T, 0xffffff, { vertexColors: true, rough: 1 })); walls.material.side = T.DoubleSide; walls.receiveShadow = true; scene.add(walls);
+    const mtx = new T.Matrix4(), q = new T.Quaternion(), sv = new T.Vector3(), pv = new T.Vector3();
 
     // lowland, and low forested ridges fading into haze so the sky shows above the horizon
     const low = new T.Mesh(new T.PlaneGeometry(R * 20, R * 20), pbr(T, PAL.lowland, { rough: 1 })); low.rotation.x = -Math.PI / 2; low.position.y = LOW - 0.3; scene.add(low);
@@ -481,12 +548,16 @@
       obstacles.push([yd.position.x, yd.position.z, 5 * TS]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
-    const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
+    const clear = (x, z, pad) => (!dem || heightAt(x, z) > 0.12) && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
     // ponds
     const waterTex = waterNormals(T);
     const water = new T.MeshStandardMaterial({ color: PAL.water, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.94, normalMap: waterTex, normalScale: new T.Vector2(0.15, 0.15), envMapIntensity: 1.3 });
-    for (let i = 0, made = 0; i < 40 && made < 6; i++) {
+    if (dem) {
+      // real terrain: one water level at the block's low ground fills the river channels and creeks
+      const lake = new T.Mesh(new T.PlaneGeometry(H * 2, H * 2), water); lake.rotation.x = -Math.PI / 2; lake.position.y = 0.02; lake.receiveShadow = true; scene.add(lake);
+    }
+    for (let i = 0, made = 0; i < 40 && made < (dem ? 0 : 6); i++) {
       const x = (rnd() - 0.5) * R * 2.6, z = (rnd() - 0.5) * R * 2.6, r = 2.5 + rnd() * 4;
       if (Math.hypot(x, z) > RG - 10 || !clear(x, z, r + 1)) continue;
       const pond = new T.Mesh(new T.CircleGeometry(r, 14), water); pond.scale.set(1, 0.6 + rnd() * 0.4, 1);
@@ -547,7 +618,7 @@
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
   }
 
   // ---------- modal and render loop ----------
@@ -560,25 +631,30 @@
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
     msg.textContent = "Loading 3D…"; msg.hidden = false;
     document.getElementById("m3dClose").focus();
-    ensureThree(QUALITY[opts.quality] || QUALITY.high).then(q => {
+    Promise.all([ensureThree(QUALITY[opts.quality] || QUALITY.high), loadDEM(pair)]).then(([q, dem]) => {
       if (modal.hidden) return;
       close(true);
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-      const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q);
+      const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q, dem);
+      const ft = built.relief ? `Real ground elevation from ${built.demSource}, ${Math.round(built.relief.low)} to ${Math.round(built.relief.high)} m, heights stretched ×${built.relief.ex.toFixed(built.relief.ex < 10 ? 1 : 0)}.` : "Ground shape is illustrative (elevation tiles didn't load).";
+      document.getElementById("m3dFoot").textContent = `Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated. ${ft}`;
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       // nothing that casts a shadow moves, so the shadow map is drawn once instead of every frame
       renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
       const overlay = document.createElement("div"); overlay.className = "m3d-labels"; stage.appendChild(overlay);
-      const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos }; });
+      const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos, w: 0 }; });
+      tags.forEach(t => { t.w = t.el.offsetWidth || t.el.textContent.length * 7.5; }); // widths are read once, here
       const v = new T.Vector3();
       // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
       // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
       let stageW = 1, stageH = 1;
       const placeTags = () => tags.forEach(t => {
         v.copy(t.pos).project(cam);
-        const off = v.z > 1, tf = off ? t.tf : `translate(${((v.x + 1) / 2 * stageW).toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
+        // keep the whole label inside the view
+        const half = t.w / 2 + 8, X = Math.max(half, Math.min(stageW - half, (v.x + 1) / 2 * stageW));
+        const off = v.z > 1, tf = off ? t.tf : `translate(${X.toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
         if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
         if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
       });

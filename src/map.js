@@ -31,6 +31,13 @@
     return { type: "Polygon", coordinates: [[[lon - dx, lat - dy], [lon + dx, lat - dy], [lon + dx, lat + dy], [lon - dx, lat + dy], [lon - dx, lat - dy]]] };
   };
 
+  // A distance in miles and km, and the great-circle distance between two [lat, lon] points.
+  const miKm = d => { const f = v => v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString(); return `${f(d / 1.609344)} mi · ${f(d)} km`; };
+  const gcKm = ([a, b], [c, d]) => { const r = Math.PI / 180, h = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+  // HTML labels (no font server needed): one per call, reused while the same list is shown.
+  const tag = (cls, text, at) => { const d = document.createElement("div"); d.className = cls; d.textContent = text; return new root.maplibregl.Marker({ element: d, offset: [0, -12] }).setLngLat(ll(at)).addTo(map); };
+
+  let gapMarkers = [], gapKey = "", measuring = false, mpts = [], mMarkers = [], mRead = null;
   let map = null, cbs = {}, is3d = false, basemap = "plain", placeMarkers = [], lastData = null, tileErrors = 0, colors = {};
 
   function style(base) {
@@ -41,7 +48,7 @@
       shade: { type: "raster-dem", tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: "terrarium" },
     };
     for (const [k, r] of Object.entries(RASTERS)) sources["r-" + k] = { type: "raster", tiles: r.tiles, tileSize: 256, maxzoom: r.max, attribution: r.attr };
-    for (const k of ["seam", "existing", "yardring", "spokes", "links", "projects", "points", "towers", "rings", "yards", "sparks"]) sources[k] = { type: "geojson", data: fc([]) };
+    for (const k of ["measure", "seam", "existing", "yardring", "spokes", "links", "projects", "points", "towers", "rings", "yards", "sparks"]) sources[k] = { type: "geojson", data: fc([]) };
     const vis = v => ({ visibility: v ? "visible" : "none" });
     return {
       version: 8, sources,
@@ -66,6 +73,9 @@
         { id: "points", type: "circle", source: "points", paint: { "circle-radius": ["get", "r"], "circle-color": ["get", "fill"], "circle-stroke-color": ["get", "color"], "circle-stroke-width": 2, "circle-opacity": ["get", "opacity"], "circle-stroke-opacity": ["get", "opacity"] } },
         { id: "rings", type: "circle", source: "rings", paint: { "circle-radius": ["get", "r"], "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": ["get", "color"], "circle-stroke-width": ["get", "w"], "circle-stroke-opacity": ["get", "opacity"] } },
         { id: "sparks", type: "circle", source: "sparks", paint: { "circle-radius": 12, "circle-color": ["get", "color"], "circle-opacity": 0.22, "circle-stroke-color": ["get", "color"], "circle-stroke-width": 2 } },
+        { id: "measure-halo", type: "line", source: "measure", filter: ["==", ["geometry-type"], "LineString"], paint: { "line-color": "#FFFFFF", "line-width": 5 } },
+        { id: "measure-line", type: "line", source: "measure", filter: ["==", ["geometry-type"], "LineString"], paint: { "line-color": "#B0183D", "line-width": 2.5, "line-dasharray": [2, 1.5] } },
+        { id: "measure-pt", type: "circle", source: "measure", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 5, "circle-color": "#FFFFFF", "circle-stroke-color": "#B0183D", "circle-stroke-width": 2 } },
         { id: "yards", type: "circle", source: "yards", paint: { "circle-radius": ["get", "r"], "circle-color": ["get", "fill"], "circle-stroke-color": "#57606A", "circle-stroke-width": 1.5 } },
       ],
     };
@@ -77,15 +87,33 @@
       container: el, style: style(base), center: [-81.6, 33.0], zoom: 6.4, minZoom: 4, maxZoom: 16, maxPitch: 75,
       attributionControl: { compact: true }, dragRotate: true, pitchWithRotate: true, fadeDuration: 0,
     });
-    map.addControl(new root.maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
+    // Corner controls like a web map, bottom right: recenter and a distance ruler, then zoom and compass, then scale
+    // bars in miles and km.
+    const btn = (title, svg, fn) => { const b = document.createElement("button"); b.type = "button"; b.title = title; b.setAttribute("aria-label", title); b.innerHTML = svg; b.onclick = fn; return b; };
+    const tools = document.createElement("div"); tools.className = "maplibregl-ctrl maplibregl-ctrl-group seam-tools";
+    tools.append(
+      btn("Recenter the map", '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" stroke-width="2"/></svg>', () => cbs.recenter && cbs.recenter()),
+      btn("Measure a distance: click points on the map, Esc to finish", '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 12.5l2 2M10 9.5l1.5 1.5M13 6.5l2 2" stroke="currentColor" stroke-width="2"/></svg>', () => setMeasure(!measuring)));
+    tools.lastChild.id = "mRuler";
+    // (the first control added sits lowest in the corner)
     map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-right");
+    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "imperial" }), "bottom-right");
+    map.addControl(new root.maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+    map.addControl({ onAdd: () => tools, onRemove: () => tools.remove() }, "bottom-right");
+    mRead = document.createElement("div"); mRead.className = "mread"; mRead.hidden = true; el.appendChild(mRead);
+    addEventListener("keydown", e => { if (e.key === "Escape" && measuring) setMeasure(false); });
+    // pair gap labels: the open pair always, every listed pair once zoomed in
+    const zoomed = () => el.classList.toggle("gaps-all", map.getZoom() >= 9);
+    map.on("zoom", zoomed); zoomed();
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
     const hit = ["links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
     map.on("click", e => {
+      if (measuring) { mpts.push([e.lngLat.lat, e.lngLat.lng]); return drawMeasure(); }
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
       if (cbs.click) cbs.click(f ? { layer: f.layer.id, id: f.properties.id } : null);
     });
     map.on("mousemove", e => {
+      if (measuring) return;
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
       map.getCanvas().style.cursor = f ? "pointer" : "";
       if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id } : null, e.originalEvent);
@@ -93,6 +121,27 @@
     map.on("mouseout", () => cbs.hover && cbs.hover(null));
     // "style.load" fires once the layers exist; "load" would also wait for every basemap tile to arrive.
     return new Promise(res => { const go = () => { placeLabels(); res(map); }; if (map.isStyleLoaded()) go(); else map.once("style.load", go); });
+  }
+
+  // Distance ruler: each leg and the running total, in miles and km.
+  function drawMeasure() {
+    mMarkers.forEach(m => m.remove()); mMarkers = [];
+    const f = mpts.map(p => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: ll(p) } }));
+    if (mpts.length > 1) f.unshift({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: mpts.map(ll) } });
+    map.getSource("measure").setData(fc(f));
+    let tot = 0;
+    for (let i = 1; i < mpts.length; i++) {
+      const d = gcKm(mpts[i - 1], mpts[i]); tot += d;
+      mMarkers.push(tag("ml-gap ml-leg", miKm(d), [(mpts[i - 1][0] + mpts[i][0]) / 2, (mpts[i - 1][1] + mpts[i][1]) / 2]));
+    }
+    mRead.innerHTML = !mpts.length ? "Click a point on the map to start measuring" : mpts.length < 2 ? "Click another point to measure" : `Total <b>${miKm(tot)}</b> · click to add a point, Esc to finish`;
+  }
+  function setMeasure(on) {
+    measuring = on; mpts = [];
+    document.getElementById("mRuler").setAttribute("aria-pressed", on);
+    map.getCanvas().style.cursor = on ? "crosshair" : "";
+    mRead.hidden = !on;
+    drawMeasure();
   }
 
   // City names as HTML markers: they need no font server, so they work on the offline Plain map too.
@@ -180,6 +229,11 @@
     map.getSource("projects").setData(fc(lines));
     map.getSource("points").setData(fc(pts));
     map.getSource("existing").setData(fc((d.existing || []).map(e => ({ type: "Feature", properties: { id: e.id }, geometry: e.parts.some(c => c.length > 1) ? { type: "LineString", coordinates: e.parts.find(c => c.length > 1).map(ll) } : { type: "Point", coordinates: ll(e.parts[0][0]) } }))));
+    const gl = (d.links || []).filter(l => l.label && l.opacity > 0.3), gk = gl.map(l => l.id + (l.focus ? "*" : "")).join("|");
+    if (gk !== gapKey) { // rebuilt only when the listed pairs or the open pair change, not on every hover
+      gapKey = gk; gapMarkers.forEach(m => m.remove());
+      gapMarkers = gl.map(l => tag("ml-gap" + (l.focus ? " on" : ""), l.label, [(l.a[0] + l.b[0]) / 2, (l.a[1] + l.b[1]) / 2]));
+    }
     map.getSource("links").setData(fc((d.links || []).map(l => ({ type: "Feature", properties: { id: l.id, color: l.color, width: l.width, opacity: l.opacity }, geometry: { type: "LineString", coordinates: [ll(l.a), ll(l.b)] } }))));
     map.getSource("rings").setData(fc((d.rings || []).map(r => ({ type: "Feature", properties: { id: r.id, color: r.color, r: r.r, w: r.w, opacity: r.opacity }, geometry: { type: "Point", coordinates: ll(r.at) } }))));
     map.getSource("sparks").setData(fc((d.sparks || []).map(r => ({ type: "Feature", properties: { id: r.id, color: r.color }, geometry: { type: "Point", coordinates: ll(r.at) } }))));
