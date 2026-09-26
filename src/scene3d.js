@@ -12,9 +12,12 @@
   };
 
   let ctx = null, last = null;
-  // Standard is the lightest; High (the default) adds ambient occlusion and SMAA; Ultra renders at the full screen
-  // resolution with a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass detail.
+  // Standard is the lightest; High adds ambient occlusion and SMAA; Ultra renders at the full screen resolution with a
+  // wider occlusion kernel. Auto (the default) builds the High scene but draws it like Standard while the camera moves,
+  // then sharpens to High once it rests, so orbiting stays at 60 fps. dpr caps the pixel ratio; seg and tex set terrain
+  // and grass detail.
   const QUALITY = {
+    auto: { dpr: 2, shadow: 4096, seg: 200, tex: 512, ssao: 16, smaa: true, auto: true },
     standard: { dpr: 1.25, shadow: 2048, seg: 130, tex: 256, ssao: 0, smaa: false },
     high: { dpr: 2, shadow: 4096, seg: 200, tex: 512, ssao: 16, smaa: true },
     ultra: { dpr: 3, shadow: 4096, seg: 280, tex: 1024, ssao: 32, smaa: true },
@@ -560,13 +563,15 @@
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
     msg.textContent = "Loading 3D…"; msg.hidden = false;
     document.getElementById("m3dClose").focus();
-    ensureThree(QUALITY[opts.quality] || QUALITY.high).then(q => {
+    ensureThree(QUALITY[opts.quality] || QUALITY.auto).then(q => {
       if (modal.hidden) return;
       close(true);
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q);
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+      // nothing that casts a shadow moves, so the shadow map is drawn once instead of every frame
+      renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
       const overlay = document.createElement("div"); overlay.className = "m3d-labels"; stage.appendChild(overlay);
       const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos }; });
@@ -588,6 +593,8 @@
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
+      let lastMove = 0;
+      controls.addEventListener("change", () => { lastMove = performance.now(); });
 
       // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
       const pmrem = new T.PMREMGenerator(renderer);
@@ -614,11 +621,18 @@
       const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
       // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.
-      const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
-      composer.addPass(fxaa || smaa);
+      const fxaa = Q.smaa && !Q.auto ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
+      [fxaa, smaa].forEach(p => p && composer.addPass(p));
+      // Auto: "fast" is the Standard look (lower resolution, no occlusion, FXAA) used while anything moves the camera.
+      let fast = false;
+      const setFast = f => {
+        if (!Q.auto || f === fast) return;
+        fast = f; if (ssao) ssao.enabled = !f; smaa.enabled = !f; fxaa.enabled = f; size();
+      };
+      if (fxaa && smaa) fxaa.enabled = false;
 
       const size = () => {
-        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
+        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(fast ? QUALITY.standard.dpr : Q.dpr, devicePixelRatio);
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
@@ -634,8 +648,10 @@
         if (INTRO && !controls.enabled) {
           const k = Math.min(1, t / INTRO), e = 1 - Math.pow(1 - k, 3);
           orbitAt(endR * (2.3 - 1.3 * e), endAz + 1.1 * (1 - e), endEl + (Math.min(1.25, endEl + 0.5) - endEl) * (1 - e)); cam.lookAt(f);
-          if (k >= 1) { controls.enabled = true; controls.autoRotate = true; }
+          // Auto rests after the fly-in so the sharp High frame can show; the other settings keep turning slowly
+          if (k >= 1) { controls.enabled = true; controls.autoRotate = !Q.auto; }
         }
+        if (Q.auto) setFast(!controls.enabled || performance.now() - lastMove < 300);
         built.puffs.forEach(p => {
           const u = p.userData, k = (u.t + t * (u.big ? 0.07 : 0.11)) % 1, rise = u.s * (u.big ? 0.9 : 0.7);
           p.position.set(u.at.x + Math.sin(k * 5 + u.t * 9) * k * 0.8 + k * rise * 0.35, u.at.y + k * rise, u.at.z + k * rise * 0.15);
