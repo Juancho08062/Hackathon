@@ -171,7 +171,7 @@ const routes = [
   ["Which overlaps are most likely to happen, and what could they save?", "list_overlaps", { sort: "chance" }],
   ["Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "list_overlaps", { project_query: "jasper okatie mcintosh purrysburg" }],
   ["What changed between DESC's last two plans?", "get_plan_changes", {}],
-  ["Which three date moves would save the most?", "optimize_schedule", {}],
+  ["Which three date moves would save the most?", "optimize_schedule", { show: 3 }],
   ["Show me what's planned near Augusta", "search_projects", { query: "Augusta" }],
   ["How reliable is the data?", "get_data_checks", {}],
   // and the shapes a reviewer actually types
@@ -257,13 +257,20 @@ t("the overview surfaces how many pairs were rejected", () => {
 });
 
 t("plan changes and schedule moves render", () => {
-  const changes = O.render("get_plan_changes", { how_dates_moved: { DESC: { n: 40, later: 22, earlier: 6, unchanged: 12, median: 12, projects_with_history: 40, source: "SCRTP" } }, windows_opened: [], windows_closed: [] }, "en");
-  assert.match(changes, /22 later, 6 earlier/);
+  const changes = O.render("get_plan_changes", { how_dates_moved: { DESC: { n: 40, later: 22, earlier: 6, unchanged: 12, median_months: 12, projects_with_history: 40, source: "SCRTP" } }, windows_opened: [], windows_closed: [] }, "en");
+  assert.match(changes, /22 later, 6 earlier, 12 unchanged \(median 12 months/); // the field get_plan_changes returns
   assert.match(changes, /No shared window opened or closed/);
   const moves = O.render("optimize_schedule", { expected_savings_before_usd: 13700000, after_usd: 16200000, moves: [{ id: "IRP-20277", project: "MCINTOSH - PURRYSBURG", utility: "GPC", months: -6, in_service_from: "2026-06-01", in_service_to: "2025-12-01", adds_usd: 480000, strongest_effect: "Jasper - Okatie: chance 12% to 61%" }] }, "en");
   assert.match(moves, /13\.7M to \$16\.2M/);
   assert.match(moves, /-6 months/);
   assert.strictEqual(O.render("optimize_schedule", { moves: [] }, "en").includes("left as planned"), true);
+  // "which three date moves": list the three that add the most, and say how many there are
+  const many = { expected_savings_before_usd: 1e6, after_usd: 2e6, moves: [100, 400, 200, 300].map((a, k) => ({ id: "P-" + k, project: "P" + k, utility: "GPC", months: 3, in_service_from: "2027-01-01", in_service_to: "2027-04-01", adds_usd: a * 1000 })) };
+  const top = O.render("optimize_schedule", many, "en", { show: 3 });
+  assert.match(top, /The 3 that add the most, of 4 moves/);
+  assert.deepStrictEqual(top.match(/P-\d/g), ["P-1", "P-3", "P-2"]);
+  assert.match(O.render("optimize_schedule", many, "es", { show: 3 }), /Los 3 que más suman, de 4/);
+  assert.strictEqual(O.render("optimize_schedule", many, "en").match(/P-\d/g).length, 4);
 });
 
 t("the offline note names why the model was skipped", () => {

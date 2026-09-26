@@ -78,31 +78,57 @@ select{padding-right:4px}
 .row{display:flex;flex-wrap:wrap;gap:6px}
 
 /* ---------- app frame ---------- */
-.app{height:100vh;display:grid;grid-template-rows:auto auto minmax(0,1fr);grid-template-columns:minmax(0,1fr)}
-.appbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;row-gap:6px;padding:4px 12px;min-height:46px;border-bottom:1px solid var(--line);background:var(--panel)}
+.app{height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr);grid-template-columns:minmax(0,1fr);position:relative}
+.appbar{display:flex;align-items:center;gap:12px;padding:0 12px;height:46px;border-bottom:1px solid var(--line);background:var(--panel)}
 h1.logo{margin:0;font-size:14px}
 .logo a{display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;color:var(--ink);text-decoration:none;padding-right:12px;border-right:1px solid var(--line);height:24px}
+.logo a svg{width:18px;height:18px}
 /* What the product is, in the place the eye lands first. The appbar used to open with a provenance citation. */
 .tagline{font-size:12px;color:var(--ink2);white-space:nowrap;margin:0}
-.logo a svg{width:18px;height:18px}
 .compare{display:flex;align-items:center;gap:6px}
 .compare select{flex:1 1 auto;font-weight:500;max-width:220px;min-width:0}
 .compare .sw{width:10px;height:10px;border-radius:2px;background:var(--ua)} .compare .sw.b{background:var(--ub)}
 .compare .vs{color:var(--ink3)}
-.asof{flex:1 1 120px;color:var(--ink2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.filterbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.asof{color:var(--ink2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* filters fold into a popover under the Filters button; the extra actions into the More menu */
+.filterbar{position:absolute;z-index:30;top:43px;right:92px;width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
+.filterbar .grow{display:none}
+.filterbar .summary{flex-basis:100%;border-top:1px solid var(--grid);padding-top:8px}
+#filtersBtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+#filtersBtn .ct{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.morewrap{position:relative}
+.menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:180px;display:grid;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
+.menu button{font:inherit;text-align:left;border:0;background:none;color:var(--ink);padding:7px 10px;border-radius:4px;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--panel2)}
 .filterbar.off>*:not(.summary){opacity:.45;pointer-events:none}
-.summary{display:flex;align-items:baseline;gap:16px;color:var(--ink2);font-size:12px;flex-wrap:wrap}
-.summary b{color:var(--ink);font-weight:600;font-size:19px;line-height:1}
-.summary .lead b{font-size:25px;color:var(--time)}
-.work{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,560px);min-height:0}
-.left{display:grid;grid-template-rows:minmax(0,1fr) 238px;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
+.summary{color:var(--ink2);font-size:12px}
+.summary b{color:var(--ink);font-weight:600}
+/* option D: a labeled tool rail, one results panel that opens with headline numbers, then the map */
+.work{display:grid;grid-template-columns:64px minmax(400px,470px) minmax(0,1fr);min-height:0}
+.rail{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;overflow-x:hidden}
+.rail>button{position:relative;font:inherit;font-size:10.5px;width:56px;border:0;border-radius:6px;background:none;color:var(--ink2);padding:7px 0 6px;display:grid;justify-items:center;gap:3px;cursor:pointer}
+.rail>button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail>button:hover{color:var(--ink);background:var(--panel2)}
+.rail>button[aria-selected=true],.rail>button[aria-pressed=true]{background:var(--panel2);color:var(--ink);font-weight:600}
+.rail .n{display:none}
+.rail .badge{position:absolute;top:3px;right:9px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--amber,#9A6700);color:#fff;font-size:9.5px;font-weight:600;display:grid;place-items:center}
+.rail .grow{flex:1}
+.side{border-right:1px solid var(--line)}
+/* headline tiles at the top of the Overlaps view */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{font:inherit;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:8px 10px;display:grid;gap:1px}
+button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
+.kpi b{font-size:20px;font-weight:600;line-height:1.2}
+.kpi span{font-size:12px;font-weight:500}
+.kpi small{font-size:11px;color:var(--ink2)}
+.left{display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 
 /* ---------- map ---------- */
 .mapwrap{position:relative;min-height:0}
 #map{position:absolute;inset:0;background:var(--water)}
-.maptools{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2}
+.maptools{position:absolute;top:10px;right:10px;left:10px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;z-index:2;pointer-events:none}
+.maptools>*{pointer-events:auto}
 .maptools .seg,.maptools .btn{box-shadow:0 1px 3px rgba(0,0,0,.12)}
 /* ---------- the assistant's standing invitation ---------- */
 .askfab{position:absolute;right:10px;top:52px;z-index:3;display:inline-flex;align-items:center;gap:6px;
@@ -142,7 +168,8 @@ h1.logo{margin:0;font-size:14px}
 .seam-tools button svg{width:18px;height:18px;margin:auto;display:block;color:#333}
 .seam-tools button[aria-pressed=true]{background:var(--seam)!important}
 .seam-tools button[aria-pressed=true] svg{color:#fff}
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale{margin-top:4px}.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale+.maplibregl-ctrl-scale{margin-top:2px}
+/* both scale bars share one row (km left of mi) so the corner stack stays short and covers fewer map labels */
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale{margin-top:4px}.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale+.maplibregl-ctrl-scale{clear:none;margin-right:6px}
 .mread{position:absolute;z-index:3;left:50%;top:58px;transform:translateX(-50%);background:#fff;color:#1f2a30;border-radius:999px;padding:5px 14px;font:13px var(--body);box-shadow:0 1px 4px rgba(0,0,0,.3);white-space:nowrap}
 .mread b{font-variant-numeric:tabular-nums}
 .ml-gap{display:none;pointer-events:none;font:600 11px var(--body);color:#1f2a30;background:rgba(255,255,255,.88);padding:1px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)}
@@ -154,51 +181,36 @@ h1.logo{margin:0;font-size:14px}
 .tlhead .muted{font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .tlhead input[type=range]{width:180px;accent-color:var(--seam)}
 .tyear{min-width:66px;font-size:12px}
-.tlbody{flex:1;overflow:auto}
+.tlbody{flex:1;overflow:auto;display:none;height:204px}
+.left.tl-open .tlbody{display:block;flex:none;height:220px}
+.tlhead>b{white-space:nowrap}
 #tl{display:block}
 svg text{font-family:var(--body)}
 
 /* ---------- side panel ---------- */
-.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
-.tabs button{font:inherit;font-size:13px;border:0;border-bottom:2px solid transparent;background:none;color:var(--ink2);padding:10px 12px 8px;cursor:pointer;white-space:nowrap}
-.tabs button:hover{color:var(--ink)}
-.tabs button[aria-pressed=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
-.tabs .n{font-weight:400;color:var(--ink2);margin-left:2px}
-.tabs .ask-tab{position:relative;display:inline-flex;align-items:center;gap:5px;margin:5px 6px 5px auto;padding:4px 11px;
-  border:1px solid var(--line);border-radius:999px;background:var(--panel)}
-.tabs .ask-tab .spark{color:var(--blue)}
-.tabs .ask-tab[aria-pressed=true]{border-bottom-color:var(--line);background:var(--ink);color:#fff}
-.tabs .ask-tab[aria-pressed=true] .spark{color:#7EB3FF}
-.spark{width:13px;height:13px;flex:none;fill:currentColor;overflow:visible}
-.spark path{transform-box:fill-box;transform-origin:center}
-.spark .s1{animation:sparkle 1.9s ease-in-out infinite}
-.spark .s2{animation:sparkle 1.9s ease-in-out .35s infinite;opacity:.55}
-@keyframes sparkle{0%,100%{opacity:.45;transform:scale(.72) rotate(-8deg)}45%{opacity:1;transform:scale(1.2) rotate(8deg)}}
-/* Runs four times and stops. Once the panel has been opened the class is dropped for good, so the nudge never
-   becomes part of the furniture. */
-.tabs .ask-tab.nudge{color:var(--ink);animation:nudge 1.9s ease-in-out 4}
-@keyframes nudge{0%,100%{background:transparent}50%{background:color-mix(in srgb,var(--blue) 12%,transparent)}}
-/* The wait is the one place motion carries information: three dots that tell you the request is still open. */
-.dots{display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle}
-.dots i{width:4px;height:4px;border-radius:50%;background:currentColor;animation:blink 1.1s ease-in-out infinite}
-.dots i:nth-child(2){animation-delay:.18s} .dots i:nth-child(3){animation-delay:.36s}
-@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
-.ask-hero{display:flex;align-items:center;gap:7px;margin:0 0 6px;font-weight:600;color:var(--ink)}
-.ask-hero .spark{width:17px;height:17px;color:var(--blue)}
+/* The Ask entry in the rail. It is the one item that is a capability rather than a view of the same data, so it keeps
+   the assistant's mark, and pulses until the panel has been opened once. */
+.rail .ask-tab .spark{width:19px;height:19px;color:var(--blue);fill:currentColor;stroke:none}
+.rail .ask-tab[aria-selected=true] .spark{color:var(--ink)}
+.rail .ask-tab.nudge{color:var(--ink);animation:nudge 1.9s ease-in-out 4}
 .panel{flex:1;overflow:auto;min-height:0;scroll-padding-top:34px}
 .ph{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .ph-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.ph-row input[type=search]{width:230px}
+.ph-row input[type=search]{flex:1 1 160px;width:auto;min-width:0}
 .chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-.chip{font:inherit;font-size:12px;display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap}
+.chip{font:inherit;font-size:12px;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap}
 .chip:hover{background:var(--panel2)}
 .chip[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:500}
 .chip i{width:8px;height:8px;border-radius:50%}
-.yards{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px}
-.thead{position:sticky;top:0;z-index:1;display:grid;grid-template-columns:24px 84px minmax(0,1fr) 104px 64px;gap:8px;padding:6px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
+.chips{flex-wrap:nowrap;gap:4px;flex:1;min-width:0}
+.ph-row .grow{display:none}
+.chips .chip{flex:1 1 auto;justify-content:center;gap:4px;padding:0 5px;font-size:11.5px}
+.yards .chip{justify-content:flex-start}
+.yards{display:grid;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px}
+.thead{position:sticky;top:0;z-index:1;display:grid;grid-template-columns:20px 72px minmax(0,1fr) 92px 60px;gap:6px;padding:6px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
 .thead.opt,.tr.opt{grid-template-columns:24px minmax(0,1fr) 56px 64px}
 .r{text-align:right}
-.tr{display:grid;grid-template-columns:24px 84px minmax(0,1fr) 104px 64px;gap:8px;padding:8px 12px;border-bottom:1px solid var(--grid);align-items:start;cursor:pointer;width:100%;font:inherit;text-align:left;background:none;border-left:0;border-right:0;border-top:0;color:var(--ink)}
+.tr{display:grid;grid-template-columns:20px 72px minmax(0,1fr) 92px 60px;gap:6px;padding:8px 12px;border-bottom:1px solid var(--grid);align-items:start;cursor:pointer;width:100%;font:inherit;text-align:left;background:none;border-left:0;border-right:0;border-top:0;color:var(--ink)}
 .tr:hover,.tr.hov{background:var(--panel2)}
 .tr.lite{grid-template-columns:64px minmax(0,1fr)}
 .check .tr.lite{grid-template-columns:62px minmax(0,1fr)}
@@ -336,7 +348,7 @@ svg text{font-family:var(--body)}
 .b-tab .tot td{font-weight:600;border-bottom:0}
 .brief ul,.brief ol{margin:0;padding-left:20px;display:grid;gap:3px}
 /* The just-outside band under the ranked list: deliberately quiet, since these pairs were rejected. */
-.band{margin:10px 12px 0;padding:8px 10px;border-left:2px solid var(--ink3, #8C959F);background:#F6F8FA;font-size:11.5px;color:#57606A;line-height:1.5}
+.band{margin:10px 12px 0;padding:8px 10px;border-left:2px solid var(--ink3);background:var(--panel2);font-size:11.5px;color:var(--ink2);line-height:1.5}
 .b-yard{margin:8px 0 0;padding:6px 10px;border-left:2px solid #8A5A1E;background:#F7F2EA}
 /* The assistant's framing paragraph. Marked apart from the rest of the brief on purpose: everything else on the
    page is filed or computed, and a reader is entitled to see which sentences a model wrote. */
@@ -392,8 +404,10 @@ body.modal-open .app{visibility:hidden}
    the panel each get too little room to read, and a projector at 1024px lands squarely in that range. */
 @media (max-width:1180px){
   .app{height:auto;min-height:100vh}
-  .work{grid-template-columns:1fr}
-  .left{grid-template-rows:62vh 220px;border-right:0}
+  .work{grid-template-columns:56px minmax(0,1fr)}
+  .rail{grid-row:1 / span 2}
+  .left{grid-row:1;grid-column:2;grid-template-rows:62vh auto;border-right:0}
+  .side{grid-column:2}
   .side{border-top:1px solid var(--line)}
   .panel{overflow:visible}
   .asof{display:none}
@@ -470,3 +484,28 @@ body.modal-open .app{visibility:hidden}
 .ask-in textarea{flex:1;font:inherit;font-size:13px;resize:none;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink)}
 .ask-key .chk{justify-self:start}
 .tabs button{padding:10px 10px 8px}
+
+/* ---------- drop-in walker ---------- */
+.peg{position:absolute;right:10px;top:52px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
+.peg:hover svg{fill:#FBB13C}
+.peg.in-ctrl{position:static;width:29px;height:40px;padding:4px 6px;border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.1);border:0}
+.peg.dragging{opacity:.35}
+.peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}
+
+/* pastel chips re-toned for the dark theme so they don't glare on dark panels */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .sev.s0{color:#1B0A10}
+  :root:not([data-theme="light"]) .sev.s1{background:#4A1D1B;color:#FFB4A8}
+  :root:not([data-theme="light"]) .sev.s2{background:#43300F;color:#F2C774}
+  :root:not([data-theme="light"]) .tag.green,:root:not([data-theme="light"]) .st.pass{background:#12351F;color:#7EE2A0}
+  :root:not([data-theme="light"]) .st.fixed{background:#0F2E45;color:#8CC8FF}
+  :root:not([data-theme="light"]) .st.warn{background:#3A2E0B;color:#F2C774}
+}
+:root[data-theme="dark"] .sev.s0{color:#1B0A10}
+:root[data-theme="dark"] .sev.s1{background:#4A1D1B;color:#FFB4A8}
+:root[data-theme="dark"] .sev.s2{background:#43300F;color:#F2C774}
+:root[data-theme="dark"] .tag.green,:root[data-theme="dark"] .st.pass{background:#12351F;color:#7EE2A0}
+:root[data-theme="dark"] .st.fixed{background:#0F2E45;color:#8CC8FF}
+:root[data-theme="dark"] .st.warn{background:#3A2E0B;color:#F2C774}

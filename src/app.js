@@ -27,8 +27,10 @@ const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
   tab: "overlaps", sort: "expected", shown: 60, askKey: false, keyNote: null,
-  askLang: store.get("askLang", (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en"), opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
-  basemap: store.get("basemap", "plain"),
+  askLang: store.get("askLang", (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en"),
+  opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  grid: true,
+  basemap: ["plain", "relief", "satellite", "topo"].includes(store.get("basemap", "plain")) ? store.get("basemap", "plain") : "plain",
 };
 const STATUS = store.get("status", {});
 const STATUSES = ["Open", "Contacted", "Coordinating", "Not pursuing"];
@@ -108,10 +110,10 @@ let optCache = { key: null, r: null };
 let bandKey = null, bandPairs = [];
 function borderline() {
   if (solo()) return [];
-  const key = [state.utilA, state.utilB, state.D, state.B, dataVersion].join("|");
+  const key = [state.utilA, state.utilB, state.D, state.B, state.mode, dataVersion, asmVersion].join("|");
   if (key !== bandKey) {
     bandKey = key;
-    bandPairs = Engine.findOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D * 1.05, bufferMonths: state.B, mode: "near" })
+    bandPairs = Engine.findOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D * 1.05, bufferMonths: state.B, mode: state.mode })
       .pairs.filter(x => x.km > state.D).sort((a, b) => a.km - b.km);
   }
   return bandPairs;
@@ -152,7 +154,7 @@ function renderMap() {
   const shown = VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
   const moved = state.showMoves && optimize() ? new Set(optimize().moves.map(m => m.id)) : null;
-  const raster = state.basemap !== "plain";
+  const raster = state.basemap === "satellite" || state.basemap === "topo";
   const casing = state.basemap === "satellite" ? "rgba(255,255,255,.85)" : raster ? "rgba(20,24,28,.55)" : css("--panel");
   const phaseOp = { all: 1, building: 1, done: .45, planned: .15 };
   const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
@@ -172,7 +174,7 @@ function renderMap() {
     color: tcol(Math.min(d.tier, 4)), r: d === focus ? 13 : d.tier <= 1 ? 9 : 6, w: d.tier === 0 ? 2.6 : 1.8, opacity: pairOp(d) }));
   const sparks = t == null ? [] : shown.filter(x => live(x, t)).map(x => ({ id: keyOf(x), at: [(x.ca[0] + x.cb[0]) / 2, (x.ca[1] + x.cb[1]) / 2], color: tcol(Math.min(x.tier, 4)) }));
   let yardRing = null, spokes = [];
-  const yards = solo() ? [] : CLUSTERS.map((c, i) => ({ id: "c" + i, at: c.yard.at, r: focus && focus.cluster === c ? 7 : 5, fill: focus && focus.cluster === c ? css("--seam") : "#FFFFFF" }));
+  const yards = solo() ? [] : CLUSTERS.map((c, i) => ({ id: "c" + i, at: c.yard.at, r: focus && focus.cluster === c ? 7 : 5, fill: focus && focus.cluster === c ? css("--seam") : css("--panel") }));
   const fx = focus && !focus.solo && !focus.moves ? (focus.cluster ? focus.cluster.yard : focus.tier <= 3 ? pairYard(focus) : null) : null;
   if (fx) {
     yardRing = { at: fx.at, km: 40 };
@@ -211,13 +213,18 @@ function mapClick(hit) {
 }
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
+  if (hit.layer === "grid") return tip(ev, `<b>Existing ${hit.kv} kV line</b>${hit.op ? "<br>" + esc(hit.op) : ""}<br><span style="opacity:.7">OpenStreetMap</span>`);
   const p = PROJECTS.find(v => v.id === hit.id) || EXIST.find(v => v.id === hit.id);
   if (p) return showTip(ev, p);
   const x = VIEW.find(v => keyOf(v) === hit.id);
   if (x) return tip(ev, `<b>${esc(SEV[Math.min(x.tier, 4)])} · ${km(x.km)}</b><br>${esc(short(x.p))}<br>${esc(short(x.q))}<br>${pct(x.risk.chance)} chance of a shared window`);
   hideTip();
 }
-function tip(ev, html) { const t = $("#tip"); t.innerHTML = html; t.hidden = false; t.style.left = Math.min(ev.clientX + 12, innerWidth - 290) + "px"; t.style.top = (ev.clientY + 12) + "px"; }
+function tip(ev, html) {
+  const t = $("#tip"); t.innerHTML = html; t.hidden = false;
+  t.style.left = Math.min(ev.clientX + 12, innerWidth - 290) + "px";
+  t.style.top = Math.min(ev.clientY + 12, innerHeight - t.offsetHeight - 8) + "px"; // flips above the pointer near the bottom
+}
 function showTip(ev, p) {
   tip(ev, `<b>${esc(p.name)}</b><br>${esc(lbl(p.utility))}${p.existing ? " · existing" : ""}${p.kv ? " · " + p.kv + " kV " + (TYPE[p.type] || "") : ""}` +
     (p.existing ? "" : `<br>In service ${fmtD(p, "in_service")}${p.cost ? " · " + money(p.cost) : ""}${isPast(p) ? (p.likely_built ? "<br>Likely built" : "<br>In-service date has passed") : ""}${p.loc === "low" ? "<br>Approximate location" : ""}`));
@@ -226,6 +233,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
@@ -306,7 +314,7 @@ function renderTimeline() {
 
 // ---------- panel: tabs ----------
 function renderTabs() {
-  document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === state.tab));
+  document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
   $("#askFab").hidden = state.tab === "ask";
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
@@ -319,6 +327,22 @@ function renderTabs() {
   }
   const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
   $("#n-checks").innerHTML = review ? `<span class="warn">${review} to review</span>` : "";
+  $("#b-checks").hidden = !review; $("#b-checks").textContent = review;
+}
+// Switch the panel's view, as the rail's tabs do.
+function goTab(t) { const keep = t === "overlaps" && state.tab === "ask"; state.tab = t; if (state.sel && !state.sel.cluster && !keep) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); }
+// Four headline numbers at the top of the Overlaps view; the last two open the Plan and Checks views.
+function renderKpis() {
+  const el = $("#kpis");
+  if (!el) return;
+  const exp = VIEW.reduce((t, x) => t + x.risk.expected, 0), plan = VIEW.reduce((t, x) => t + x.sav.total, 0), o = optimize();
+  const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
+  const gain = o && o.moves.length ? o.after - o.before : 0;
+  el.innerHTML = `<div class="kpi"><b>${RESULT.pairs.length}</b><span>overlaps</span><small>of ${RESULT.checked.toLocaleString()} pairs checked</small></div>
+    <div class="kpi"><b>${money(exp)}</b><span>expected savings</span><small>${money(plan)} if every date held</small></div>
+    <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " suggested date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
+    <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks to review</small></button>`;
+  el.querySelectorAll("[data-kt]").forEach(b => b.onclick = () => goTab(b.dataset.kt));
 }
 function renderPanel() {
   renderTabs();
@@ -331,14 +355,17 @@ function renderPanel() {
   renderOverlaps(P);
 }
 
+const activate = (el, fn) => { el.setAttribute("role", "button"); el.onclick = fn; el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } }; };
 // ---------- panel: overlaps table ----------
 function overlapsHead(P) {
-  if (P.dataset.view === "overlaps" && $("#q")) return;
-  P.dataset.view = "overlaps";
-  P.innerHTML = `<div class="ph">
+  // rebuilt when switching between comparing two utilities and listing one, since only the former has headline numbers
+  const view = solo() ? "overlaps-solo" : "overlaps";
+  if (P.dataset.view === view && $("#q")) return;
+  P.dataset.view = view;
+  P.innerHTML = `<div class="ph">${solo() ? "" : `<div class="kpis" id="kpis"></div>`}
       <div class="ph-row"><div class="chips" id="chips" role="group" aria-label="Filter by distance"></div></div>
       <div class="ph-row"><label class="fl">Sort <select id="sort"><option value="expected">Expected savings</option><option value="chance">Chance of a shared window</option><option value="distance">Distance</option></select></label>
-        <span class="grow"></span><input id="q" type="search" placeholder="Filter by project, substation, TEAMS id" aria-label="Filter overlaps"></div>
+        <span class="grow"></span><input id="q" type="search" placeholder="Search projects or TEAMS id" aria-label="Filter overlaps"></div>
     </div>
     <div class="yards" id="clusters"></div>
     <div class="thead" id="thead"></div>
@@ -352,6 +379,7 @@ function overlapsHead(P) {
 function renderOverlaps(P) {
   overlapsHead(P);
   if (solo()) return renderSoloRows();
+  renderKpis();
   $("#chips").innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
     .concat(TIERS.slice(0, 4).map((t, i) => `<button type="button" class="chip" data-t="${i}" aria-pressed="${state.tiers.has(i) && state.tiers.size < 5}"><i style="background:${tcol(i)}"></i>${SEV[i]} ${RESULT.pairs.filter(x => x.tier === i).length}</button>`)).join("");
   $("#chips").querySelectorAll(".chip").forEach(b => b.onclick = () => {
@@ -391,7 +419,7 @@ function renderOverlaps(P) {
   if ($("#more")) $("#more").onclick = () => { state.shown += 60; renderMap(); renderOverlaps(P); };
   const band = borderline();
   if (band.length) {
-    const close = band.slice(0, 3).map(x => `${esc(short(x.p))} / ${esc(short(x.q))} at ${km(x.km)}`).join("; ");
+    const close = band.slice(0, 3).map(x => `${esc(short(x.p))} / ${esc(short(x.q))} at ${x.km.toFixed(1)} km`).join("; ");
     R.insertAdjacentHTML("beforeend", `<p class="band">${band.length} more pair${band.length === 1 ? "" : "s"} sit just outside the ${state.D} km screen &mdash; closest ${close}. Kept out of the ranking and the totals; shown because ${state.D} km is a chosen threshold, not a cliff.</p>`);
   }
 }
@@ -401,9 +429,9 @@ function renderSoloRows() {
   $("#thead").innerHTML = `<span>#</span><span>Type</span><span>Project</span><span>In service</span><span class="r">Cost</span>`;
   const R = $("#rows");
   if (!SOLO.length) { R.innerHTML = `<div class="empty">No projects match the filter.</div>`; return; }
-  R.innerHTML = SOLO.slice(0, 300).map((p, i) => `<button type="button" class="tr" data-i="${i}"><span class="muted">${i + 1}</span><span class="dist"><span>${p.kv} kV</span><small>${esc(TYPE[p.type] || p.type)}</small></span>
-    <span class="pair"><span class="pp${isPast(p) ? " past" : ""}"><i class="a"></i>${esc(p.name)}</span></span><span class="ch"><span>${fmtD(p, "in_service")}</span></span><span class="r">${p.cost ? money(p.cost) : "–"}</span></button>`).join("");
-  R.querySelectorAll(".tr").forEach(el => { const x = { p: SOLO[+el.dataset.i], solo: true }; el.onclick = () => select(x); });
+  R.innerHTML = SOLO.slice(0, 300).map((p, i) => `<div class="tr" tabindex="0" data-i="${i}"><span class="muted">${i + 1}</span><span class="dist"><span>${p.kv} kV</span><small>${esc(TYPE[p.type] || p.type)}</small></span>
+    <span class="pair"><span class="pp${isPast(p) ? " past" : ""}"><i class="a"></i>${esc(p.name)}</span></span><span class="ch"><span>${fmtD(p, "in_service")}</span></span><span class="r">${p.cost ? money(p.cost) : "–"}</span></div>`).join("");
+  R.querySelectorAll(".tr").forEach(el => { const x = { p: SOLO[+el.dataset.i], solo: true }; activate(el, () => select(x)); });
 }
 
 // ---------- panel: pair detail ----------
@@ -412,6 +440,15 @@ function located(p) {
   const M = { reference: "challenge reference", manual: "placed by hand", osm_substation: "OpenStreetMap substation", osm_plant: "OpenStreetMap plant", town: "town only", "not found": "not found" };
   return p.located.map(l => `${esc(l.name.replace(/\s*\(.*?\)/g, "").toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))}: <span class="${l.confidence === "high" ? "" : "amber"}">${M[l.method] || l.method}</span>`).join(" · ");
 }
+// A plain name for where a project comes from, for the brief's footer.
+const srcName = p => {
+  const s = p.source || "";
+  if (!s) return `${lbl(p.utility)}'s plan`;
+  if (s.startsWith("Challenge package")) return s.replace("Challenge package: ", "");
+  if (/scrtp/i.test(s)) return "SCRTP 2026-2030 project list";
+  if (/southeasternrtp/i.test(s)) return "SERTP expansion plan";
+  try { return /^https?:/i.test(s) ? `${lbl(p.utility)}'s plan (${new URL(s).hostname})` : s; } catch (err) { return s; }
+};
 function sourceLink(p) {
   if (!p.source) return "–";
   const txt = p.source.startsWith("Challenge package") ? p.source.replace("Challenge package: ", "") : p.source.includes("scrtp") ? "SCRTP 2026–2030" : p.source.includes("southeasternrtp") ? "SERTP" : "Source";
@@ -427,7 +464,8 @@ function driftText(p) {
 }
 function chanceBox(x) {
   const r = x.risk;
-  if (r.why === "built") return `<div class="callout amber"><b>Likely built</b><span>${esc(short(x.p.likely_built ? x.p : x.q))} was listed for ${fmtD(x.p.likely_built ? x.p : x.q, "in_service")} and is gone from DESC's newer plan, so there is nothing left to build together. Georgia's work still meets the finished line: share outage plans and as-built drawings.</span></div>`;
+  if (r.why === "built") { const b = x.p.likely_built ? x.p : x.q, o = b === x.p ? x.q : x.p;
+    return `<div class="callout amber"><b>Likely built</b><span>${esc(short(b))} was listed for ${fmtD(b, "in_service")} and is gone from ${esc(lbl(b.utility))}'s newer plan, so there is nothing left to build together. ${esc(lbl(o.utility))}'s work still meets the finished line: share outage plans and as-built drawings.</span></div>`; }
   const ahead = mon(x.p.in_service) > mon(TODAY) && mon(x.q.in_service) > mon(TODAY);
   const head = x.sameWindow && r.chance < .5 ? (ahead ? "In one window on paper, but plans usually move" : "In one window on paper, but mostly in the past")
     : !x.sameWindow && r.chance >= .5 ? "Apart on paper, but likely to meet" : x.sameWindow ? "In one window, and likely to stay there" : "Apart on paper, and likely to stay apart";
@@ -553,7 +591,7 @@ function whatIf(x, who, m) {
 }
 const moLabel = m => m === 0 ? "as planned" : `${Math.abs(m)} month${Math.abs(m) === 1 ? "" : "s"} ${m < 0 ? "earlier" : "later"}`;
 function updateWhatIf(x) {
-  const { who, shift } = state.wi, y = whatIf(x, who, shift), rec = Engine.recommendShift(x, who);
+  const { who, shift } = state.wi, y = whatIf(x, who, shift), rec = Engine.recommendShift(x, who, TODAY);
   $("#wiOut").textContent = moLabel(shift);
   const svg = d3.select("#wiChart"), W = 480, H = 64, LW = 96; svg.selectAll("*").remove();
   const all = [x.p, x.q, y.p, y.q], lo = Math.floor(d3.min(all, p => mon(p.start)) / 12) * 12, hi = Math.ceil(d3.max(all, p => mon(p.in_service)) / 12) * 12;
@@ -609,7 +647,7 @@ function renderChanges(P) {
     <p class="note">Seamline replays each pair with the dates the previous plan listed. These are the shared build windows the latest updates opened and closed.</p></div>
     <h3 class="sub">Shared windows opened <span class="up">${d.opened.length}</span></h3><div class="rows">${list(d.opened)}</div>
     <h3 class="sub">Closed <span class="down">${d.closed.length}</span></h3><div class="rows">${list(d.closed)}</div>`;
-  P.querySelectorAll("[data-k]").forEach(el => el.onclick = () => { const x = RESULT.pairs.find(v => keyOf(v) === el.dataset.k); if (x) { state.tab = "overlaps"; select(x); } });
+  P.querySelectorAll("[data-k]").forEach(el => activate(el, () => { const x = RESULT.pairs.find(v => keyOf(v) === el.dataset.k); if (x) { state.tab = "overlaps"; select(x); } }));
 }
 
 // ---------- panel: optimize ----------
@@ -635,11 +673,11 @@ function renderOptimize(P) {
   $("#oWho").onchange = e => { state.opt.who = e.target.value; renderPanel(); renderMap(); };
   $("#oMap").onclick = () => { state.showMoves = !state.showMoves; if (state.showMoves && o.moves.length) flyTo({ moves: o.moves }); renderPanel(); renderMap(); };
   $("#oBrief").onclick = () => openScheduleBrief(o);
-  P.querySelectorAll(".tr.opt").forEach(el => el.onclick = () => {
+  P.querySelectorAll(".tr.opt").forEach(el => activate(el, () => {
     const m = o.moves[+el.dataset.i], best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0];
     const x = best && RESULT.pairs.find(v => keyOf(v) === keyOf(best.x));
     if (x) { state.tab = "overlaps"; select(x); }
-  });
+  }));
 }
 
 // ---------- panel: data checks ----------
@@ -801,7 +839,7 @@ function runTool(name, i) {
       windows_opened: d.opened.map(row), windows_closed: d.closed.map(row) };
   }
   if (name === "optimize_schedule") {
-    const u = i.utility ? String(i.utility).toUpperCase() : null;
+    const u = i.utility ? utilities().find(v => v.toLowerCase() === String(i.utility).toLowerCase() || lbl(v).toLowerCase() === String(i.utility).toLowerCase()) || String(i.utility) : null;
     const r = Engine.optimizeSchedule(RESULT.pairs, MODEL.slips, { today: TODAY, bufferMonths: state.B, maxShift: i.max_shift_months || 6, utilities: u ? [u] : null });
     return { expected_savings_before_usd: Math.round(r.before), after_usd: Math.round(r.after), moves: r.moves.map(m => {
       const best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0];
@@ -811,11 +849,20 @@ function runTool(name, i) {
   }
   if (name === "get_data_checks") return { as_of: TODAY, pipeline: MODEL.pipeline || null, checks: (MODEL.checks || []).map(c => ({ check: c.title, status: c.status, result: c.result, examples: (c.records || []).slice(0, 5) })) };
   if (name === "show_on_map") {
-    if (i.key) { const x = findPair(i.key); if (!x) throw new Error(`No flagged pair ${i.key}.`); if (!VIEW.includes(x)) { state.tiers = new Set([0, 1, 2, 3, 4]); state.q = ""; state.past = true; state.horizon = 0; $("#pastOn").checked = true; refresh(); }
-      const y = VIEW.find(v => keyOf(v) === keyOf(x)) || x; state.sel = y; state.wi = null; renderMap(); renderTimeline(); flyTo(y); return { shown: pairOut(y).project_a + " and " + pairOut(y).project_b }; }
+    // The chat stays open; the pair is selected (its details wait on the Overlaps tab) and the map flies to it.
+    // If filters hide it, they are cleared, and the controls show that.
+    const clearFilters = () => { state.tiers = new Set([0, 1, 2, 3, 4]); state.q = ""; state.past = true; state.horizon = 0; syncControls(); if ($("#q")) $("#q").value = ""; refresh(); };
+    const show = y => { state.hover = null; state.wi = null; state.sel = y; renderMap(); renderTimeline(); flyTo(y); writeHash(); };
+    if (i.key) {
+      const x = findPair(i.key); if (!x) throw new Error(`No flagged pair ${i.key}.`);
+      if (!VIEW.includes(x)) clearFilters();
+      const y = VIEW.find(v => keyOf(v) === keyOf(x)) || x; show(y);
+      return { shown: pairOut(y).project_a + " and " + pairOut(y).project_b, note: "Selected; its details are on the Overlaps tab." };
+    }
     const p = PROJECTS.find(v => v.id === i.project_id);
     if (!p) throw new Error("Give a pair key or a project id.");
-    SeamMap.fit(p.coords, { padKm: 6 });
+    const y = solo() ? { p, solo: true } : pairFor(p);
+    if (y) { if (!y.solo && !VIEW.includes(y)) clearFilters(); show(y.solo ? y : (VIEW.find(v => v === y) || y)); } else SeamMap.fit(p.coords, { padKm: 6 });
     return { shown: p.name };
   }
   if (name === "compare_projects") {
@@ -857,7 +904,8 @@ function runTool(name, i) {
       explanation: `${(p.coords || []).length ? q.id : p.id} has no location, so no distance can be measured.` });
     const km = Engine.closest(p, q)[0];
     if (km > state.D) return Object.assign(base, { rejected: true, reason: "too_far", distance_km: +km.toFixed(2),
-      explanation: `Their closest points are ${km.toFixed(1)} km apart, beyond the ${state.D} km screen, so sharing a crew or a staging yard is not plausible.`,
+      explanation: km <= state.D * 1.05 ? `Their closest points are ${km.toFixed(1)} km apart, just beyond the ${state.D} km screen. That is a chosen threshold, so widening the distance filter would include them.`
+        : `Their closest points are ${km.toFixed(1)} km apart, beyond the ${state.D} km screen, so sharing a crew or a staging yard is not plausible.`,
       just_outside: km <= state.D * 1.05 });
     return Object.assign(base, { rejected: true, reason: "filtered", distance_km: +km.toFixed(2),
       explanation: `They are ${km.toFixed(1)} km apart, inside the screen, but the current match mode (${state.mode}) or the build-window filter excludes them.` });
@@ -1120,7 +1168,7 @@ function answerOffline(q, reason) {
   CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
   let text;
   try {
-    text = SeamOffline.render(plan.tool, runTool(plan.tool, plan.input), lang);
+    text = SeamOffline.render(plan.tool, runTool(plan.tool, plan.input), lang, plan.input);
   } catch (err) {
     text = String(err && err.message || err);
   }
@@ -1129,6 +1177,7 @@ function answerOffline(q, reason) {
 
 async function sendQuestion(q) {
   if (CHAT.busy) return;
+  const mark = CHAT.messages.length; // where this turn starts, so a failed turn can be undone whole
   CHAT.busy = true; CHAT.log.push({ role: "user", text: q });
   const P = $("#panel"), again = () => { if (state.tab === "ask") renderAsk(P); };
   const finish = text => { CHAT.log.push({ role: "assistant", text }); CHAT.busy = false; again(); if (state.tab !== "ask") renderTabs(); };
@@ -1151,7 +1200,8 @@ async function sendQuestion(q) {
       onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
     finish(r.text + (r.truncated ? "\n\n(The answer was cut short.)" : ""));
   } catch (err) {
-    CHAT.messages.pop(); // drop the unanswered question so the conversation stays valid
+    // drop the whole turn (question, tool calls and results) so the history never ends on an unanswered tool call
+    CHAT.messages.length = mark;
     // The API is unreachable, the key was refused or the SDK would not load. Fall back to the pattern path rather than
     // leaving the question unanswered, and say which happened.
     const why = `Your API key is set, but the request failed. ${SeamAgent.explain(err)}`;
@@ -1182,11 +1232,13 @@ function cycleHint() {
 }
 
 function openBrief(x0, narrative) {
-  const y = whatIf(x0, state.wi.who, state.wi.shift), better = state.wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
-  const x = better ? y : x0, moved = better ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
+  // the what-if applies only when it was set on this pair; the assistant can open a brief for a pair nobody selected
+  const wi = state.wi && state.wi.key === keyOf(x0) ? state.wi : { who: "q", shift: 0 };
+  const y = whatIf(x0, wi.who, wi.shift), better = wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
+  const x = better ? y : x0, moved = better ? x[wi.who] : null, s = x.sav, T = TIERS[x.tier];
   const uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(state.wi.shift)}` : ""}.`
-    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = Engine.recommendShift(x0, "q"); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
+  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(wi.shift)}` : ""}.`
+    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = Engine.recommendShift(x0, "q", TODAY); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
   const risk = x.risk.why === "built" ? "One of the projects is likely built already." : `Given how both utilities' dates have moved between plans, there is a ${pct(x.risk.chance)} chance both are in the field together from today on; expected savings ${money(x.risk.expected)}.`;
   const steps = [
     "Confirm both project locations and the closest-point distance with each utility's GIS team.",
@@ -1210,7 +1262,7 @@ function openBrief(x0, narrative) {
     ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total if dates hold${Engine.customized() ? " (with edited unit costs)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
     ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles and ${im.co2t.toFixed(1)} t of CO2` : ""}.</p>`; })() : ""}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
-    <p class="b-foot">Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
+    <p class="b-foot">Prepared with Seamline from public plans (${esc([...new Set([x.p, x.q].map(srcName))].join("; "))}). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   showBrief();
 }
 function openReport(opts, narrative) {
@@ -1265,9 +1317,8 @@ function briefMap(x) {
   const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
   const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
-  if (pr.scale() > 60000) pr.scale(60000)
-    .center([(x.ca[1] + x.cb[1]) / 2, (x.ca[0] + x.cb[0]) / 2])
-    .translate([W / 2, H / 2]);
+  // very close pairs would zoom in past street level; cap the zoom and keep the pair centered
+  if (pr.scale() > 60000) { const [[x0, y0], [x1, y1]] = d3.geoBounds(box); pr.scale(60000).center([(x0 + x1) / 2, (y0 + y1) / 2]).translate([W / 2, H / 2]); }
   const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
   const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#F1F2EE" stroke="#B9C0C4" stroke-width=".8"/>`).join("");
   const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" stroke="#8FB6CC" stroke-width="2.5"/>` : "";
@@ -1280,19 +1331,59 @@ function briefMap(x) {
 function closeBrief() { $("#brief").hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; }
 
 // ---------- 3D illustration (three.js) ----------
-const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
-function open3d(x) {
+const quality3d = () => Scene3D.qualityKey(store.get("3dquality", "detailed"));
+function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
-  Scene3D.open(x, {
+  Scene3D.open(x, Object.assign({
     title: `${short(x.p)} and ${short(x.q)}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
-  });
+  }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
 function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
+
+// ---------- drop-in walker ----------
+// Drag the orange figure onto a project: the 3D illustration opens at that spot in walk mode, with the project's
+// pair that is worth the most (or the selected pair, if it includes the project).
+function pairFor(p) {
+  if (state.sel && state.sel.p && state.sel.q && (state.sel.p === p || state.sel.q === p)) return state.sel;
+  return (VIEW.concat(RESULT.pairs)).filter(x => x.p === p || x.q === p).sort((a, b) => b.risk.expected - a.risk.expected)[0] || null;
+}
+function setupPeg() {
+  const peg = $("#peg");
+  let ghost = null, over = null;
+  const end = () => { if (ghost) ghost.remove(); ghost = null; peg.classList.remove("dragging"); hideTip(); };
+  peg.addEventListener("pointerdown", e => {
+    e.preventDefault(); peg.setPointerCapture(e.pointerId); peg.classList.add("dragging");
+    ghost = peg.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("ghost"); document.body.appendChild(ghost);
+    move(e);
+  });
+  const move = e => {
+    if (!ghost) return;
+    ghost.style.transform = `translate(${e.clientX - 14}px, ${e.clientY - 44}px)`;
+    const hit = mapReady ? SeamMap.pick(e.clientX, e.clientY) : null;
+    over = hit && hit.id ? { p: PROJECTS.find(v => v.id === hit.id), at: hit.at } : null;
+    const x = over && over.p && pairFor(over.p);
+    ghost.classList.toggle("ok", !!x);
+    if (over && over.p) tip(e, x ? `<b>${esc(short(over.p))}</b><br>Drop to walk here in 3D` : `<b>${esc(short(over.p))}</b><br>${solo() ? "Pick a second utility at the top to compare" : "No overlap with " + esc(lbl(state.utilB)) + " for this project"}`);
+    else if (hit) tip(e, "Drop onto a project line or substation"); else hideTip();
+  };
+  peg.addEventListener("pointermove", move);
+  peg.addEventListener("pointerup", () => {
+    const o = over; end(); over = null;
+    if (!o || !o.p) return;
+    const x = pairFor(o.p);
+    if (!x) return;
+    const ll = Engine.closest({ coords: [o.at] }, o.p)[2]; // the point on the project nearest the drop
+    if (x !== state.sel) select(x);
+    open3d(x, { walkAt: ll });
+  });
+  peg.addEventListener("pointercancel", end);
+  peg.addEventListener("click", e => { if (e.detail === 0) tip({ clientX: peg.getBoundingClientRect().left, clientY: peg.getBoundingClientRect().top }, "Drag onto a project to walk around it in 3D"); });
+}
 
 // ---------- pickers, datasets, import ----------
 function renderPickers() {
@@ -1382,27 +1473,102 @@ function saveAssume(vals) {
 }
 { const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
+
+// ---------- shareable link ----------
+// The URL hash carries what's on screen (utilities, filters, tab, selection, basemap, 3D and camera), so a link
+// pasted into an email opens the same view. It is rewritten as the view changes, without adding history entries.
+let pendingView = null, hashTimer = null;
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.toString()) return;
+  const num = (k, ok) => { const v = +h.get(k); return h.has(k) && isFinite(v) && (!ok || ok(v)) ? v : null; };
+  if (h.get("a")) state.utilA = h.get("a");
+  if (h.get("b")) state.utilB = h.get("b");
+  if (num("d", v => v >= 1 && v <= 200) != null) state.D = num("d");
+  if (num("w", v => [0, 3, 6, 12].includes(v)) != null) state.B = num("w");
+  if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
+  if (num("h", v => [0, 12, 36].includes(v)) != null) state.horizon = num("h");
+  if (h.get("past") === "0") state.past = false;
+  if (h.get("grid") === "0") state.grid = false;
+  if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
+  if (state.utilB === NONE && (state.tab === "changes" || state.tab === "optimize")) state.tab = "overlaps"; // those need two utilities
+  if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
+  const cam = (h.get("cam") || "").split(",").map(Number);
+  pendingView = { sel: h.get("sel"), d3: h.get("3d") === "1", cam: cam.length === 5 && cam.every(isFinite) ? cam : null };
+}
+function syncControls() {
+  $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
+  $("#buf").value = String(state.B);
+  for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
+  document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
+  $("#pastOn").checked = state.past;
+}
+function applyPendingView() {
+  const v = pendingView; pendingView = null;
+  if (!v) return false;
+  const m = SeamMap.raw();
+  if (v.d3) { SeamMap.set3D(true); $("#b3d").setAttribute("aria-pressed", "true"); }
+  if (v.sel) {
+    const x = RESULT.pairs.find(y => keyOf(y) === v.sel), p = !x && PROJECTS.find(q => q.id === v.sel);
+    if (x) { state.sel = VIEW.find(y => y === x) || x; if (state.tab !== "overlaps" && state.tab !== "ask") state.tab = "overlaps"; }
+    else if (p && solo()) state.sel = { p, solo: true };
+    renderMap(); renderPanel(); renderTimeline();
+  }
+  if (v.cam) { m.jumpTo({ center: [v.cam[0], v.cam[1]], zoom: v.cam[2], pitch: v.cam[3], bearing: v.cam[4] }); return true; }
+  if (state.sel) { flyTo(state.sel); return true; }
+  return false;
+}
+function writeHash() {
+  if (!mapReady) return; // until the map is up, the link being opened is still being applied
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const h = new URLSearchParams();
+    h.set("a", state.utilA); h.set("b", state.utilB);
+    if (state.D !== 40) h.set("d", state.D);
+    if (state.B) h.set("w", state.B);
+    if (state.mode !== "near") h.set("m", state.mode);
+    if (state.horizon) h.set("h", state.horizon);
+    if (!state.past) h.set("past", "0");
+    if (!state.grid) h.set("grid", "0");
+    if (state.tab !== "overlaps") h.set("tab", state.tab);
+    const x = state.sel;
+    if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
+    if (state.basemap !== "plain") h.set("map", state.basemap);
+    {
+      const m = SeamMap.raw(), c = m.getCenter();
+      if (SeamMap.get3D()) h.set("3d", "1");
+      h.set("cam", [c.lng.toFixed(4), c.lat.toFixed(4), m.getZoom().toFixed(2), Math.round(m.getPitch()), Math.round(m.getBearing())].join(","));
+    }
+    history.replaceState(null, "", "#" + h.toString().replace(/%7C/gi, "|").replace(/%2C/gi, ","));
+  }, 250);
+}
+
 // ---------- modals ----------
 function openModal(id) { const m = $("#" + id); returnFocus = document.activeElement; m.hidden = false; lockApp(true); const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
 function closeModal(id) { $("#" + id).hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
 
 // ---------- selection and refresh ----------
 function select(x) {
+  state.hover = null;
   if (!x || !state.wi || state.wi.key !== (x.p && x.q ? keyOf(x) : "")) state.wi = null;
   const changed = x !== state.sel;
   state.sel = x;
   if (x && !x.moves) state.tab = "overlaps";
   renderMap(); renderPanel(); renderTimeline();
   if (changed && x) flyTo(x); else if (changed && !x) fitAll(700);
+  writeHash();
 }
 function refresh() {
+  state.hover = null;
   compute();
   if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); }
   else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
+  $("#filtCt").textContent = `${state.D} km · ${state.horizon ? (state.horizon === 12 ? "next 12 mo" : "next " + state.horizon / 12 + " yr") : "all dates"}`;
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
+  writeHash();
 }
 function rebuild() {
   state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
@@ -1411,7 +1577,7 @@ function rebuild() {
 function setBasemap(b) {
   state.basemap = b; store.set("basemap", b);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === b));
-  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap();
+  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap(); writeHash();
 }
 function theme() {
   SeamMap.setTheme({ water: css("--water"), land: css("--land"), county: css("--grid"), stateLine: css("--ink3"), river: css("--river"), place: css("--ink2") });
@@ -1429,9 +1595,26 @@ $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
 for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
-$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
-$("#askFab").onclick = () => { state.tab = "ask"; store.set("askSeen", true); renderTabs(); renderPanel(); const q = $("#askQ"); if (q) q.focus(); };
-document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (b.dataset.tab === "ask") store.set("askSeen", true); if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#bgrid").onclick = () => { state.grid = !state.grid; $("#bgrid").setAttribute("aria-pressed", state.grid); SeamMap.setGrid(state.grid); legend(); writeHash(); };
+$("#share").onclick = () => {
+  clearTimeout(hashTimer); writeHash();
+  setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
+};
+$("#askFab").onclick = () => { store.set("askSeen", true); goTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
+document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => { if (b.dataset.tab === "ask") store.set("askSeen", true); goTab(b.dataset.tab); });
+// Windows: unfold the build-windows chart under the map (the Play bar is always there).
+$("#railTl").onclick = () => {
+  const on = !$(".left").classList.contains("tl-open");
+  $(".left").classList.toggle("tl-open", on); $("#railTl").setAttribute("aria-pressed", on);
+  renderTimeline(); SeamMap.resize();
+};
+// Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
+const pops = [["filtersBtn", "controls"], ["moreBtn", "moreMenu"]];
+const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });
+pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; if (open && p === "controls") $("#controls").style.right = Math.max(12, innerWidth - $("#" + b).getBoundingClientRect().right) + "px"; $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
+document.addEventListener("click", e => { if (!e.target.closest("#controls, #moreMenu")) closePops(); });
+$("#moreMenu").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; closePops(); if (b.dataset.go) $("#" + b.dataset.go).click(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
@@ -1453,6 +1636,8 @@ document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => closeMo
 document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeModal(m.id); }));
 addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
+  if (!$("#controls").hidden || !$("#moreMenu").hidden) return closePops();
+  if (!$("#m3d").hidden && Scene3D.isWalking && Scene3D.isWalking()) return Scene3D.stopWalking();
   if (!$("#brief").hidden) closeBrief();
   else if (!$("#m3d").hidden) close3d();
   else if (!$("#import").hidden) closeModal("import");
@@ -1473,9 +1658,10 @@ const drop = $("#drop");
 ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => importFiles([...e.dataTransfer.files]));
 $("#copy").onclick = () => {
-  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  // quoted, and text that a spreadsheet would run as a formula (=, +, -, @) is prefixed with an apostrophe
+  const q = v => { let t = String(v ?? ""); if (/^[=+\-@]/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
   const csv = solo()
-    ? ["utility,name,kv,type,start,in_service,cost,lat,lon"].concat(SOLO.map(p => [q(p.utility), q(p.name), p.kv, p.type, p.start, p.in_service, p.cost ?? "", p.coords[0][0], p.coords[0][1]].join(","))).join("\n")
+    ? ["utility,name,kv,type,start,in_service,cost,lat,lon"].concat(SOLO.map(p => [q(p.utility), q(p.name), p.kv, q(p.type), p.start, p.in_service, p.cost ?? "", p.coords[0][0], p.coords[0][1]].join(","))).join("\n")
     : ["rank,tier,distance_km,same_window_on_paper,overlap_months,gap_months,chance_of_shared_window,expected_savings_usd,savings_if_dates_hold_usd,utility_a,project_a,in_service_a,source_a,utility_b,project_b,in_service_b,source_b,status"]
       .concat(VIEW.map((x, i) => [i + 1, q(TIERS[x.tier].label), x.km.toFixed(2), x.sameWindow, Math.round(x.ov), Math.round(x.gap), x.risk.chance.toFixed(3), Math.round(x.risk.expected), Math.round(x.sav.total),
         q(x.p.utility), q(x.p.name), x.p.in_service, q(x.p.page || x.p.source), q(x.q.utility), q(x.q.name), x.q.in_service, q(x.q.page || x.q.source), q(STATUS[keyOf(x)] || "Open")].join(","))).join("\n");
@@ -1487,14 +1673,24 @@ addEventListener("resize", () => renderTimeline());
 
 renderAssume();
 renderDatasets();
+setupPeg();
 SEAM = seamCoords();
+readHash();
+syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
   click: mapClick, hover: mapHover, recenter: () => fitAll(700),
   tilesFailed: name => { setBasemap("plain"); $("#tileNote").textContent = `${SeamMap.BASEMAPS[name].label} tiles couldn't load (they need an internet connection), so the map switched to Plain.`; $("#tileNote").hidden = false; },
 }).then(() => {
   mapReady = true;
+  // the walker sits on top of the corner controls, like Street View's figure, so it never covers the scale bars
+  const peg = $("#peg"); peg.classList.add("maplibregl-ctrl", "in-ctrl");
+  SeamMap.raw().addControl({ onAdd: () => peg, onRemove: () => {} }, "bottom-right");
   SeamMap.setBasemap(state.basemap);
+  SeamMap.setGrid(state.grid); $("#bgrid").setAttribute("aria-pressed", state.grid);
+  document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
-  fitAll(0);
+  if (!applyPendingView()) fitAll(0);
+  SeamMap.raw().on("moveend", writeHash);
+  writeHash();
 });
