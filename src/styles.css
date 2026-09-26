@@ -78,7 +78,7 @@ select{padding-right:4px}
 .row{display:flex;flex-wrap:wrap;gap:6px}
 
 /* ---------- app frame ---------- */
-.app{height:100vh;display:grid;grid-template-rows:auto auto minmax(0,1fr)}
+.app{height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr);position:relative}
 .appbar{display:flex;align-items:center;gap:12px;padding:0 12px;height:46px;border-bottom:1px solid var(--line);background:var(--panel)}
 .logo{display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;color:var(--ink);text-decoration:none;padding-right:12px;border-right:1px solid var(--line);height:24px}
 .logo svg{width:18px;height:18px}
@@ -87,12 +87,38 @@ select{padding-right:4px}
 .compare .sw{width:10px;height:10px;border-radius:2px;background:var(--ua)} .compare .sw.b{background:var(--ub)}
 .compare .vs{color:var(--ink3)}
 .asof{color:var(--ink2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.filterbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--panel2)}
+/* filters fold into a popover under the Filters button; the extra actions into the More menu */
+.filterbar{position:absolute;z-index:30;top:44px;right:92px;width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
+.filterbar .grow{display:none}
+.filterbar .summary{flex-basis:100%;border-top:1px solid var(--grid);padding-top:8px}
+#filtersBtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+#filtersBtn .ct{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.morewrap{position:relative}
+.menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:180px;display:grid;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
+.menu button{font:inherit;text-align:left;border:0;background:none;color:var(--ink);padding:7px 10px;border-radius:4px;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--panel2)}
 .filterbar.off>*:not(.summary){opacity:.45;pointer-events:none}
 .summary{color:var(--ink2);font-size:12px}
 .summary b{color:var(--ink);font-weight:600}
-.work{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,560px);min-height:0}
-.left{display:grid;grid-template-rows:minmax(0,1fr) 238px;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
+/* option D: a labeled tool rail, one results panel that opens with headline numbers, then the map */
+.work{display:grid;grid-template-columns:64px minmax(400px,470px) minmax(0,1fr);min-height:0}
+.rail{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;overflow-x:hidden}
+.rail>button{position:relative;font:inherit;font-size:10.5px;width:56px;border:0;border-radius:6px;background:none;color:var(--ink2);padding:7px 0 6px;display:grid;justify-items:center;gap:3px;cursor:pointer}
+.rail>button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail>button:hover{color:var(--ink);background:var(--panel2)}
+.rail>button[aria-selected=true],.rail>button[aria-pressed=true]{background:var(--panel2);color:var(--ink);font-weight:600}
+.rail .n{display:none}
+.rail .badge{position:absolute;top:3px;right:9px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--amber,#9A6700);color:#fff;font-size:9.5px;font-weight:600;display:grid;place-items:center}
+.rail .grow{flex:1}
+.side{border-right:1px solid var(--line)}
+/* headline tiles at the top of the Overlaps view */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{font:inherit;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:8px 10px;display:grid;gap:1px}
+button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
+.kpi b{font-size:20px;font-weight:600;line-height:1.2}
+.kpi span{font-size:12px;font-weight:500}
+.kpi small{font-size:11px;color:var(--ink2)}
+.left{display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 
 /* ---------- map ---------- */
@@ -130,7 +156,9 @@ select{padding-right:4px}
 .tlhead .muted{font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .tlhead input[type=range]{width:180px;accent-color:var(--seam)}
 .tyear{min-width:66px;font-size:12px}
-.tlbody{flex:1;overflow:auto}
+.tlbody{flex:1;overflow:auto;display:none;height:204px}
+.left.tl-open .tlbody{display:block;flex:none;height:220px}
+.tlhead>b{white-space:nowrap}
 #tl{display:block}
 svg text{font-family:var(--body)}
 
@@ -150,10 +178,10 @@ svg text{font-family:var(--body)}
 .chip[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:500}
 .chip i{width:8px;height:8px;border-radius:50%}
 .yards{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px}
-.thead{position:sticky;top:0;z-index:1;display:grid;grid-template-columns:24px 84px minmax(0,1fr) 104px 64px;gap:8px;padding:6px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
+.thead{position:sticky;top:0;z-index:1;display:grid;grid-template-columns:20px 72px minmax(0,1fr) 92px 60px;gap:6px;padding:6px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
 .thead.opt,.tr.opt{grid-template-columns:24px minmax(0,1fr) 56px 64px}
 .r{text-align:right}
-.tr{display:grid;grid-template-columns:24px 84px minmax(0,1fr) 104px 64px;gap:8px;padding:8px 12px;border-bottom:1px solid var(--grid);align-items:start;cursor:pointer;width:100%;font:inherit;text-align:left;background:none;border-left:0;border-right:0;border-top:0;color:var(--ink)}
+.tr{display:grid;grid-template-columns:20px 72px minmax(0,1fr) 92px 60px;gap:6px;padding:8px 12px;border-bottom:1px solid var(--grid);align-items:start;cursor:pointer;width:100%;font:inherit;text-align:left;background:none;border-left:0;border-right:0;border-top:0;color:var(--ink)}
 .tr:hover,.tr.hov{background:var(--panel2)}
 .tr.lite{grid-template-columns:64px minmax(0,1fr)}
 .check .tr.lite{grid-template-columns:62px minmax(0,1fr)}
@@ -328,8 +356,10 @@ body.m3d-open .app{visibility:hidden}
 /* ---------- small screens: stack map, timeline and panel ---------- */
 @media (max-width:1000px){
   .app{height:auto;min-height:100vh}
-  .work{grid-template-columns:1fr}
-  .left{grid-template-rows:62vh 220px;border-right:0}
+  .work{grid-template-columns:56px minmax(0,1fr)}
+  .rail{grid-row:1 / span 2}
+  .left{grid-row:1;grid-column:2;grid-template-rows:62vh auto;border-right:0}
+  .side{grid-column:2}
   .side{border-top:1px solid var(--line)}
   .panel{overflow:visible}
   .asof{display:none}
@@ -367,3 +397,12 @@ body.m3d-open .app{visibility:hidden}
 .ask-in textarea{flex:1;font:inherit;font-size:13px;resize:none;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink)}
 .ask-key .chk{justify-self:start}
 .tabs button{padding:10px 10px 8px}
+
+/* ---------- drop-in walker ---------- */
+.peg{position:absolute;right:10px;bottom:44px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
+.peg:hover svg{fill:#FBB13C}
+.peg.in-ctrl{position:static;width:29px;height:40px;padding:4px 6px;border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.1);border:0}
+.peg.dragging{opacity:.35}
+.peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}
