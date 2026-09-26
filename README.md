@@ -6,6 +6,8 @@ The built-in example compares **Dominion Energy South Carolina** with **Georgia*
 
 ![Overview: ranked coordination opportunities next to the map](docs/screenshots/overview.png)
 
+A plain-language walkthrough of every screen, with screenshots, is in [`docs/Seamline-Field-Guide.docx`](docs/Seamline-Field-Guide.docx).
+
 ## Quick start
 
 Open `index.html` in a browser. That's it: everything it needs is in this folder.
