@@ -824,9 +824,9 @@ function renderAsk(P) {
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   P.innerHTML = `<div class="ask">
     <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
-      : `<div class="msg hint"><p class="ask-hero">${SPARK}Ask about the plans</p><p>Projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
+      : `<div class="msg hint"><p class="ask-hero">${SPARK}Ask about the plans</p><p>Projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
-    <p class="ask-hint" id="askHint" aria-hidden="true"></p>
+    <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="e.g. Which three date moves would save the most?" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
@@ -834,7 +834,7 @@ function renderAsk(P) {
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); state.askKey = false; renderAsk(P); $("#askQ").focus(); } };
   if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; renderAsk(P); };
-  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => sendQuestion(b.textContent));
+  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
