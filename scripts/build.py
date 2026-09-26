@@ -11,6 +11,7 @@ for key, text in {
     "/*FORMATS*/": src("formats.js"),
     "/*VEHICLES*/": src("vehicles3d.js"),
     "/*SCENE3D*/": src("scene3d.js"),
+    "/*RENDER3D*/": src("render3d.js"),
     "/*MAP*/": src("map.js"),
     "/*AGENT*/": src("agent.js"),
     "/*AGENT_OFFLINE*/": src("agent-offline.js"),
