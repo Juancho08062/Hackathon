@@ -358,6 +358,9 @@ svg text{font-family:var(--body)}
 .m3d-head p{margin:3px 0 0;color:rgba(255,255,255,.82)}
 .m3d-head .btn{pointer-events:auto;flex:none;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25);backdrop-filter:blur(6px)}
 .m3d-head .btn:hover{background:rgba(255,255,255,.22)}
+.m3d-q{pointer-events:auto;flex:none;display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.85)}
+.m3d-q select{font:inherit;font-size:13px;height:34px;padding:0 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px)}
+.m3d-q option{color:#13222A}
 .m3d-head #m3dLabels[aria-pressed=false]{opacity:.75}
 .m3d-stage.nolabels .m3d-labels,.m3d-stage.nolabels~.m3d-foot{display:none}
 .m3d-msg{position:absolute;z-index:3;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(6,14,18,.8);padding:10px 16px;border-radius:var(--r-sm);max-width:80%}

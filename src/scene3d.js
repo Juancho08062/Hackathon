@@ -1,7 +1,8 @@
 // Seamline 3D: a realistic scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
 // the closest-point link, and the shared zone the tier allows (corridor, laydown yard or staging yard).
 // three.js loads on first use. Horizontal positions are to scale; heights are exaggerated so towers read.
-// Rendering: PBR materials, a physical sky that also lights the scene, soft shadows, HDR bloom, ACES tone mapping and FXAA.
+// Rendering: PBR materials, a physical sky that also lights the scene, soft shadows, HDR bloom and ACES tone mapping.
+// Quality presets trade speed for sharpness: pixel ratio, shadow map size, terrain and texture detail, SSAO and SMAA.
 (function (root) {
   const PAL = {
     fog: 0xa9bccb, sun: 0xfff1d6,
@@ -10,8 +11,16 @@
     fence: 0x46525c, ridge: 0x4f6b55, water: 0x24505c, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let ctx = null;
-  const ensureThree = () => root.Libs.need("THREE", "OrbitControls", "ThreeExtras");
+  let ctx = null, last = null;
+  // Standard is the lightest; High (the default) adds ambient occlusion and SMAA; Ultra renders at the full screen
+  // resolution with a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass detail.
+  const QUALITY = {
+    standard: { dpr: 1.25, shadow: 2048, seg: 130, tex: 256, ssao: 0, smaa: false },
+    high: { dpr: 2, shadow: 4096, seg: 200, tex: 512, ssao: 16, smaa: true },
+    ultra: { dpr: 3, shadow: 4096, seg: 280, tex: 1024, ssao: 32, smaa: true },
+  };
+  const ensureThree = q => root.Libs.need("THREE", "OrbitControls", "ThreeExtras")
+    .then(() => q.ssao || q.smaa ? root.Libs.need("ThreeQuality").then(() => q, () => QUALITY.standard) : q);
 
   // ---------- helpers ----------
   // PBR material helper. `rough` and `metal` set roughness and metalness; `shininess` of 40 or more means a glossy surface.
@@ -282,7 +291,7 @@
   }
 
   // ---------- build ----------
-  function build(pair, opts) {
+  function build(pair, opts, Q) {
     const T = root.THREE, rnd = rng(7);
     const c0 = [(pair.ca[0] + pair.cb[0]) / 2, (pair.ca[1] + pair.cb[1]) / 2];
     const KX = 111.32 * Math.cos(c0[0] * Math.PI / 180), KY = 110.57;
@@ -311,13 +320,13 @@
 
     scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, 0.2));
     const sun = new T.DirectionalLight(PAL.sun, 2.6);
-    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    sun.castShadow = true; sun.shadow.mapSize.set(Q.shadow, Q.shadow);
     const sc = sun.shadow.camera; sc.left = sc.bottom = -R * 1.4; sc.right = sc.top = R * 1.4; sc.near = 1; sc.far = R * 5;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
     scene.add(sun, sun.target);
 
     // plateau ground with vertex colors
-    const size = RG * 2.4, gGeo = new T.PlaneGeometry(size, size, 130, 130); gGeo.rotateX(-Math.PI / 2);
+    const size = RG * 2.4, gGeo = new T.PlaneGeometry(size, size, Q.seg, Q.seg); gGeo.rotateX(-Math.PI / 2);
     const pos = gGeo.attributes.position, cols = [], tmp = new T.Color();
     const cG = new T.Color(PAL.grass), cD = new T.Color(PAL.grassDark), cY = new T.Color(PAL.grassDry), cR = new T.Color(PAL.rock);
     for (let i = 0; i < pos.count; i++) {
@@ -331,16 +340,16 @@
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
     // speckled grass texture, multiplied over the vertex colors
-    const GS = 256, gc = document.createElement("canvas"); gc.width = gc.height = GS;
+    const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
-    for (let i = 0; i < 9000; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
     // grass blades and a few bare patches
     {
-      for (let i = 0; i < 2200; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
-      for (let i = 0; i < 14; i++) { gx.fillStyle = "rgba(205,190,160,0.18)"; gx.beginPath(); gx.arc(gr() * GS, gr() * GS, 6 + gr() * 18, 0, 7); gx.fill(); }
+      for (let i = 0; i < 2200 * (GS / 256) ** 2; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
+      for (let i = 0; i < 14; i++) { gx.fillStyle = "rgba(205,190,160,0.18)"; gx.beginPath(); gx.arc(gr() * GS, gr() * GS, (6 + gr() * 18) * GS / 256, 0, 7); gx.fill(); }
     }
     const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(26, 26);
-    groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = 4;
+    groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = Q.aniso || 4;
     const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
 
     // basalt columns around the cliff
@@ -540,6 +549,7 @@
 
   // ---------- modal and render loop ----------
   function open(pair, opts) {
+    last = { pair, opts };
     const modal = document.getElementById("m3d");
     modal.hidden = false;
     document.getElementById("m3dTitle").textContent = opts.title;
@@ -547,11 +557,11 @@
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
     msg.textContent = "Loading 3D…"; msg.hidden = false;
     document.getElementById("m3dClose").focus();
-    ensureThree().then(() => {
+    ensureThree(QUALITY[opts.quality] || QUALITY.high).then(q => {
       if (modal.hidden) return;
       close(true);
-      const T = root.THREE, built = build(pair, opts);
-      const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+      const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+      const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q);
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
@@ -582,18 +592,35 @@
       built.scene.environment = pmrem.fromScene(envScene).texture;
       const rt = new T.WebGLRenderTarget(1, 1, { type: T.HalfFloatType, format: T.RGBAFormat, minFilter: T.LinearFilter, magFilter: T.LinearFilter });
       const composer = new T.EffectComposer(renderer, rt);
-      composer.addPass(new T.RenderPass(built.scene, cam));
+      let ssao = null;
+      if (Q.ssao) {
+        // Ambient occlusion darkens creases where towers meet the ground and parts touch. The pass renders the scene
+        // itself; its beauty buffer is switched to half-float so bloom and tone mapping still get HDR input.
+        ssao = new T.SSAOPass(built.scene, cam, 1, 1);
+        ssao.beautyRenderTarget.texture.type = T.HalfFloatType;
+        ssao.normalRenderTarget.depthTexture.type = T.UnsignedIntType; // 16-bit depth bands badly over this camera range
+        ssao.kernelSize = Q.ssao; ssao.generateSampleKernel();
+        ssao.ssaoMaterial.defines.KERNEL_SIZE = Q.ssao; ssao.ssaoMaterial.uniforms.kernel.value = ssao.kernel; ssao.ssaoMaterial.needsUpdate = true;
+        ssao.kernelRadius = 1.4; ssao.minDistance = 0.000002; ssao.maxDistance = 0.0006;
+        // clouds, steam and labels are sprites: keep them out of the occlusion pass
+        const hide = ssao.overrideVisibility.bind(ssao);
+        ssao.overrideVisibility = function () { hide(); built.scene.traverse(o => { if (o.isSprite || o === built.sky) o.visible = false; }); };
+        composer.addPass(ssao);
+      } else composer.addPass(new T.RenderPass(built.scene, cam));
       composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
       const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
-      const fxaa = new T.ShaderPass(T.FXAAShader); composer.addPass(fxaa);
+      // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.
+      const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
+      composer.addPass(fxaa || smaa);
 
       const size = () => {
-        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(1.25, devicePixelRatio);
+        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
-        composer.setPixelRatio(pr); composer.setSize(w, h); fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
+        composer.setPixelRatio(pr); composer.setSize(w, h);
+        if (fxaa) fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
         cam.aspect = w / h; cam.updateProjectionMatrix();
       };
       size();
@@ -633,6 +660,7 @@
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
+          if (ssao) ssao.dispose(); if (smaa) { smaa.edgesRT.dispose(); smaa.weightsRT.dispose(); smaa.areaTexture.dispose(); smaa.searchTexture.dispose(); }
           renderer.dispose();
         },
       };
@@ -642,5 +670,7 @@
     if (ctx) { ctx.stop(); ctx = null; }
     if (!keepOpen) { document.getElementById("m3d").hidden = true; document.getElementById("m3dStage").innerHTML = ""; }
   }
-  root.Scene3D = { open, close };
+  // Re-open the current pair at a new quality setting.
+  const reopen = quality => { if (last && !document.getElementById("m3d").hidden) open(last.pair, Object.assign({}, last.opts, { quality })); };
+  root.Scene3D = { open, close, reopen, QUALITY };
 })(this);
