@@ -300,6 +300,7 @@ function renderPanel() {
   if (state.tab === "changes" && !solo()) return renderChanges(P);
   if (state.tab === "optimize" && !solo()) return renderOptimize(P);
   if (state.tab === "checks") return renderChecks(P);
+  if (state.tab === "ask") return renderAsk(P);
   renderOverlaps(P);
 }
 
@@ -624,6 +625,154 @@ function renderChecks(P) {
     const url = URL.createObjectURL(new Blob([JSON.stringify(MODEL, null, 1)], { type: "application/json" }));
     const a = document.createElement("a"); a.href = url; a.download = "seamline-validation.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+}
+
+
+// ---------- panel: assistant ----------
+// Claude answers questions using tools that read the same data the page shows (agent.js runs the loop).
+const CHAT = { messages: [], log: [], busy: false };
+const SYSTEM = `You are the assistant inside Seamline, a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
+
+How Seamline measures things:
+- Distance is between the closest points of two projects. Tiers: touching (0 km), under 1.6 km (can share right-of-way, access roads, permits), under 8 km (laydown yards, deliveries), under 40 km (crews, cranes, contractors).
+- "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
+- Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
+
+Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it.`;
+const TOOLS = [
+  { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
+  { name: "search_projects", description: "Find planned projects by words in their name, description, substation names, TEAMS number or source page. Returns up to `limit` matches with id, utility, kV, type, construction window, in-service date, cost and location confidence.", input_schema: { type: "object", properties: { query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'" }, utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" }, limit: { type: "integer", description: "Max results, default 10" } }, required: ["query"] } },
+  { name: "get_project", description: "Everything Seamline knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
+  { name: "list_overlaps", description: "Ranked flagged pairs of projects (one from each utility). Filter and sort them; each row has a key for get_overlap and show_on_map.", input_schema: { type: "object", properties: {
+    sort: { type: "string", enum: ["expected", "chance", "distance"], description: "expected = expected savings (default), chance = chance of a shared window, distance = closest first" },
+    max_distance_km: { type: "number", description: "Only pairs at most this far apart" },
+    min_chance: { type: "number", description: "Only pairs with at least this chance (0 to 1)" },
+    same_window_on_paper: { type: "boolean", description: "true: only pairs whose planned windows overlap; false: only pairs that don't" },
+    project_query: { type: "string", description: "Only pairs where either project's name matches these words" },
+    include_past: { type: "boolean", description: "Include projects whose in-service date has passed (default true)" },
+    limit: { type: "integer", description: "Max rows, default 10, at most 25" } } } },
+  { name: "get_overlap", description: "Full detail of one pair: distance, tier, both build windows, chance and expected savings, each shareable item with its saving and the math, the best shared yard, plan drift, locations, sources, and whether it is one of the challenge's reference overlaps.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key from list_overlaps, 'PROJECTID|PROJECTID'" } }, required: ["key"] } },
+  { name: "get_plan_changes", description: "How each utility's planned dates moved between its last two published plans (counts later, earlier, unchanged), and which shared build windows the latest plan updates opened or closed, with the reason.", input_schema: { type: "object", properties: {} } },
+  { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
+  { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
+  { name: "show_on_map", description: "Select a pair or a project in Seamline so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
+];
+const projOut = p => ({ id: p.id, utility: p.utility, name: p.name, kv: p.kv, type: TYPE[p.type] || p.type, construction: `${p.start} to ${p.in_service}`, start_published: !!p.start_published,
+  in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built, cost_usd: p.cost || null, location_confidence: p.loc, source: p.page ? `${p.source} (${p.page})` : p.source });
+const pairOut = x => ({ key: keyOf(x), distance_km: +x.km.toFixed(2), tier: TIERS[Math.min(x.tier, 4)].label, project_a: `${x.p.name} (${x.p.utility}, in service ${x.p.in_service})`, project_b: `${x.q.name} (${x.q.utility}, in service ${x.q.in_service})`,
+  windows_on_paper: x.ov > 0 ? `${Math.round(x.ov)} months shared` : `${Math.round(x.gap)} months apart`, chance_of_shared_window: x.risk.why === "built" ? "none, one side is likely built" : +x.risk.chance.toFixed(2),
+  expected_savings_usd: Math.round(x.risk.expected), savings_if_dates_hold_usd: Math.round(x.sav.total), challenge_reference: REFS[keyOf(x)] || null });
+const findPair = key => { const k = String(key || "").trim(), [a, b] = k.split("|"); return RESULT.pairs.find(x => keyOf(x) === k || (x.p.id === b && x.q.id === a)); };
+function runTool(name, i) {
+  const words = q => String(q || "").toLowerCase().split(/\s+/).filter(Boolean);
+  const hit = (text, q) => { const w = words(q); return w.every(t => text.toLowerCase().includes(t)); };
+  if (name === "get_overview") {
+    const tiers = {}; TIERS.slice(0, 4).forEach((t, k) => { tiers[t.label] = RESULT.pairs.filter(x => x.tier === k).length; });
+    return { utilities: solo() ? [lblLong(state.utilA)] : [lblLong(state.utilA), lblLong(state.utilB)], projects: Object.fromEntries(utilities().map(u => [u, PROJECTS.filter(p => p.utility === u).length])),
+      filters: { distance_km: state.D, window_buffer_months: state.B, match: state.mode, build_period_months_from_today: state.horizon || "all", include_dates_passed: state.past },
+      pairs_checked: RESULT.checked, pairs_flagged: RESULT.pairs.length, pairs_shown_with_filters: VIEW.length, by_tier: tiers,
+      same_window_on_paper: RESULT.pairs.filter(x => x.sameWindow).length, expected_savings_usd: Math.round(RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0)),
+      savings_if_dates_hold_usd: Math.round(RESULT.pairs.reduce((a, x) => a + x.sav.total, 0)), as_of: TODAY, sources: $("#asof").textContent };
+  }
+  if (name === "search_projects") {
+    const ps = PROJECTS.filter(p => (!i.utility || p.utility.toLowerCase() === String(i.utility).toLowerCase()) && hit(`${p.id} ${p.name} ${p.desc || ""} ${p.page || ""} ${(p.located || []).map(l => l.name).join(" ")}`, i.query));
+    return { matches: ps.length, projects: ps.slice(0, Math.min(25, i.limit || 10)).map(projOut) };
+  }
+  if (name === "get_project") {
+    const p = PROJECTS.find(v => v.id === i.id);
+    if (!p) throw new Error(`No project with id ${i.id}. Use search_projects to find its id.`);
+    const pairs = RESULT.pairs.filter(x => x.p === p || x.q === p).sort((a, b) => b.risk.expected - a.risk.expected);
+    return Object.assign(projOut(p), { description: p.desc || null, plan_drift: p.drift || null, also_listed_as: p.official || null, located: p.located || `placed by hand (${p.loc})`,
+      overlaps: pairs.length, top_overlaps: pairs.slice(0, 8).map(pairOut) });
+  }
+  if (name === "list_overlaps") {
+    let xs = RESULT.pairs.filter(x => (i.max_distance_km == null || x.km <= i.max_distance_km) && (i.min_chance == null || x.risk.chance >= i.min_chance) &&
+      (i.same_window_on_paper == null || x.sameWindow === i.same_window_on_paper) && (i.include_past !== false || (!isPast(x.p) && !isPast(x.q))) &&
+      (!i.project_query || hit(`${x.p.name} ${x.q.name} ${x.p.id} ${x.q.id}`, i.project_query)));
+    const by = { expected: (a, b) => b.risk.expected - a.risk.expected, chance: (a, b) => b.risk.chance - a.risk.chance, distance: (a, b) => a.km - b.km }[i.sort || "expected"] || ((a, b) => b.risk.expected - a.risk.expected);
+    xs = xs.slice().sort(by);
+    return { matching_pairs: xs.length, rows: xs.slice(0, Math.min(25, i.limit || 10)).map(pairOut) };
+  }
+  if (name === "get_overlap") {
+    const x = findPair(i.key);
+    if (!x) throw new Error(`No flagged pair ${i.key}. Use list_overlaps to get keys.`);
+    const all = Engine.savings(Object.assign({}, x, { sameWindow: true })).items, needs = new Set(Engine.SHARES.filter(g => g.window).flatMap(g => g.items));
+    const yd = x.tier <= 3 ? pairYard(x) : null;
+    return Object.assign(pairOut(x), { project_a: projOut(x.p), project_b: projOut(x.q), plan_drift: { a: x.p.drift || null, b: x.q.drift || null },
+      located: { a: x.p.located || x.p.loc, b: x.q.located || x.q.loc },
+      shareable_items: all.map(it => ({ item: it.k, saving_usd: Math.round(it.v), math: it.how, needs_shared_window: needs.has(it.share) })),
+      shared_yard: yd ? { near: yd.near || "open land", at: yd.at.map(v => +v.toFixed(4)), km_to_sites: yd.dists.map(d => +d.toFixed(1)) } : null, also_in_common: x.res });
+  }
+  if (name === "get_plan_changes") {
+    const d = drift(), S = MODEL.slips || {};
+    const row = x => ({ key: keyOf(x), distance_km: +x.km.toFixed(1), pair: `${x.p.name} × ${x.q.name}`, moved: [x.p, x.q].filter(p => p.drift && p.drift.months).map(p => `${p.utility} moved ${p.name} ${Math.abs(p.drift.months)} months ${p.drift.months > 0 ? "later" : "earlier"}`), challenge_reference: REFS[keyOf(x)] || null });
+    return { how_dates_moved: Object.fromEntries(Object.entries(S).map(([u, v]) => [u, { projects_with_history: v.n, later: v.slipped, earlier: v.advanced, unchanged: v.n - v.slipped - v.advanced, median_months: v.median, source: v.source }])),
+      windows_opened: d.opened.map(row), windows_closed: d.closed.map(row) };
+  }
+  if (name === "optimize_schedule") {
+    const u = i.utility ? String(i.utility).toUpperCase() : null;
+    const r = Engine.optimizeSchedule(RESULT.pairs, MODEL.slips, { today: TODAY, bufferMonths: state.B, maxShift: i.max_shift_months || 6, utilities: u ? [u] : null });
+    return { expected_savings_before_usd: Math.round(r.before), after_usd: Math.round(r.after), moves: r.moves.map(m => {
+      const best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0];
+      return { project: m.project.name, id: m.id, utility: m.project.utility, months: m.months, in_service_from: m.from.in_service, in_service_to: m.to.in_service, adds_usd: Math.round(m.gain),
+        strongest_effect: best ? `${(best.x.p === m.project ? best.x.q : best.x.p).name}: chance ${Math.round(best.before * 100)}% to ${Math.round(best.after * 100)}%` : null };
+    }) };
+  }
+  if (name === "get_data_checks") return { as_of: TODAY, pipeline: MODEL.pipeline || null, checks: (MODEL.checks || []).map(c => ({ check: c.title, status: c.status, result: c.result, examples: (c.records || []).slice(0, 5) })) };
+  if (name === "show_on_map") {
+    if (i.key) { const x = findPair(i.key); if (!x) throw new Error(`No flagged pair ${i.key}.`); if (!VIEW.includes(x)) { state.tiers = new Set([0, 1, 2, 3, 4]); state.q = ""; state.past = true; state.horizon = 0; $("#pastOn").checked = true; refresh(); }
+      const y = VIEW.find(v => keyOf(v) === keyOf(x)) || x; state.sel = y; state.wi = null; renderMap(); renderTimeline(); flyTo(y); return { shown: pairOut(y).project_a + " and " + pairOut(y).project_b }; }
+    const p = PROJECTS.find(v => v.id === i.project_id);
+    if (!p) throw new Error("Give a pair key or a project id.");
+    SeamMap.fit(p.coords, { padKm: 6 });
+    return { shown: p.name };
+  }
+  throw new Error("Unknown tool " + name);
+}
+const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+  .split(/\n{2,}/).map(par => /^\s*[-*] /m.test(par) ? "<ul>" + par.split("\n").filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*[-*]\s+/, "")}</li>`).join("") + "</ul>" : `<p>${par.replace(/\n/g, "<br>")}</p>`).join("");
+const apiKey = () => { try { return sessionStorage.getItem("seamline.key") || localStorage.getItem("seamline.key") || ""; } catch (err) { return CHAT.key || ""; } };
+function saveKey(k, remember) {
+  CHAT.key = k;
+  try { sessionStorage.setItem("seamline.key", k); if (remember) localStorage.setItem("seamline.key", k); else localStorage.removeItem("seamline.key"); } catch (err) { /* storage blocked: key lives for this page only */ }
+}
+const SUGGEST = ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "How reliable is the data?"];
+function renderAsk(P) {
+  P.dataset.view = "ask";
+  const has = !!apiKey();
+  P.innerHTML = `<div class="ask">
+    <div class="ask-key${has ? " set" : ""}">${has ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
+      : `<label for="kIn"><b>Anthropic API key</b></label><div class="ph-row"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" class="btn sm primary" id="kSave">Use key</button></div>
+      <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
+      <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`}</div>
+    <div class="ask-log" id="askLog">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
+      : `<div class="msg hint"><p>Ask about the planned projects, overlaps, plan changes or data quality. Answers come from the same data the map and tables show.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
+      ${CHAT.busy ? `<div class="msg tool">Thinking…</div>` : ""}</div>
+    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="Ask about the plans…" aria-label="Question"${has ? "" : " disabled"}></textarea><button type="submit" class="btn primary"${has && !CHAT.busy ? "" : " disabled"}>Ask</button></form></div>`;
+  const log = $("#askLog"); log.scrollTop = log.scrollHeight;
+  if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); renderAsk(P); $("#askQ").focus(); } };
+  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } renderAsk(P); };
+  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (apiKey()) sendQuestion(b.textContent); else $("#kIn").focus(); });
+  $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
+  $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
+}
+const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
+  get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map" };
+async function sendQuestion(q) {
+  if (CHAT.busy) return;
+  CHAT.busy = true; CHAT.log.push({ role: "user", text: q }); CHAT.messages.push({ role: "user", content: q });
+  const P = $("#panel"), again = () => { if (state.tab === "ask") renderAsk(P); };
+  again();
+  try {
+    const r = await SeamAgent.ask({ apiKey: apiKey(), system: SYSTEM, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
+      onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
+    CHAT.log.push({ role: "assistant", text: r.text + (r.truncated ? "\n\n(The answer was cut short.)" : "") });
+  } catch (err) {
+    CHAT.messages.pop(); // drop the unanswered question so the conversation stays valid
+    CHAT.log.push({ role: "assistant", text: SeamAgent.explain(err) });
+  }
+  CHAT.busy = false; again();
+  if (state.tab !== "ask") renderTabs();
 }
 
 // ---------- coordination brief ----------
