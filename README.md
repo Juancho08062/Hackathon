@@ -24,6 +24,10 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 - **Light and dark themes** that follow the system setting.
 - **Map** with pan and zoom and four styles: Plain, Streets, Satellite and Terrain.
 - **Timeline** of each flagged project's estimated construction window.
+- **The Seam.** The Georgia and South Carolina border, the Savannah River both utilities build along, is drawn as a stitched seam on the map.
+- **Play the build years.** A time scrubber steps the map month by month. Projects light up while they're under construction, and flagged pairs that are building at the same time spark.
+- **What-if schedule shift.** For any pair, slide one project earlier or later and watch the shared window and savings update. Seamline suggests the smallest move that gives both builds a real shared window.
+- **Coordination brief.** One click writes a one-page memo for a pair, addressed to both utilities' planners: where and when they meet, what they can share, the savings estimate, a locator map and next steps. Print it, save it as a PDF, or copy the text.
 - **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Rendered realistically: physically based materials, a physical sky that lights the scene, soft shadows, bloom and filmic tone mapping.
 - **Import** any utility's plan and compare any two utilities, or set the second utility to **None** to just browse one utility's projects.
 

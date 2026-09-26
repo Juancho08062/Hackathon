@@ -9,7 +9,7 @@
   --hot:#B0183D; --hotsoft:rgba(176,24,61,.08);
   --near:#6B4FB8; --time:#2F7A4E;
   --t0:#B0183D; --t1:#B25E09; --t2:#6B4FB8; --t3:#3F6E7D;
-  --onhot:#fff; --hero1:#0C1F27; --hero2:#163847;
+  --onhot:#fff; --seam:#9A6B2F; --seamglow:rgba(214,164,92,.28); --hero1:#0C1F27; --hero2:#163847;
   --shadow:0 1px 2px rgba(16,34,42,.06),0 4px 16px rgba(16,34,42,.06);
   --r:10px; --r-sm:7px;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
@@ -26,7 +26,7 @@
     --hot:#FF5C7F; --hotsoft:rgba(255,92,127,.1);
     --near:#A48CF0; --time:#5CC58A;
     --t0:#FF5C7F; --t1:#F2A54A; --t2:#A48CF0; --t3:#7FB3C2;
-    --onhot:#1B0A10; --hero1:#0A181E; --hero2:#12303C;
+    --onhot:#1B0A10; --seam:#E3B878; --seamglow:rgba(227,184,120,.16); --hero1:#0A181E; --hero2:#12303C;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
   }
 }
@@ -39,7 +39,7 @@
   --hot:#FF5C7F; --hotsoft:rgba(255,92,127,.1);
   --near:#A48CF0; --time:#5CC58A;
   --t0:#FF5C7F; --t1:#F2A54A; --t2:#A48CF0; --t3:#7FB3C2;
-  --onhot:#1B0A10; --hero1:#0A181E; --hero2:#12303C;
+  --onhot:#1B0A10; --seam:#E3B878; --seamglow:rgba(227,184,120,.16); --hero1:#0A181E; --hero2:#12303C;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
 }
 
@@ -143,6 +143,22 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .tilenote{color:var(--hot);margin:6px 0}
 .maphint{padding:9px 16px;border-top:1px solid var(--line);background:var(--panel2)}
 
+/* ---------- time scrubber ---------- */
+.scrub{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px 10px;border-top:1px solid var(--line);background:var(--panel2)}
+.scrub .play{min-width:72px;justify-content:center;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.scrub .play[aria-pressed=true]{background:var(--seam);border-color:var(--seam);color:#fff}
+.scrub-track{position:relative;flex:1 1 260px;min-width:200px;padding-bottom:16px}
+.scrub-track input{margin:0;accent-color:var(--seam)}
+.ticks{position:absolute;left:8px;right:8px;bottom:0;height:14px;pointer-events:none}
+.ticks span{position:absolute;transform:translateX(-50%);font:500 10px/1 var(--mono);color:var(--ink3)}
+.ticks span::before{content:"";position:absolute;left:50%;top:-5px;width:1px;height:4px;background:var(--ink3)}
+.scrub-read{display:grid;min-width:150px}
+.scrub-read b{font-family:var(--display);font-size:22px;font-weight:600;line-height:1.1}
+.scrub-read span{font-size:12px;color:var(--ink2)}
+.scrub.on .scrub-read b{color:var(--seam)}
+.spark{animation:spark 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes spark{0%{transform:scale(.5);opacity:1}70%{opacity:.6}100%{transform:scale(1.9);opacity:0}}
+
 /* ---------- list ---------- */
 .search{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .search input{flex:1;min-width:0}
@@ -184,6 +200,53 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .imp small{display:block;color:var(--ink2);font-size:11px}
 .imp .tot td{font-weight:600;border-bottom:0;color:var(--time);padding-top:8px}
 .row{display:flex;flex-wrap:wrap;gap:8px}
+
+.whatif{display:grid;gap:8px;padding:12px;border-radius:var(--r-sm);background:var(--panel);box-shadow:inset 0 0 0 1px var(--grid)}
+.whatif .dh{flex-wrap:wrap}
+.whatif .seg button{font-size:12px;padding:4px 10px}
+.wi-ctl{display:flex;align-items:center;gap:12px}
+.wi-ctl input{flex:1;margin:0;accent-color:var(--seam)}
+.wi-ctl output{font-family:var(--mono);font-size:12px;min-width:15ch;text-align:right}
+#wiChart{display:block;width:100%;height:auto}
+.wi-res{margin:0;font-size:13px}
+.wi-res .up{color:var(--time);font-weight:600} .wi-res .down{color:var(--hot);font-weight:600}
+
+/* ---------- coordination brief ---------- */
+.brief-wrap{position:fixed;inset:0;z-index:25;background:rgba(6,12,15,.72);backdrop-filter:blur(4px);overflow:auto;padding:16px;display:grid;justify-items:center;align-content:start;gap:12px}
+.brief-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;position:sticky;top:0;z-index:1}
+.brief{width:min(800px,100%);background:#fff;color:#13222A;border-radius:6px;padding:40px 48px;box-shadow:0 24px 60px rgba(0,0,0,.45);font-size:13px;line-height:1.5;color-scheme:light}
+.b-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:2px dashed #9A6B2F;margin-bottom:14px}
+.b-brand{font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:.14em}
+.b-brand span{font-weight:500;letter-spacing:.04em;color:#4A5B62;margin-left:8px;font-size:18px}
+.b-date{font-size:12px;color:#4A5B62}
+.b-memo{display:grid;grid-template-columns:40px 1fr;gap:4px 12px;margin:0 0 12px}
+.b-memo dt{font-weight:600;color:#4A5B62;text-transform:uppercase;font-size:11px;letter-spacing:.08em;padding-top:2px}
+.b-memo dd{margin:0;font-weight:500}
+.b-lede{font-size:14px;margin:0 0 14px}
+.b-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:center;margin-bottom:6px}
+.b-map{display:block;width:100%;height:auto;border-radius:4px;border:1px solid #D6DFDE}
+.b-kpis{display:grid;gap:10px}
+.b-kpis div{border-left:3px solid #9A6B2F;padding-left:10px}
+.b-kpis b{display:block;font-family:var(--display);font-size:26px;font-weight:600;line-height:1.05}
+.b-kpis span{font-size:12px;color:#4A5B62}
+.brief h4{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin:16px 0 6px;color:#13222A}
+.b-tab{width:100%;border-collapse:collapse}
+.b-tab th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#4A5B62;border-bottom:1px solid #13222A;padding:4px 8px 4px 0}
+.b-tab td{padding:6px 8px 6px 0;border-bottom:1px solid #E4EAE9;vertical-align:top}
+.b-tab td span{font-size:11px;color:#4A5B62}
+.b-tab td em{font-size:11px;color:#9A6B2F;font-style:normal;font-weight:600}
+.b-tab .n{text-align:right;font-family:var(--mono);white-space:nowrap}
+.b-tab .tot td{font-weight:600;border-bottom:0}
+.brief ul,.brief ol{margin:0;padding-left:20px;display:grid;gap:3px}
+.b-foot{margin:18px 0 0;padding-top:10px;border-top:1px solid #E4EAE9;font-size:11px;color:#4A5B62}
+@media (max-width:640px){.brief{padding:24px 20px}.b-grid{grid-template-columns:1fr}}
+@media print{
+  body{padding:0;background:#fff}
+  body>*:not(#brief){display:none!important}
+  .brief-wrap{position:static;background:none;padding:0;backdrop-filter:none}
+  .brief-bar{display:none}
+  .brief{box-shadow:none;width:100%;padding:0}
+}
 
 /* ---------- timeline and footer ---------- */
 #tl{display:block;width:100%}
