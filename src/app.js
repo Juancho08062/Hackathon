@@ -28,6 +28,8 @@ const fmtD = (p, which) => {
   if (which === "in_service" && p.date_precision === "estimated") return "~" + d.getUTCFullYear() + " (est.)";
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 };
+// SVG path for a project's line parts, each drawn on its own so separate parts are never joined.
+const lineD = (p, pt) => Engine.isLine(p) ? Engine.partsOf(p).filter(c => c.length > 1).map(c => d3.line()(c.map(pt))).join("") : null;
 const km = d => d < 0.1 ? "0 km" : d < 10 ? d.toFixed(1) + " km" : Math.round(d) + " km";
 const tcol = i => css(TIERS[i].tok);
 const utilities = () => [...new Set(PROJECTS.map(p => p.utility))];
@@ -38,7 +40,7 @@ const shownUtil = u => u === state.utilA || (!solo() && u === state.utilB);
 const uColor = u => u === state.utilA ? css("--u0") : u === state.utilB ? css("--u1") : css("--ink3");
 
 // ---------- compute ----------
-let RESULT = { pairs: [], checked: 0 }, VIEW = [], CLUSTERS = [];
+let RESULT = { pairs: [], checked: 0 }, VIEW = [], CLUSTERS = [], dataVersion = 0;
 let SOLO = [];
 function compute() {
   if (solo()) {
@@ -48,10 +50,14 @@ function compute() {
       .sort((a, b) => mon(a.start) - mon(b.start) || a.name.localeCompare(b.name));
     return;
   }
-  RESULT = findOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: state.mode });
+  // The pair comparison only reruns when its inputs change; search and tier toggles just re-filter the cached pairs.
+  const res = Engine.cachedOverlaps(PROJECTS, { utilA: state.utilA, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: state.mode }, dataVersion);
+  if (res !== RESULT) {
+    RESULT = res;
+    // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance slider says
+    CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
+  }
   const q = state.q.toLowerCase();
-  // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance slider says
-  CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
   VIEW = RESULT.pairs.filter(x => state.tiers.has(Math.min(x.tier, 4)) &&
     (!q || (x.p.name + " " + x.q.name + " " + x.p.desc + " " + x.q.desc).toLowerCase().includes(q)));
 }
@@ -97,16 +103,16 @@ function drawMap() {
     .attr("letter-spacing", d => d[3] ? ".2em" : 0).attr("font-family", d => d[3] ? css("--display") : null).text(d => d[0]);
   // existing infrastructure: built-in plants and lines, plus any backdrop layer imported (for example HIFLD)
   const eg = z.append("g").attr("id", "existing").style("display", state.exist ? null : "none").selectAll("g").data(EXIST.filter(e => e.backdrop || shownUtil(e.utility))).join("g").style("cursor", "help")
-    .on("mousemove", (ev, d) => tip(ev, `<b>${esc(d.name)}</b><br>Existing ${esc(lbl(d.utility))} ${d.coords.length > 1 ? "line" : "asset"}${d.kv > 0 ? " · " + d.kv + " kV" : ""}${d.backdrop ? "<br>From " + esc(d.dsName) : ""}`)).on("mouseleave", hideTip);
-  eg.filter(d => d.coords.length > 1).append("path").attr("d", d => d3.line()(d.coords.map(pt))).attr("fill", "none").attr("stroke", css("--ink3")).attr("stroke-width", 2.5).attr("stroke-opacity", .6);
-  eg.filter(d => d.coords.length === 1).append("path").attr("class", "dia").attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1])
+    .on("mousemove", (ev, d) => tip(ev, `<b>${esc(d.name)}</b><br>Existing ${esc(lbl(d.utility))} ${Engine.isLine(d) ? "line" : "asset"}${d.kv > 0 ? " · " + d.kv + " kV" : ""}${d.backdrop ? "<br>From " + esc(d.dsName) : ""}`)).on("mouseleave", hideTip);
+  eg.filter(d => Engine.isLine(d)).append("path").attr("d", d => lineD(d, pt)).attr("fill", "none").attr("stroke", css("--ink3")).attr("stroke-width", 2.5).attr("stroke-opacity", .6);
+  eg.filter(d => !Engine.isLine(d)).append("path").attr("class", "dia").attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1])
     .attr("fill", css("--panel")).attr("stroke", d => uColor(d.utility)).attr("stroke-width", 1.5);
   z.append("g").attr("id", "links");
   z.append("g").attr("id", "projs");
   z.append("g").attr("id", "sparks");
   z.append("g").attr("id", "yards");
   // existing-asset names sit above project lines, with a halo so a line never hides them
-  z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => !e.backdrop && shownUtil(e.utility) && e.coords.length === 1)).join("text").attr("class", "exl ex")
+  z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => !e.backdrop && shownUtil(e.utility) && !Engine.isLine(e))).join("text").attr("class", "exl ex")
     .attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1]).attr("data-fs", 10).attr("fill", css("--ink2"))
     .attr("stroke", raster ? "rgba(255,255,255,.8)" : css("--land")).attr("stroke-width", 3).attr("paint-order", "stroke").attr("stroke-linejoin", "round").style("pointer-events", "none").text(d => d.name.split(" (")[0]);
   z.selectAll("#toplabels text.ex").style("display", state.exist ? null : "none");
@@ -222,19 +228,19 @@ function renderMap() {
   // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite.
   const raster = !!BASEMAPS[state.basemap].url, lightMap = state.basemap === "streets" || state.basemap === "terrain";
   const wide = d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + (raster ? 1.5 : 0) + (d.ph === "building" ? 1.5 : 0);
-  G.select("path.casing").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
+  G.select("path.casing").attr("d", d => lineD(d.p, pt))
     .attr("fill", "none").attr("stroke", lightMap ? "rgba(20,24,28,.85)" : raster ? "rgba(255,255,255,.9)" : css("--panel")).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
     .attr("stroke-width", d => wide(d) + (raster ? 4 : 3));
   const phaseOp = { all: 1, building: 1, done: .5, planned: .14 };
   G.attr("opacity", d => focus ? (d.hi ? 1 : .22) : (d.on ? 1 : .3) * phaseOp[d.ph]).classed("building", d => d.ph === "building").style("cursor", "pointer")
     .on("mousemove", (ev, d) => showTip(ev, d.p)).on("mouseleave", hideTip)
     .on("click", (ev, d) => { if (solo()) return select({ p: d.p, solo: true }); const pr = VIEW.find(x => x.p === d.p || x.q === d.p); if (pr) select(pr); });
-  G.select("path.line").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
+  G.select("path.line").attr("d", d => lineD(d.p, pt))
     .attr("fill", "none").attr("stroke", d => uColor(d.p.utility)).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
     .attr("stroke-width", wide)
     .attr("stroke-dasharray", d => d.p.loc === "low" ? "6 4" : null);
   G.select("circle").attr("cx", d => pt(d.p.coords[0])[0]).attr("cy", d => pt(d.p.coords[0])[1])
-    .attr("data-r", d => d.p.coords.length > 1 ? 0 : (d.hi ? 7 : 4.5))
+    .attr("data-r", d => Engine.isLine(d.p) ? 0 : (d.hi ? 7 : 4.5))
     .attr("fill", d => d.p.loc === "low" ? css("--panel") : uColor(d.p.utility)).attr("stroke", d => raster && d.p.loc !== "low" ? (lightMap ? "rgba(20,24,28,.9)" : "#fff") : uColor(d.p.utility)).attr("stroke-width", 2);
   // sparks: flagged pairs that are both under construction at the scrubbed month
   const sp = t == null ? [] : shown.filter(x => live(x, t));
@@ -317,7 +323,7 @@ function drawYards(focus) {
 function renderStats() {
   if (solo()) {
     const ps = PROJECTS.filter(p => p.utility === state.utilA), costs = ps.map(Engine.estCost);
-    const lineKm = ps.filter(p => p.coords.length > 1).reduce((t, p) => t + Engine.lengthKm(p), 0);
+    const lineKm = ps.filter(Engine.isLine).reduce((t, p) => t + Engine.lengthKm(p), 0);
     const years = ps.map(p => +p.in_service.slice(0, 4));
     $("#stats").innerHTML = [
       [`${ps.length}`, `planned projects for ${lbl(state.utilA)}`],
@@ -481,7 +487,7 @@ function renderDetail() {
 
 // ---------- what-if schedule shift ----------
 const short = p => (lbl(p.utility).split(" (")[0].split(" ")[0]) + " project";
-const shiftISO = (iso, m) => { const d = new Date(iso + "T00:00:00Z"), day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + m); d.setUTCDate(Math.min(day, 28)); return d.toISOString().slice(0, 10); };
+const shiftISO = Engine.shiftISO;
 // The pair recomputed with one project's whole build window moved by m months.
 function whatIf(x, who, m) {
   if (!m) return x;
@@ -492,12 +498,8 @@ function whatIf(x, who, m) {
   return y;
 }
 // Smallest move that gives the two builds a real shared window: 6 months, or all of the shorter build.
-function recommendShift(x, who) {
-  const dur = p => mon(p.in_service) - mon(p.start), need = Math.min(6, dur(x.p), dur(x.q));
-  if (Engine.windowOverlap(x.p, x.q) >= need) return 0;
-  for (let a = 1; a <= 60; a++) for (const m of [-a, a]) if (Engine.windowOverlap(whatIf(x, who, m).p, whatIf(x, who, m).q) >= need) return m;
-  return null;
-}
+// Doesn't depend on the slider, so the engine works it out once per pair and remembers it.
+const recommendShift = Engine.recommendShift;
 const moLabel = m => m === 0 ? "as planned" : `${Math.abs(m)} month${Math.abs(m) === 1 ? "" : "s"} ${m < 0 ? "earlier" : "later"}`;
 function updateWhatIf(x) {
   const { who, shift } = state.wi, y = whatIf(x, who, shift), rec = recommendShift(x, who);
@@ -592,14 +594,14 @@ function openBrief(x0) {
 }
 // Small locator map for the brief: GA and SC outlines, the seam, both projects and the closest-point link.
 function briefMap(x) {
-  const W = 300, H = 210, feat = p => p.coords.length > 1 ? { type: "LineString", coordinates: p.coords.map(c => [c[1], c[0]]) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
+  const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
   const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
   if (pr.scale() > 60000) pr.scale(60000).translate(pr.translate());
   const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
   const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#EEF1EF" stroke="#B9C3C1" stroke-width=".8"/>`).join("");
   const sc = seamCoords(), seam = sc ? `<path d="${path({ type: "LineString", coordinates: sc })}" fill="none" stroke="#9A6B2F" stroke-width="1.4" stroke-dasharray="4 3"/>` : "";
-  const proj1 = (p, c) => p.coords.length > 1 ? `<path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>` : `<circle cx="${P(p.coords[0])[0]}" cy="${P(p.coords[0])[1]}" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
+  const proj1 = (p, c) => Engine.isLine(p) ? `<path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>` : `<circle cx="${P(p.coords[0])[0]}" cy="${P(p.coords[0])[1]}" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
   const [a, b] = [P(x.ca), P(x.cb)];
   return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map"><rect width="${W}" height="${H}" fill="#DCE6EA"/>${st}${seam}${proj1(x.p, "#0E6F8C")}${proj1(x.q, "#B4560F")}
     <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B0183D" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B0183D" stroke-width="1.5"/>
@@ -683,7 +685,7 @@ function renderDatasets() {
   $("#datasets").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
     const id = b.dataset.rm;
     PROJECTS = PROJECTS.filter(p => p.dataset !== id);
-    for (let i = EXIST.length - 1; i >= 0; i--) if (EXIST[i].dataset === id) EXIST.splice(i, 1);
+    for (let i = EXIST.length - 1; i >= 0; i--) if (EXIST[i].dataset === id) EXIST.splice(i, 1); dataVersion++;
     DATASETS.splice(DATASETS.findIndex(d => d.id === id), 1);
     renderDatasets(); rebuild();
   });
@@ -706,13 +708,13 @@ function importParsed(input, filename) {
     res.projects.forEach(p => p.dataset = id);
     if (backdrop) {
       // existing lines and substations: drawn under the plans for context, never paired or ranked
-      res.projects.forEach(p => { p.existing = p.backdrop = true; p.dsName = filename; EXIST.push(p); });
+      res.projects.forEach(p => { p.existing = p.backdrop = true; p.dsName = filename; EXIST.push(p); }); dataVersion++;
       DATASETS.push({ id, name: filename, count: res.projects.length, backdrop: true });
       state.exist = true; $("#exOn").checked = true;
       renderDatasets(); drawMap(); refresh();
       return `<p class="ok">Loaded ${res.projects.length} existing lines and facilities from ${esc(filename)} as a background layer.</p>`;
     }
-    PROJECTS = PROJECTS.concat(res.projects);
+    PROJECTS = PROJECTS.concat(res.projects); dataVersion++;
     const utils = [...new Set(res.projects.map(p => p.utility))];
     DATASETS.push({ id, name: filename, count: res.projects.length, utils });
     // Compare the new utility against whichever current utility is nearest to its projects.
@@ -787,7 +789,8 @@ $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === 
 $("#utilB").onchange = e => { state.utilB = e.target.value; rebuild(); };
 $("#dist").oninput = e => { state.D = +e.target.value; refresh(); };
 $("#buf").oninput = e => { state.B = +e.target.value; refresh(); };
-$("#q").oninput = e => { state.q = e.target.value; refresh(); };
+let qTimer = null;
+$("#q").oninput = e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value; refresh(); }, 150); };
 for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => {
   state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh();
 };

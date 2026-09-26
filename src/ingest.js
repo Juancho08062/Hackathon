@@ -5,7 +5,7 @@
   const Engine = root.Engine || (typeof require !== "undefined" ? require("./engine.js") : null);
 
   const ALIASES = {
-    utility: ["utility", "owner", "company", "transmission_owner", "to", "utility_name", "entity", "member"],
+    utility: ["utility", "owner", "company", "transmission_owner", "utility_name", "entity", "member"],
     name: ["name", "project", "project_name", "title", "description_short", "project_title", "facility", "facility_name", "proj_name"],
     desc: ["desc", "description", "scope", "details", "notes"],
     kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv", "kv_nominal"],
@@ -69,15 +69,27 @@
     if (/new|construct|line|build/.test(s)) return "new_line";
     return hasLine ? "new_line" : "substation";
   }
-  // Accepts 2029, "2029-06", "6/1/2029", "2029-06-01", "Summer 2027".
+  // A real calendar date as ISO, or null: month 1 to 12, day clamped to the month's last day.
+  const ymd = (y, mo, d) => {
+    if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return null;
+    const last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return `${y}-${String(mo).padStart(2, "0")}-${String(Math.min(last, d)).padStart(2, "0")}`;
+  };
+  // Accepts 2029, "2029-06", "6/1/2029", "2029-06-01", "Summer 2027", and day-first "25/12/2029" when the first number
+  // can't be a month. Returns null for anything it can't read as a real date (for example 2029-13).
   function toDate(v) {
     if (v == null || v === "") return null;
     const s = String(v).trim();
     let m;
     if ((m = s.match(/^(\d{4})$/))) return { iso: `${m[1]}-06-01`, precision: "year" };
-    if ((m = s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/))) return { iso: `${m[1]}-${m[2].padStart(2, "0")}-${(m[3] || "01").padStart(2, "0")}`, precision: m[3] ? "day" : "month" };
-    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; const last = new Date(Date.UTC(+y, +m[1], 0)).getUTCDate(); return { iso: `${y}-${m[1].padStart(2, "0")}-${String(Math.min(last, +m[2])).padStart(2, "0")}`, precision: "day" }; }
+    if ((m = s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/))) { const iso = ymd(+m[1], +m[2], m[3] ? +m[3] : 1); return iso && { iso, precision: m[3] ? "day" : "month" }; }
+    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) {
+      const y = +(m[3].length === 2 ? "20" + m[3] : m[3]), a = +m[1], b = +m[2];
+      const iso = a > 12 ? ymd(y, b, a) : ymd(y, a, b);
+      return iso && { iso, precision: "day" };
+    }
     if ((m = s.match(/(spring|summer|fall|autumn|winter)\s+(\d{4})/i))) { const mo = { spring: "04", summer: "07", fall: "10", autumn: "10", winter: "01" }[m[1].toLowerCase()]; return { iso: `${m[2]}-${mo}-01`, precision: "season" }; }
+    if (/^\d+([/-]\d+)+$/.test(s)) return null; // numeric dates that failed the checks above aren't guessed at
     const d = new Date(s); return isNaN(d) ? null : { iso: d.toISOString().slice(0, 10), precision: "day" };
   }
   const num = v => { const n = parseFloat(String(v ?? "").replace(/[$,\s]/g, "").replace(/(\d)k$/i, "$1e3").replace(/(\d)m$/i, "$1e6")); return isFinite(n) ? n : null; };
@@ -85,8 +97,11 @@
   const plainText = v => { if (v == null) return ""; if (typeof v === "object") v = v.value ?? ""; return String(v).replace(/<(br|\/p|\/tr)[^>]*>/gi, " ").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim(); };
   function minusMonths(iso, m) { const d = new Date(iso + "T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() - m); return d.toISOString().slice(0, 10); }
 
-  // row: flat object; coords: optional [[lat, lon], ...] (from GeoJSON). Returns { project } or { error }.
+  // row: flat object; coords: optional [[lat, lon], ...] or, for multi-part geometry, a list of such parts (from GeoJSON).
+  // Returns { project } or { error }.
   function toProject(row, coords, defaults, i) {
+    let parts = null;
+    if (coords && coords.length && Array.isArray(coords[0][0])) { parts = coords.filter(c => c.length); coords = parts.flat(); if (parts.length < 2) parts = null; }
     const ends = ["sub_1", "sub_2"].map(k => Object.entries(row).find(([c]) => norm(c) === k)).filter(e => e && e[1] && !/^not available$/i.test(e[1])).map(e => e[1]);
     const name = pick(row, "name") || (defaults.existing && (ends.length ? ends.join(" – ") : "Existing facility")), utility = pick(row, "utility") || defaults.utility;
     if (!name) return { error: "no project name" };
@@ -97,33 +112,38 @@
       coords = [[lat, lon]].concat(lat2 != null && lon2 != null ? [[lat2, lon2]] : []);
     }
     if (coords.some(([a, b]) => Math.abs(a) > 90 || Math.abs(b) > 180)) return { error: "coordinates out of range" };
-    const isd = toDate(pick(row, "in_service")) || toDate(defaults.in_service);
+    const rawIsd = pick(row, "in_service"), rawStart = pick(row, "start");
+    if (rawIsd && !toDate(rawIsd)) return { error: `in-service date "${rawIsd}" isn't a real date` };
+    if (rawStart && !toDate(rawStart)) return { error: `start date "${rawStart}" isn't a real date` };
+    const isd = toDate(rawIsd) || toDate(defaults.in_service);
     if (!isd) return { error: "no in-service date (add a column, or set a default in-service date above)" };
     const kv = num(pick(row, "kv")) || 115;
     const type = toType(pick(row, "type") || name, coords.length > 1);
     const kmv = num(pick(row, "km")), miles = num(pick(row, "miles")) ?? (kmv ? kmv / 1.609 : null);
-    const st = toDate(pick(row, "start")) || toDate(defaults.start);
+    const st = toDate(rawStart) || toDate(defaults.start);
     return {
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),
         name: String(name).trim(), desc: plainText(pick(row, "desc")), kv, miles, type,
         in_service: isd.iso, date_precision: isd.precision === "day" ? "day" : "year",
         start: st ? st.iso : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
-        cost: num(pick(row, "cost")), coords, loc: "med", source: defaults.source || "", page: "", imported: true,
+        cost: num(pick(row, "cost")), coords, ...(parts ? { parts } : {}), loc: "med", source: defaults.source || "", page: "", imported: true,
       },
     };
   }
 
-  // Reduce any GeoJSON geometry to the [lon, lat] points Seamline measures from.
-  function geomPoints(g) {
+  // Reduce any GeoJSON geometry to the parts Seamline measures from: each part is a list of [lon, lat] points (a line)
+  // or a single point. Separate parts stay separate, so nothing is measured across the gap between them.
+  function geomParts(g) {
     if (!g) return null;
     switch (g.type) {
-      case "Point": return [g.coordinates];
-      case "MultiPoint": case "LineString": return g.coordinates;
-      case "MultiLineString": return g.coordinates.flat();
-      case "Polygon": return [centroid(g.coordinates[0])];
-      case "MultiPolygon": return g.coordinates.map(p => centroid(p[0]));
-      case "GeometryCollection": { const parts = g.geometries.map(geomPoints).filter(Boolean); return parts.length ? parts.sort((x, y) => y.length - x.length)[0] : null; }
+      case "Point": return [[g.coordinates]];
+      case "LineString": return [g.coordinates];
+      case "MultiPoint": return g.coordinates.map(c => [c]);
+      case "MultiLineString": return g.coordinates.filter(l => l.length);
+      case "Polygon": return [[centroid(g.coordinates[0])]];
+      case "MultiPolygon": return g.coordinates.map(p => [centroid(p[0])]);
+      case "GeometryCollection": { const parts = g.geometries.flatMap(x => geomParts(x) || []); return parts.length ? parts : null; }
       default: return null;
     }
   }
@@ -131,9 +151,10 @@
     const list = Array.isArray(gj) ? gj : [gj];
     const feats = list.flatMap(x => x.type === "FeatureCollection" ? x.features : x.type === "Feature" ? [x] : []);
     return feats.map((f, i) => {
-      const c = geomPoints(f.geometry);
-      if (!c || !c.length) return { error: `unsupported geometry ${(f.geometry && f.geometry.type) || "(none)"}` };
-      return toProject(f.properties || {}, c.map(([lon, lat]) => [lat, lon]), defaults, i);
+      const parts = geomParts(f.geometry);
+      if (!parts || !parts.length) return { error: `unsupported geometry ${(f.geometry && f.geometry.type) || "(none)"}` };
+      const ll = parts.map(part => part.map(([lon, lat]) => [lat, lon]));
+      return toProject(f.properties || {}, ll.length === 1 ? ll[0] : ll, defaults, i);
     });
   }
   const centroid = ring => [ring.reduce((s, p) => s + p[0], 0) / ring.length, ring.reduce((s, p) => s + p[1], 0) / ring.length];

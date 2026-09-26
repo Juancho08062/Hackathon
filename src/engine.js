@@ -18,9 +18,12 @@
     const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
     return o(a, b, c) !== o(a, b, d) && o(c, d, a) !== o(c, d, b);
   }
+  // A project is one or more parts (a multi-part line, or several points); coords is every point, parts keeps them apart
+  // so no segment is ever drawn or measured between two separate parts.
+  const partsOf = p => p.parts || [p.coords];
+  const isLine = p => partsOf(p).some(c => c.length > 1);
   function segments(p) {
-    const c = p.coords.map(xy);
-    return c.length === 1 ? [[c[0], c[0]]] : c.slice(1).map((v, i) => [c[i], v]);
+    return partsOf(p).flatMap(part => { const c = part.map(xy); return c.length === 1 ? [[c[0], c[0]]] : c.slice(1).map((v, i) => [c[i], v]); });
   }
   // Distance between the closest points of two projects (lines or points), not their centers.
   // Returns [km, closest point on p, closest point on q] with points as [lat, lon].
@@ -39,7 +42,7 @@
     return [best[0], unxy(best[1]), unxy(best[2])];
   }
   const lengthKm = p => p.miles ? p.miles * 1.609
-    : p.coords.length > 1 ? segments(p).reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1]), 0) : 0;
+    : isLine(p) ? segments(p).reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1]), 0) : 0;
 
   // ---------- distance tiers (challenge spec) ----------
   const TIERS = [
@@ -242,6 +245,35 @@
     return { pairs: out, checked: A.length * B.length };
   }
 
-  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
+  // findOverlaps, remembered: the same projects, options and data version return the cached result, so filtering
+  // and search never re-run the comparison. version must change whenever the project list or cost assumptions change.
+  let lastKey = null, lastResult = null;
+  function cachedOverlaps(projects, opts, version) {
+    const key = JSON.stringify([opts, projects.length, version, ASSUME]);
+    if (key !== lastKey) { lastKey = key; lastResult = findOverlaps(projects, opts); }
+    return lastResult;
+  }
+
+  // ---------- what-if schedule shift ----------
+  // An ISO date moved by m whole months (day capped at 28 so every month has it).
+  const shiftISO = (iso, m) => { const d = new Date(iso + "T00:00:00Z"), day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + m); d.setUTCDate(Math.min(day, 28)); return d.toISOString().slice(0, 10); };
+  // Smallest move of one project ("p" or "q") that gives the two builds a real shared window: 6 months, or all of the
+  // shorter build. 0 if they already share it, null if no move within 5 years does. Remembered per pair and dates.
+  const recCache = new Map();
+  function recommendShift(x, who) {
+    const key = `${x.p.id}|${x.q.id}|${who}|${x.p.start}|${x.p.in_service}|${x.q.start}|${x.q.in_service}`;
+    if (recCache.has(key)) return recCache.get(key);
+    recommendShift.computed++;
+    const dur = p => monthIndex(p.in_service) - monthIndex(p.start), need = Math.min(6, dur(x.p), dur(x.q));
+    const moved = m => { const o = x[who], n = { start: shiftISO(o.start, m), in_service: shiftISO(o.in_service, m) }; return who === "p" ? windowOverlap(n, x.q) : windowOverlap(x.p, n); };
+    let rec = null;
+    if (windowOverlap(x.p, x.q) >= need) rec = 0;
+    else for (let a = 1; a <= 60 && rec == null; a++) for (const m of [-a, a]) if (moved(m) >= need) { rec = m; break; }
+    recCache.set(key, rec);
+    return rec;
+  }
+  recommendShift.computed = 0;
+
+  const api = { cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);
