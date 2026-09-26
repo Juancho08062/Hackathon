@@ -10,7 +10,6 @@ for key, text in {
     "/*LIBS*/": src("libs.js"),
     "/*FORMATS*/": src("formats.js"),
     "/*VEHICLES*/": src("vehicles3d.js"),
-    "/*REALISM*/": src("realism3d.js"),
     "/*SCENE3D*/": src("scene3d.js"),
     "/*MAP*/": src("map.js"),
     "/*AGENT*/": src("agent.js"),
