@@ -269,5 +269,27 @@ t("schedule optimizer: on the built-in plans a few moves raise expected savings"
   const again = E.optimizeSchedule(pairs, m.slips, { today: m.as_of, maxMoves: 6 });
   assert.deepStrictEqual(again.moves.map(x => [x.id, x.months]), r.moves.map(x => [x.id, x.months]));
 });
+// The projection is flat: one fixed latitude for the whole map (LAT0 in engine.js). That is an approximation, and
+// the tier boundaries are the product's central claim, so the error is measured rather than assumed. Today the worst
+// flagged pair is 0.35 km off geodesic distance and no pair changes tier. This test keeps it that way: widen the
+// footprint or touch the projection and it fails instead of quietly reporting wrong distances.
+t("flat projection stays close to geodesic distance", () => {
+  const R = 6371.0088, rad = d => d * Math.PI / 180;
+  const geodesic = ([lat1, lon1], [lat2, lon2]) => {
+    const dLat = rad(lat2 - lat1), dLon = rad(lon2 - lon1);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+  const { pairs } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
+  assert(pairs.length > 100, "expected the built-in comparison to flag a meaningful number of pairs");
+  let worst = 0, flips = 0;
+  for (const x of pairs) {
+    const km = geodesic(x.ca, x.cb);
+    worst = Math.max(worst, Math.abs(km - x.km));
+    if (E.tierOf(km) !== E.tierOf(x.km)) flips++;
+  }
+  assert(worst < 0.5, `worst deviation from geodesic distance is ${worst.toFixed(3)} km`);
+  assert.strictEqual(flips, 0, `${flips} pairs would change tier if measured geodesically`);
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);
