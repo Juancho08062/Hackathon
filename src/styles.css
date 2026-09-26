@@ -121,7 +121,7 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 .kpi b{font-size:20px;font-weight:600;line-height:1.2}
 .kpi span{font-size:12px;font-weight:500}
 .kpi small{font-size:11px;color:var(--ink2)}
-.left{display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
+.left{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 
 /* ---------- map ---------- */
@@ -130,38 +130,11 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 .maptools{position:absolute;top:10px;right:10px;left:10px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;z-index:2;pointer-events:none}
 .maptools>*{pointer-events:auto}
 .maptools .seg,.maptools .btn{box-shadow:0 1px 3px rgba(0,0,0,.12)}
-/* ---------- the assistant's standing invitation ---------- */
-/* Top-left of the map. The walker sits at right:10px top:52px and this pill used to be at the same coordinates, so one
-   covered the other; the legend owns the bottom-left and the map tools are right-aligned along the top. */
-.askfab{position:absolute;left:10px;bottom:calc(var(--legend-h,0px) + 10px);z-index:3;display:inline-flex;align-items:center;gap:6px;
-  font:600 12.5px var(--body);color:#fff;background:#12181F;border:0;border-radius:999px;padding:8px 14px 8px 11px;
-  cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.24)}
-.askfab .spark{width:15px;height:15px;color:#7EB3FF}
+/* ---------- Geo, the assistant: its chat mark ---------- */
 .geo-ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
 .geo-ico circle{fill:currentColor;stroke:none}
 .rail .ask-tab .spark.geo-ico{fill:none;stroke:currentColor}
-/* Geo's first-visit greeting, a speech bubble above its button; static, and gone once Geo has been opened */
-.geo-hi{position:absolute;left:10px;bottom:calc(var(--legend-h,0px) + 54px);z-index:3;max-width:250px;padding:9px 30px 9px 12px;
-  background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;font-size:12.5px;line-height:1.4;box-shadow:0 2px 10px rgba(0,0,0,.16)}
-.geo-hi::after{content:"";position:absolute;left:22px;bottom:-6px;width:10px;height:10px;background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
-.geo-hi[hidden]{display:none}
-.geo-hi b{display:block}
-.geo-x{position:absolute;right:4px;top:4px;width:22px;height:22px;border:0;background:none;color:var(--ink2);font-size:16px;line-height:1;cursor:pointer;border-radius:6px}
-.geo-x:hover{background:var(--line)}
 .ask-sub{margin:-2px 0 8px;color:var(--ink2)}
-.askfab[hidden]{display:none}
-/* The halo: a rotating conic gradient behind the pill. A gradient's own angle cannot be animated without @property,
-   so the element carrying it turns instead. */
-.askfab::before{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-1;
-  background:conic-gradient(from 0deg,#2F81F7,#7EB3FF,#A371F7,#2F81F7);animation:spin 4.5s linear infinite}
-/* And a ring that breathes outward, so the button moves even when nothing else on the page does. */
-.askfab::after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #2F81F7;
-  animation:ring 2.4s ease-out infinite;pointer-events:none}
-@keyframes spin{to{transform:rotate(1turn)}}
-@keyframes ring{0%{opacity:.55;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.5)}}
-.askfab:hover{background:#1B2530}
-.askfab:focus-visible{outline:2px solid #2F81F7;outline-offset:3px}
-@media (prefers-reduced-motion: reduce){.askfab::before,.askfab::after{animation:none}.askfab::after{opacity:0}}
 
 .legend{position:absolute;left:10px;bottom:10px;z-index:2;display:grid;gap:5px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);font-size:11.5px;box-shadow:0 1px 3px rgba(0,0,0,.12);max-width:calc(100% - 140px)}
 .lg-row{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
@@ -526,3 +499,24 @@ body.modal-open .app{visibility:hidden}
 :root[data-theme="dark"] .tag.green,:root[data-theme="dark"] .st.pass{background:#12351F;color:#7EE2A0}
 :root[data-theme="dark"] .st.fixed{background:#0F2E45;color:#8CC8FF}
 :root[data-theme="dark"] .st.warn{background:#3A2E0B;color:#F2C774}
+
+/* Side panel hidden: the rail, the filter bar and the map fill the window. The column shrinks to nothing rather than
+   leaving the grid, so the map keeps its column. */
+.work{transition:none}
+.work.min{grid-template-columns:64px 0 minmax(0,1fr)}
+.work.min .side{overflow:hidden;border:0;visibility:hidden}
+.paneltog{position:absolute;left:0;top:50%;z-index:4;transform:translateY(-50%);width:18px;height:44px;padding:0;display:grid;place-items:center;
+  border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;background:var(--panel);color:var(--ink2);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.paneltog svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.paneltog:hover{color:var(--ink);background:var(--panel2)}
+.paneltog:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.work.min .paneltog svg{transform:scaleX(-1)}
+/* The filters that matter most, always in view over the map */
+.mapbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 12px 7px 26px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12px;min-width:0}
+.mapbar .mb-lbl{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.mapbar .mb-sep{width:1px;height:18px;background:var(--line);margin:0 2px}
+.mapbar select{font:inherit;font-size:12px;height:26px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:0 4px}
+.mapbar .mb-more{margin-left:auto}
+.mapbar .chips,.mapbar .seg{flex:none;flex-wrap:nowrap}
+/* On a 13-inch screen the tagline would push Filters and More off the header */
+@media (max-width:1360px){.appbar .tagline{display:none}}

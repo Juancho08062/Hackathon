@@ -130,7 +130,7 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 .kpi b{font-size:20px;font-weight:600;line-height:1.2}
 .kpi span{font-size:12px;font-weight:500}
 .kpi small{font-size:11px;color:var(--ink2)}
-.left{display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
+.left{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 
 /* ---------- map ---------- */
@@ -139,38 +139,11 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 .maptools{position:absolute;top:10px;right:10px;left:10px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;z-index:2;pointer-events:none}
 .maptools>*{pointer-events:auto}
 .maptools .seg,.maptools .btn{box-shadow:0 1px 3px rgba(0,0,0,.12)}
-/* ---------- the assistant's standing invitation ---------- */
-/* Top-left of the map. The walker sits at right:10px top:52px and this pill used to be at the same coordinates, so one
-   covered the other; the legend owns the bottom-left and the map tools are right-aligned along the top. */
-.askfab{position:absolute;left:10px;bottom:calc(var(--legend-h,0px) + 10px);z-index:3;display:inline-flex;align-items:center;gap:6px;
-  font:600 12.5px var(--body);color:#fff;background:#12181F;border:0;border-radius:999px;padding:8px 14px 8px 11px;
-  cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.24)}
-.askfab .spark{width:15px;height:15px;color:#7EB3FF}
+/* ---------- Geo, the assistant: its chat mark ---------- */
 .geo-ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
 .geo-ico circle{fill:currentColor;stroke:none}
 .rail .ask-tab .spark.geo-ico{fill:none;stroke:currentColor}
-/* Geo's first-visit greeting, a speech bubble above its button; static, and gone once Geo has been opened */
-.geo-hi{position:absolute;left:10px;bottom:calc(var(--legend-h,0px) + 54px);z-index:3;max-width:250px;padding:9px 30px 9px 12px;
-  background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;font-size:12.5px;line-height:1.4;box-shadow:0 2px 10px rgba(0,0,0,.16)}
-.geo-hi::after{content:"";position:absolute;left:22px;bottom:-6px;width:10px;height:10px;background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
-.geo-hi[hidden]{display:none}
-.geo-hi b{display:block}
-.geo-x{position:absolute;right:4px;top:4px;width:22px;height:22px;border:0;background:none;color:var(--ink2);font-size:16px;line-height:1;cursor:pointer;border-radius:6px}
-.geo-x:hover{background:var(--line)}
 .ask-sub{margin:-2px 0 8px;color:var(--ink2)}
-.askfab[hidden]{display:none}
-/* The halo: a rotating conic gradient behind the pill. A gradient's own angle cannot be animated without @property,
-   so the element carrying it turns instead. */
-.askfab::before{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-1;
-  background:conic-gradient(from 0deg,#2F81F7,#7EB3FF,#A371F7,#2F81F7);animation:spin 4.5s linear infinite}
-/* And a ring that breathes outward, so the button moves even when nothing else on the page does. */
-.askfab::after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #2F81F7;
-  animation:ring 2.4s ease-out infinite;pointer-events:none}
-@keyframes spin{to{transform:rotate(1turn)}}
-@keyframes ring{0%{opacity:.55;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.5)}}
-.askfab:hover{background:#1B2530}
-.askfab:focus-visible{outline:2px solid #2F81F7;outline-offset:3px}
-@media (prefers-reduced-motion: reduce){.askfab::before,.askfab::after{animation:none}.askfab::after{opacity:0}}
 
 .legend{position:absolute;left:10px;bottom:10px;z-index:2;display:grid;gap:5px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);font-size:11.5px;box-shadow:0 1px 3px rgba(0,0,0,.12);max-width:calc(100% - 140px)}
 .lg-row{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
@@ -536,6 +509,27 @@ body.modal-open .app{visibility:hidden}
 :root[data-theme="dark"] .st.fixed{background:#0F2E45;color:#8CC8FF}
 :root[data-theme="dark"] .st.warn{background:#3A2E0B;color:#F2C774}
 
+/* Side panel hidden: the rail, the filter bar and the map fill the window. The column shrinks to nothing rather than
+   leaving the grid, so the map keeps its column. */
+.work{transition:none}
+.work.min{grid-template-columns:64px 0 minmax(0,1fr)}
+.work.min .side{overflow:hidden;border:0;visibility:hidden}
+.paneltog{position:absolute;left:0;top:50%;z-index:4;transform:translateY(-50%);width:18px;height:44px;padding:0;display:grid;place-items:center;
+  border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;background:var(--panel);color:var(--ink2);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.paneltog svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.paneltog:hover{color:var(--ink);background:var(--panel2)}
+.paneltog:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.work.min .paneltog svg{transform:scaleX(-1)}
+/* The filters that matter most, always in view over the map */
+.mapbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 12px 7px 26px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12px;min-width:0}
+.mapbar .mb-lbl{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.mapbar .mb-sep{width:1px;height:18px;background:var(--line);margin:0 2px}
+.mapbar select{font:inherit;font-size:12px;height:26px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:0 4px}
+.mapbar .mb-more{margin-left:auto}
+.mapbar .chips,.mapbar .seg{flex:none;flex-wrap:nowrap}
+/* On a 13-inch screen the tagline would push Filters and More off the header */
+@media (max-width:1360px){.appbar .tagline{display:none}}
+
 </style>
 
 <div class="app">
@@ -593,6 +587,15 @@ body.modal-open .app{visibility:hidden}
       <div class="panel" id="panel" role="tabpanel" aria-label="Selected view" tabindex="-1"></div>
     </aside>
     <section class="left" aria-label="Map and build windows">
+      <button type="button" class="paneltog" id="panelTog" aria-controls="panel" aria-expanded="true" title="Hide the side panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="mapbar" role="group" aria-label="Map filters">
+        <span class="mb-lbl">Show routes</span><div class="chips" id="chips" role="group" aria-label="Show routes by distance"></div>
+        <span class="mb-sep" aria-hidden="true"></span>
+        <label class="mb-lbl" for="dist2">Within</label><select id="dist2" aria-label="Overlap distance"><option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40">40 km</option><option value="60">60 km</option><option value="100">100 km</option></select>
+        <span class="mb-sep" aria-hidden="true"></span>
+        <span class="mb-lbl">Building</span><div class="seg" role="group" aria-label="Build period"><button type="button" data-h="12" aria-pressed="false">Next 12 mo</button><button type="button" data-h="36" aria-pressed="false">Next 3 yr</button><button type="button" data-h="0" aria-pressed="true">All dates</button></div>
+        <button type="button" class="btn sm mb-more" id="moreFilters">More filters</button>
+      </div>
       <div class="mapwrap">
         <div id="map" role="region" aria-label="Map of planned projects"></div>
         <div class="maptools">
@@ -601,10 +604,6 @@ body.modal-open .app{visibility:hidden}
           <button type="button" class="btn tog" id="bgrid" aria-pressed="true" title="Today's transmission lines from OpenStreetMap">Grid</button>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
-        <button type="button" class="askfab" id="askFab" aria-label="Chat with Geo about these plans">
-          <svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>
-          <span>Ask Geo</span></button>
-        <div class="geo-hi" id="geoHi" hidden><b>Hey, I'm Geo.</b> Ask me which overlaps matter and what the two utilities could share.<button type="button" class="geo-x" id="geoHiX" aria-label="Dismiss">×</button></div>
         <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
           <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
         </button>
@@ -4682,8 +4681,6 @@ function renderTimeline() {
 function renderTabs() {
   document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
-  $("#askFab").hidden = state.tab === "ask";
-  $("#geoHi").hidden = state.tab === "ask" || store.get("askSeen", false);
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -4700,6 +4697,7 @@ function renderTabs() {
 // Ask toggles; every other rail item switches. Leaving Ask returns to the view that was open before it, which is what
 // a panel you opened over your work should do.
 function toggleTab(t) {
+  if (panelMin()) { setPanel(false); if (t === "ask") store.set("askSeen", true); else state.lastView = t; return goTab(t); } // a rail item reopens a hidden panel
   if (t === "ask" && state.tab === "ask") return goTab(state.lastView || "overlaps");
   if (t === "ask") store.set("askSeen", true);
   else state.lastView = t;
@@ -4740,7 +4738,6 @@ function overlapsHead(P) {
   if (P.dataset.view === view && $("#q")) return;
   P.dataset.view = view;
   P.innerHTML = `<div class="ph">${solo() ? "" : `<div class="kpis" id="kpis"></div>`}
-      <div class="ph-row"><div class="chips" id="chips" role="group" aria-label="Filter by distance"></div></div>
       <div class="ph-row"><label class="fl">Sort <select id="sort"><option value="expected">Expected savings</option><option value="chance">Chance of a shared window</option><option value="distance">Distance</option></select></label>
         <span class="grow"></span><input id="q" type="search" placeholder="Search projects or TEAMS id" aria-label="Filter overlaps"></div>
     </div>
@@ -4753,19 +4750,31 @@ function overlapsHead(P) {
   let qTimer = null;
   $("#q").oninput = e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value; state.shown = 60; refresh(); }, 150); };
 }
-function renderOverlaps(P) {
-  overlapsHead(P);
-  if (solo()) return renderSoloRows();
-  renderKpis();
-  $("#chips").innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
+// The distance chips live in the bar over the map, so they stay in reach with the side panel hidden.
+function renderChips() {
+  const el = $("#chips");
+  if (solo()) { el.innerHTML = `<span class="muted">${SOLO.length} ${esc(lbl(state.utilA))} projects</span>`; return; }
+  el.innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
     .concat(TIERS.slice(0, 4).map((t, i) => `<button type="button" class="chip" data-t="${i}" aria-pressed="${state.tiers.has(i) && state.tiers.size < 5}"><i style="background:${tcol(i)}"></i>${SEV[i]} ${RESULT.pairs.filter(x => x.tier === i).length}</button>`)).join("");
-  $("#chips").querySelectorAll(".chip").forEach(b => b.onclick = () => {
+  el.querySelectorAll(".chip").forEach(b => b.onclick = () => {
     const v = b.dataset.t;
     if (v === "all") state.tiers = new Set([0, 1, 2, 3, 4]);
     else if (state.tiers.size >= 5) state.tiers = new Set([+v]);
     else { if (state.tiers.has(+v)) state.tiers.delete(+v); else state.tiers.add(+v); if (!state.tiers.size) state.tiers = new Set([0, 1, 2, 3, 4]); }
     state.shown = 60; refresh();
   });
+}
+// The side panel can be hidden, leaving the rail, the filter bar and the map; the choice is remembered.
+const panelMin = () => $(".work").classList.contains("min");
+function setPanel(min, quiet) {
+  $(".work").classList.toggle("min", !!min);
+  const t = $("#panelTog"); t.setAttribute("aria-expanded", !min); t.title = min ? "Show the side panel" : "Hide the side panel";
+  if (!quiet) { store.set("panelMin", !!min); requestAnimationFrame(() => { SeamMap.resize(); renderTimeline(); }); }
+}
+function renderOverlaps(P) {
+  overlapsHead(P);
+  if (solo()) return renderSoloRows();
+  renderKpis();
   const C = $("#clusters");
   C.hidden = !CLUSTERS.length;
   C.innerHTML = CLUSTERS.length ? `<span class="muted">Shared yards</span>` + CLUSTERS.map((c, i) => `<button type="button" class="chip" data-i="${i}" title="One staging yard for ${c.projects.length} projects built at the same time">${c.projects.length} projects · ${c.yard.near ? esc(c.yard.near.replace(/^(SAV|GTC|MEAG|CC)\s*[:-]\s*/i, "").split(/ (?:\d|-|\()/)[0]) : "open land"} · ${miles(c.impact.netMi)} truck-mi</button>`).join("") : "";
@@ -4801,7 +4810,6 @@ function renderOverlaps(P) {
   }
 }
 function renderSoloRows() {
-  $("#chips").innerHTML = `<span class="muted">${SOLO.length} ${esc(lbl(state.utilA))} projects</span>`;
   $("#clusters").hidden = true;
   $("#thead").innerHTML = `<span>#</span><span>Type</span><span>Project</span><span>In service</span><span class="r">Cost</span>`;
   const R = $("#rows");
@@ -5990,6 +5998,7 @@ function readHash() {
 function syncControls() {
   $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
   $("#buf").value = String(state.B);
+  const d2 = $("#dist2"); if (![...d2.options].some(o => o.value === String(state.D))) { const o = document.createElement("option"); o.value = String(state.D); o.textContent = state.D + " km"; d2.append(o); } d2.value = String(state.D);
   for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
   document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
   $("#pastOn").checked = state.past;
@@ -6055,6 +6064,7 @@ function refresh() {
   if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); }
   else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
+  renderChips();
   $("#filtCt").textContent = `${state.D} km · ${state.horizon ? (state.horizon === 12 ? "next 12 mo" : "next " + state.horizon / 12 + " yr") : "all dates"}`;
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
@@ -6078,7 +6088,11 @@ function theme() {
 // ---------- wiring ----------
 $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === state.utilA) state.utilB = utilities().find(u => u !== state.utilA) || NONE; rebuild(); };
 $("#utilB").onchange = e => { state.utilB = e.target.value; state.tab = "overlaps"; rebuild(); };
-$("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; refresh(); };
+$("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
+$("#dist2").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
+$("#moreFilters").onclick = e => { e.stopPropagation(); $("#filtersBtn").click(); };
+$("#panelTog").onclick = () => setPanel(!panelMin());
+setPanel(store.get("panelMin", false), true);
 $("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refresh(); };
 for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => { state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh(); };
 document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { state.horizon = +b.dataset.h; document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", o === b)); refresh(); });
@@ -6092,10 +6106,6 @@ $("#share").onclick = () => {
   clearTimeout(hashTimer); writeHash();
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
 };
-$("#askFab").onclick = () => { toggleTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
-$("#geoHiX").onclick = () => { store.set("askSeen", true); $("#geoHi").hidden = true; renderTabs(); };
-// Geo's button and greeting sit just above the legend, whatever height the legend has.
-new ResizeObserver(() => { const lg = $("#legend"); $(".mapwrap").style.setProperty("--legend-h", (lg && lg.offsetParent ? lg.offsetHeight + 10 : 0) + "px"); }).observe($("#legend"));
 document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
 $("#railTl").onclick = () => {

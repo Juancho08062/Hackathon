@@ -327,8 +327,6 @@ function renderTimeline() {
 function renderTabs() {
   document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
-  $("#askFab").hidden = state.tab === "ask";
-  $("#geoHi").hidden = state.tab === "ask" || store.get("askSeen", false);
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -345,6 +343,7 @@ function renderTabs() {
 // Ask toggles; every other rail item switches. Leaving Ask returns to the view that was open before it, which is what
 // a panel you opened over your work should do.
 function toggleTab(t) {
+  if (panelMin()) { setPanel(false); if (t === "ask") store.set("askSeen", true); else state.lastView = t; return goTab(t); } // a rail item reopens a hidden panel
   if (t === "ask" && state.tab === "ask") return goTab(state.lastView || "overlaps");
   if (t === "ask") store.set("askSeen", true);
   else state.lastView = t;
@@ -385,7 +384,6 @@ function overlapsHead(P) {
   if (P.dataset.view === view && $("#q")) return;
   P.dataset.view = view;
   P.innerHTML = `<div class="ph">${solo() ? "" : `<div class="kpis" id="kpis"></div>`}
-      <div class="ph-row"><div class="chips" id="chips" role="group" aria-label="Filter by distance"></div></div>
       <div class="ph-row"><label class="fl">Sort <select id="sort"><option value="expected">Expected savings</option><option value="chance">Chance of a shared window</option><option value="distance">Distance</option></select></label>
         <span class="grow"></span><input id="q" type="search" placeholder="Search projects or TEAMS id" aria-label="Filter overlaps"></div>
     </div>
@@ -398,19 +396,31 @@ function overlapsHead(P) {
   let qTimer = null;
   $("#q").oninput = e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value; state.shown = 60; refresh(); }, 150); };
 }
-function renderOverlaps(P) {
-  overlapsHead(P);
-  if (solo()) return renderSoloRows();
-  renderKpis();
-  $("#chips").innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
+// The distance chips live in the bar over the map, so they stay in reach with the side panel hidden.
+function renderChips() {
+  const el = $("#chips");
+  if (solo()) { el.innerHTML = `<span class="muted">${SOLO.length} ${esc(lbl(state.utilA))} projects</span>`; return; }
+  el.innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
     .concat(TIERS.slice(0, 4).map((t, i) => `<button type="button" class="chip" data-t="${i}" aria-pressed="${state.tiers.has(i) && state.tiers.size < 5}"><i style="background:${tcol(i)}"></i>${SEV[i]} ${RESULT.pairs.filter(x => x.tier === i).length}</button>`)).join("");
-  $("#chips").querySelectorAll(".chip").forEach(b => b.onclick = () => {
+  el.querySelectorAll(".chip").forEach(b => b.onclick = () => {
     const v = b.dataset.t;
     if (v === "all") state.tiers = new Set([0, 1, 2, 3, 4]);
     else if (state.tiers.size >= 5) state.tiers = new Set([+v]);
     else { if (state.tiers.has(+v)) state.tiers.delete(+v); else state.tiers.add(+v); if (!state.tiers.size) state.tiers = new Set([0, 1, 2, 3, 4]); }
     state.shown = 60; refresh();
   });
+}
+// The side panel can be hidden, leaving the rail, the filter bar and the map; the choice is remembered.
+const panelMin = () => $(".work").classList.contains("min");
+function setPanel(min, quiet) {
+  $(".work").classList.toggle("min", !!min);
+  const t = $("#panelTog"); t.setAttribute("aria-expanded", !min); t.title = min ? "Show the side panel" : "Hide the side panel";
+  if (!quiet) { store.set("panelMin", !!min); requestAnimationFrame(() => { SeamMap.resize(); renderTimeline(); }); }
+}
+function renderOverlaps(P) {
+  overlapsHead(P);
+  if (solo()) return renderSoloRows();
+  renderKpis();
   const C = $("#clusters");
   C.hidden = !CLUSTERS.length;
   C.innerHTML = CLUSTERS.length ? `<span class="muted">Shared yards</span>` + CLUSTERS.map((c, i) => `<button type="button" class="chip" data-i="${i}" title="One staging yard for ${c.projects.length} projects built at the same time">${c.projects.length} projects · ${c.yard.near ? esc(c.yard.near.replace(/^(SAV|GTC|MEAG|CC)\s*[:-]\s*/i, "").split(/ (?:\d|-|\()/)[0]) : "open land"} · ${miles(c.impact.netMi)} truck-mi</button>`).join("") : "";
@@ -446,7 +456,6 @@ function renderOverlaps(P) {
   }
 }
 function renderSoloRows() {
-  $("#chips").innerHTML = `<span class="muted">${SOLO.length} ${esc(lbl(state.utilA))} projects</span>`;
   $("#clusters").hidden = true;
   $("#thead").innerHTML = `<span>#</span><span>Type</span><span>Project</span><span>In service</span><span class="r">Cost</span>`;
   const R = $("#rows");
@@ -1635,6 +1644,7 @@ function readHash() {
 function syncControls() {
   $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
   $("#buf").value = String(state.B);
+  const d2 = $("#dist2"); if (![...d2.options].some(o => o.value === String(state.D))) { const o = document.createElement("option"); o.value = String(state.D); o.textContent = state.D + " km"; d2.append(o); } d2.value = String(state.D);
   for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
   document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
   $("#pastOn").checked = state.past;
@@ -1700,6 +1710,7 @@ function refresh() {
   if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); }
   else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
+  renderChips();
   $("#filtCt").textContent = `${state.D} km · ${state.horizon ? (state.horizon === 12 ? "next 12 mo" : "next " + state.horizon / 12 + " yr") : "all dates"}`;
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
@@ -1723,7 +1734,11 @@ function theme() {
 // ---------- wiring ----------
 $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === state.utilA) state.utilB = utilities().find(u => u !== state.utilA) || NONE; rebuild(); };
 $("#utilB").onchange = e => { state.utilB = e.target.value; state.tab = "overlaps"; rebuild(); };
-$("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; refresh(); };
+$("#dist").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
+$("#dist2").onchange = e => { state.D = +e.target.value; state.shown = 60; syncControls(); refresh(); };
+$("#moreFilters").onclick = e => { e.stopPropagation(); $("#filtersBtn").click(); };
+$("#panelTog").onclick = () => setPanel(!panelMin());
+setPanel(store.get("panelMin", false), true);
 $("#buf").onchange = e => { state.B = +e.target.value; chanceCache.clear(); refresh(); };
 for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => { state.mode = m; for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === m); refresh(); };
 document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { state.horizon = +b.dataset.h; document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", o === b)); refresh(); });
@@ -1737,10 +1752,6 @@ $("#share").onclick = () => {
   clearTimeout(hashTimer); writeHash();
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
 };
-$("#askFab").onclick = () => { toggleTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
-$("#geoHiX").onclick = () => { store.set("askSeen", true); $("#geoHi").hidden = true; renderTabs(); };
-// Geo's button and greeting sit just above the legend, whatever height the legend has.
-new ResizeObserver(() => { const lg = $("#legend"); $(".mapwrap").style.setProperty("--legend-h", (lg && lg.offsetParent ? lg.offsetHeight + 10 : 0) + "px"); }).observe($("#legend"));
 document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
 $("#railTl").onclick = () => {
