@@ -383,9 +383,6 @@ function renderDetail() {
     return;
   }
   const s = x.sav;
-  const imp = s.items.length
-    ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated</td><td>${money(s.total)}</td></tr></tbody></table>`
-    : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
   const key = x.p.id + "|" + x.q.id;
   if (!state.wi || state.wi.key !== key) state.wi = { key, who: "q", shift: 0 };
   el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="brf">Coordination brief</button><button type="button" class="btn" id="clr" aria-label="Close details">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
@@ -397,7 +394,7 @@ function renderDetail() {
       <svg id="wiChart" role="img" aria-label="Both build windows after the shift"></svg>
       <p class="wi-res" id="wiRes" aria-live="polite"></p>
       <div class="row"><button type="button" class="btn" id="wiRec"></button><button type="button" class="btn" id="wiReset">Reset to plan</button></div></div>
-    <div><h3>Cost and impact estimate</h3><div id="impBox">${imp}</div></div></div>`;
+    <div><h3>Cost and impact estimate</h3><div id="impBox"></div></div></div>`;
   $("#clr").onclick = () => select(null);
   $("#v3d").onclick = () => open3d(x);
   $("#brf").onclick = () => openBrief(x);
@@ -461,16 +458,17 @@ function updateWhatIf(x) {
   recBtn.hidden = rec == null || rec === 0 || rec === shift;
   if (rec) { recBtn.textContent = `Try ${moLabel(rec)}`; recBtn.onclick = () => { state.wi.shift = rec; $("#wiShift").value = rec; updateWhatIf(x); }; }
   $("#wiReset").hidden = !shift;
-  const s = y.sav;
-  $("#impBox").innerHTML = s.items.length
-    ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}</td><td>${money(s.total)}</td></tr></tbody></table>`
-    : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
+  const s = y.sav, off = Engine.shareable(y).some(g => !g.active);
+  $("#impBox").innerHTML = `<table class="imp"><tbody><tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}<small>the sum of the ${s.items.length} item${s.items.length === 1 ? "" : "s"} priced above</small></td><td>${s.total ? money(s.total) : "$0"}</td></tr></tbody></table>
+    <p class="note">${off ? "Yard, delivery, crew, crane and contractor savings count only when both are built at the same time. " : ""}Planning estimates. Change any unit cost under <a href="#assume">Cost assumptions</a> and every pair updates.</p>`;
 }
 
 // What the pair can share, tier by tier, in the challenge's wording. Crew and yard sharing needs a shared build window.
+// Each item carries its own estimated saving and the math behind it.
 function sharesHTML(x) {
+  const by = Object.fromEntries(x.sav.items.map(i => [i.share, i]));
   return `<div class="shares"><h3>What they can share</h3>${Engine.shareable(x).map(g => `<div class="sg${g.active ? "" : " off"}" style="--c:${tcol(g.tier)}">
-    <span class="sl">${esc(g.label)}</span><span class="chips">${g.items.map(i => `<span class="chip">${esc(i)}</span>`).join("")}</span>
+    <span class="sl">${esc(g.label)}</span><ul class="si">${g.items.map(n => { const i = by[n]; return `<li><span>${esc(n)}</span><b>${i ? money(i.v) : "–"}</b>${i ? `<small>${esc(i.how)}</small>` : ""}</li>`; }).join("")}</ul>
     ${g.active ? "" : `<em>only if both are built at the same time</em>`}</div>`).join("")}
     ${x.res.length ? `<p class="note">Also in common: ${x.res.map(esc).join(", ")}.</p>` : ""}</div>`;
 }
@@ -502,10 +500,11 @@ function openBrief(x0) {
       <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.ov > 0 ? Math.round(x.ov) + " mo" : Math.round(x.gap) + " mo gap"}</b><span>${x.ov > 0 ? "of shared build window" : "between build windows"}</span></div><div><b>${(s.total ? money(s.total) : "$0")}</b><span>rough savings</span></div></div></div>
     <h4>The projects</h4>
     <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
-    <h4>What they can share</h4>
+    ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total${Engine.customized() ? " (with edited cost assumptions)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>
+      ${(() => { const off = Engine.shareable(x).filter(g => !g.active).flatMap(g => g.items); return off.length || x.res.length ? `<p class="b-note">${off.length ? `Only if both are built at the same time: ${esc(off.join(", ").toLowerCase())}. ` : ""}${x.res.length ? `Also in common: ${x.res.map(esc).join(", ")}.` : ""}</p>` : ""; })()}`
+    : `<h4>What they can share</h4>
     <ul>${Engine.shareable(x).map(g => `<li><b>${esc(g.label)}:</b> ${esc(g.items.join(", ").toLowerCase().replace(/^./, c => c.toUpperCase()))}${g.active ? "" : " (only if both are built at the same time)"}</li>`).join("")}
-      ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>
-    ${s.items.length ? `<h4>Savings estimate</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<br><span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
+      ${x.res.length ? `<li><b>Also in common:</b> ${x.res.map(esc).join(", ")}</li>` : ""}</ul>`}
     <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
     <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   $("#brief").hidden = false;
@@ -653,6 +652,42 @@ async function importFiles(files) {
 }
 
 // ---------- wiring ----------
+// ---------- cost assumptions ----------
+// Every unit cost behind the savings estimate, editable. Changes are remembered on this device and recompute every pair.
+function renderAssume() {
+  let g0 = "";
+  $("#asmBody").innerHTML = `<table class="asm"><thead><tr><th>Item</th><th>Value</th><th>What it covers</th></tr></thead><tbody>${Engine.ASSUMPTIONS.map(a => {
+    const head = a.group !== g0 ? `<tr class="ag"><td colspan="3">${esc(a.group)}</td></tr>` : ""; g0 = a.group;
+    const v = Engine.ASSUME[a.key], changed = v !== a.value;
+    return `${head}<tr${changed ? ' class="chg"' : ""}><td><label for="as-${a.key}">${esc(a.label)}</label></td><td><input id="as-${a.key}" data-k="${a.key}" type="number" min="0" step="any" inputmode="decimal" value="${v}"><span class="u">${esc(a.unit)}</span></td><td>${esc(a.check)}${changed ? ` <em>default ${esc(String(a.value))}</em>` : ""}</td></tr>`;
+  }).join("")}</tbody></table>`;
+  $("#asmBody").querySelectorAll("input").forEach(inp => inp.onchange = () => {
+    const vals = {};
+    $("#asmBody").querySelectorAll("input").forEach(i => { const n = parseFloat(i.value); if (isFinite(n) && n >= 0) vals[i.dataset.k] = n; });
+    saveAssume(vals, true);
+  });
+  $("#asmReset").hidden = !Engine.customized();
+}
+function saveAssume(vals, typing) {
+  Engine.setAssumptions(vals);
+  try { if (Engine.customized()) localStorage.setItem("seamline.assume", JSON.stringify(vals)); else localStorage.removeItem("seamline.assume"); } catch (err) { /* storage blocked: keep the numbers for this visit only */ }
+  if (typing) markAssume(); else renderAssume();
+  refresh();
+}
+function markAssume() {
+  $("#asmBody").querySelectorAll("input").forEach(i => {
+    const a = Engine.ASSUMPTIONS.find(o => o.key === i.dataset.k), tr = i.closest("tr"), changed = Engine.ASSUME[a.key] !== a.value;
+    tr.classList.toggle("chg", changed);
+    let em = tr.lastElementChild.querySelector("em");
+    if (changed && !em) { em = document.createElement("em"); tr.lastElementChild.append(" ", em); }
+    if (em) em.textContent = changed ? `default ${a.value}` : "";
+  });
+  $("#asmReset").hidden = !Engine.customized();
+}
+try { const a = JSON.parse(localStorage.getItem("seamline.assume") || "null"); if (a && typeof a === "object") Engine.setAssumptions(a); } catch (err) { /* storage blocked or bad value: use the defaults */ }
+$("#asmReset").onclick = () => saveAssume({});
+renderAssume();
+
 function select(x) { if (!x || !state.wi || state.wi.key !== (x.p && x.q ? x.p.id + "|" + x.q.id : "")) state.wi = null; state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline(); }
 function refresh() {
   $("#distv").textContent = `${state.D} km (${Math.round(state.D / 1.609)} mi)`;
