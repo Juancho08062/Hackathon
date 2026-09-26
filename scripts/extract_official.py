@@ -62,8 +62,9 @@ def gpc_details(all_pages):
             continue
         teams, _, _, _, smo, sd, sy = m.groups()
         tail = text.split("parity forecast purposes only", 1)[-1].split("PUBLIC DISCLOSURE")[0]
-        parts = [clean(p) for p in re.split(r"\n\s*REDACTED\s*\n", tail)]
-        desc = parts[0] if parts else ""
+        parts = re.split(r"\n\s*REDACTED\s*\n", tail)
+        desc = clean(parts[0]) if parts else ""
+        # after the redacted cost: one line of change from the previous ten-year plan, then one from the previous IRP
         notes = [clean(l) for l in (parts[1] if len(parts) > 1 else "").split("\n") if l.strip()]
         miles = re.search(r"(\d+(?:\.\d+)?)\s*(?:-\s*)?(?:circuit\s+)?mi(?:les?)?\b", desc, re.I)
         out[teams] = dict(start=f"{sy}-{smo}-{sd}", description=desc, miles=miles.group(1) if miles else "",

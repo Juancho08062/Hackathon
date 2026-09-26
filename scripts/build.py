@@ -13,6 +13,7 @@ for key, text in {
     "/*APP*/": src("app.js"),
     "/*BASEMAP*/null": (root / "data/basemap.json").read_text(),
     "/*PROJECTS*/[]": json.dumps(json.load(open(root / "data/projects.json")), separators=(",", ":")),
+    "/*MODEL*/null": json.dumps(json.load(open(root / "data/model.json")), separators=(",", ":")),
 }.items():
     assert key in html, key
     html = html.replace(key, text, 1)

@@ -172,5 +172,66 @@ t("suggested shift is worked out once per pair, not once per slider tick", () =>
   assert.strictEqual(E.recommendShift.computed - before, 1);
   assert.strictEqual(E.shiftISO("2029-01-31", 1), "2029-02-28");
 });
+t("overlap chance: with no schedule risk it is the plan's own answer", () => {
+  const still = { A: { months: [0] }, B: { months: [0] } };
+  const a = P("a", "A", [[33, -82]], "2027-01-01", "2028-01-01"), b = P("b", "B", [[33, -81.9]], "2027-06-01", "2028-06-01");
+  const c = P("c", "B", [[33, -81.9]], "2031-01-01", "2032-01-01");
+  assert.strictEqual(E.overlapChance({ p: a, q: b }, still, { bufferMonths: 0 }).p, 1);
+  assert.strictEqual(E.overlapChance({ p: a, q: c }, still, { bufferMonths: 0 }).p, 0);
+});
+t("overlap chance: slips move it between 0 and 1, the same answer every time", () => {
+  const slips = { A: { months: [0, 12, 24] }, B: { months: [-12, 0, 12] } };
+  const a = P("a", "A", [[33, -82]], "2027-01-01", "2028-01-01"), b = P("b", "B", [[33, -81.9]], "2028-03-01", "2029-03-01");
+  const r = E.overlapChance({ p: a, q: b }, slips, { bufferMonths: 0 });
+  assert(r.p > 0.2 && r.p < 0.9, r.p);
+  assert.strictEqual(E.overlapChance({ p: a, q: b }, slips, { bufferMonths: 0 }).p, r.p);
+  const far = P("f", "B", [[33, -81.9]], "2036-01-01", "2037-01-01");
+  assert.strictEqual(E.overlapChance({ p: a, q: far }, slips, { bufferMonths: 0 }).p, 0);
+});
+t("overlap chance: a project that is likely built has no window left to share", () => {
+  const a = P("a", "A", [[33, -82]], "2023-01-01", "2024-12-31", { likely_built: true }), b = P("b", "B", [[33, -81.9]], "2024-01-01", "2025-01-01");
+  const r = E.overlapChance({ p: a, q: b }, { A: { months: [0] }, B: { months: [0] } }, { bufferMonths: 0 });
+  assert.strictEqual(r.p, 0);
+  assert.strictEqual(r.why, "built");
+});
+t("overlap chance: a shared window that has already closed does not count", () => {
+  const still = { A: { months: [0] }, B: { months: [0] } };
+  const a = P("a", "A", [[33, -82]], "2025-01-01", "2026-03-01"), b = P("b", "B", [[33, -81.9]], "2025-06-01", "2027-01-01");
+  assert.strictEqual(E.overlapChance({ p: a, q: b }, still, { bufferMonths: 0 }).p, 1);
+  assert.strictEqual(E.overlapChance({ p: a, q: b }, still, { bufferMonths: 0, today: "2026-09-26" }).p, 0);
+  const late = { A: { months: [12] }, B: { months: [0] } }; // a slips a year, so both are in the field after today
+  assert.strictEqual(E.overlapChance({ p: a, q: b }, late, { bufferMonths: 0, today: "2026-09-26" }).p, 1);
+});
+t("expected savings: items that need a shared window count by its chance, the rest in full", () => {
+  const a = P("a", "A", [[33, -82]], "2027-01-01", "2028-01-01"), b = P("b", "B", [[33, -81.99]], "2029-01-01", "2030-01-01");
+  const x = E.findOverlaps([a, b], { utilA: "A", utilB: "B", maxKm: 40, bufferMonths: 0, mode: "near" }).pairs[0];
+  const e = E.expectedSavings(x, 0.5);
+  assert(e.fixed > 0 && e.windowed > 0, JSON.stringify(e));
+  assert(Math.abs(e.expected - (e.fixed + 0.5 * e.windowed)) < 1e-6);
+  assert.strictEqual(E.expectedSavings(x, 0).expected, e.fixed);
+});
+t("built-in slip model comes from the plans themselves", () => {
+  const m = require("../data/model.json");
+  assert.strictEqual(m.slips.DESC.n, 30);
+  assert(m.slips.DESC.months.every(v => v >= 0) && m.slips.DESC.slipped > 20, "DESC dates only slipped");
+  assert(m.slips.GPC.n > 80 && m.slips.GPC.advanced > 0);
+  assert(m.checks.find(c => c.id === "rows").status === "pass");
+  const { pairs } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const pair = (a, b) => pairs.find(x => x.p.id === a && x.q.id === b);
+  const ovl2 = E.overlapChance(pair("DESC-12", "IRP-20277"), m.slips, { bufferMonths: 0, today: m.as_of });
+  assert(ovl2.p > 0 && ovl2.p < 1, ovl2.p); // in one window on paper, but DESC usually slips
+  assert.strictEqual(E.overlapChance(pair("DESCP-31", "IRP-20793"), m.slips, { bufferMonths: 0 }).p, 0);
+});
+t("plan drift: the latest plan updates opened and closed shared windows", () => {
+  const { pairs } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const { opened, closed } = E.driftChanges(pairs);
+  // 8 opened by DESC's slips, 1 by Georgia pulling Ray Place Rd - Warrenton forward from 2030 to 2027
+  assert.deepStrictEqual([opened.length, closed.length], [9, 3]);
+  assert(opened.some(x => x.p.id === "DESC-20" && x.q.drift && x.q.drift.months === -36));
+  // reference overlap OVL_3 shares a window only because Jasper - Okatie #2 moved 11 months later
+  assert(opened.some(x => x.p.id === "DESC-12" && x.q.id === "IRP-20065"));
+  const j = projects.find(p => p.id === "DESC-12");
+  assert.deepStrictEqual([j.drift.from_in_service, j.drift.to_in_service, j.drift.months], ["2025-12-31", "2026-12-01", 11]);
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);

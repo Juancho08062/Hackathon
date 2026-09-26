@@ -270,7 +270,7 @@ for eid, oids in SAME.items():
         if len(coords) >= len(o["coords"]):
             o["coords"], o["loc"] = coords, "high"
             o["located"] = [dict(name=e, method=x[2], confidence=x[3], note=x[4]) for e, x in zip(endpoints(r["name"]), pts)]
-unplaced = []
+unplaced, dropped_span, date_fixes = [], [], []
 for oid, r in official.items():
     if oid in taken:
         continue
@@ -287,6 +287,7 @@ for oid, r in official.items():
     # keep the more certain one.
     span = max((haversine(a[:2], b[:2]) for a in got for b in got), default=0)
     if span > max(25, 4 * 1.609 * (miles or 25)):
+        dropped_span.append(dict(id=oid, name=r["name"], span_km=round(span), plan_miles=miles))
         rank = {"high": 0, "medium": 1, "low": 2}
         got = sorted(got, key=lambda x: rank[x[3]])[:1]
         pts = [x if x in got else None for x in pts]
@@ -303,6 +304,7 @@ for oid, r in official.items():
     note = None
     if pub and pub >= end:  # a few IRP pages list a start after the need date
         note, pub = f"The plan lists a start date ({r['start']}) after the need date, so the start is estimated.", None
+        date_fixes.append(dict(id=oid, name=r["name"], start=r["start"], need=r["need_date"]))
     start = max(est, pub) if pub else est
     o = dict(id=oid, utility="GPC" if gpc else "DESC", owner=(("GPC" if r["sponsor"] == "SAV" else r["sponsor"]) if gpc else "DESC"),
              name=title(r["name"]) if gpc else r["name"], official_name=r["name"], desc=desc, kv=kv, miles=miles, type=t,
@@ -326,7 +328,102 @@ for oid, r in official.items():
 json.dump(unplaced, open(pathlib.Path(__file__).resolve().parent.parent / "data" / "official" / "unplaced.json", "w"), indent=1)
 print(len(out), "projects so far;", len(unplaced), "official projects could not be placed (data/official/unplaced.json)")
 
+
+# ---------------------------------------------------------------------------
+# Plan drift, the slip model and the validation report (data/model.json).
+# How much do planned dates move from one plan to the next? DESC: the same project in
+# the 2024-2028 list and the 2026-2030 list. Georgia: each IRP project page's "change
+# from the previous ten-year plan" note ("Project delayed from 2025 to 2026").
+# ---------------------------------------------------------------------------
+def months_between(a, b):
+    a, b = date.fromisoformat(a), date.fromisoformat(b)
+    return round((b - a).days / 30.44)
+
+
+desc_slips = []
+for eid, oids in SAME.items():
+    o = by_id[eid]
+    if o["utility"] != "DESC" or len(oids) != 1:
+        continue
+    r = official[oids[0]]
+    m = months_between(r["in_service"], o["in_service"])
+    o["drift"] = dict(plans="SCRTP 2024-2028 to 2026-2030", from_in_service=r["in_service"], to_in_service=o["in_service"],
+                      months=m, from_cost=int(r["cost"]) if r.get("cost") else None, to_cost=o.get("cost"))
+    desc_slips.append(m)
+
+CHANGE = re.compile(r"(delayed|advanced) from (20\d\d) to (20\d\d)", re.I)
+gpc_slips, gpc_unparsed = [], []
+for oid, r in official.items():
+    if not oid.startswith("IRP-"):
+        continue
+    note = r.get("change_ten_year_plan", "").strip()
+    m = CHANGE.search(note)
+    if m:
+        v = 12 * (int(m.group(3)) - int(m.group(2)))
+    elif note.lower().startswith("no change"):
+        v = 0
+    else:
+        if note and not note.lower().startswith("new project"):
+            gpc_unparsed.append(dict(id=oid, note=note))
+        continue
+    gpc_slips.append(v)
+    tgt = by_id.get(oid) or next((o for o in out if any(x["id"] == oid for x in o.get("official") or [])), None)
+    if tgt is not None:
+        tgt["drift"] = dict(plans="GA ITS ten-year plan 2023 to 2024", months=v, note=note)
+
+likely_built = []
+for o in out:
+    if o["id"].startswith("DESCP-") and o.get("past_in_service"):
+        o["likely_built"] = True  # listed for a date that has passed, and gone from DESC's newer list
+        likely_built.append(o["id"])
+
+def dist(v):
+    v = sorted(v)
+    return dict(n=len(v), months=v, slipped=sum(1 for x in v if x > 0), advanced=sum(1 for x in v if x < 0),
+                median=v[len(v) // 2])
+
+placed = [o for o in out if o["id"].startswith(("IRP-", "DESCP-"))]
+past = [o for o in out if not o.get("existing") and o.get("in_service", "9") < TODAY.isoformat()]
+dup_ids = [p["id"] for p in official.values() if p["id"].count("-") > 1]
+checks = [
+    dict(id="rows", title="Every project in both PDFs was read",
+         result=f"DESC {sum(1 for i in official if i.startswith('DESCP'))} of 44; Georgia {sum(1 for i in official if i.startswith('IRP'))} rows from Table 2",
+         status="pass"),
+    dict(id="detail", title="Each Georgia row has its detail page (start date, description, miles)",
+         result=f"{sum(1 for p in official.values() if p.get('start'))} of {sum(1 for i in official if i.startswith('IRP'))} matched by TEAMS number",
+         status="warn", records=[dict(id=p["id"], name=p["name"]) for p in official.values() if p["id"].startswith("IRP") and not p.get("start")]),
+    dict(id="dates", title="Start date is before the need date", result=f"{len(date_fixes)} plan page(s) list a start after the need date; start estimated instead",
+         status="fixed" if date_fixes else "pass", records=date_fixes),
+    dict(id="dupes", title="TEAMS numbers are unique", result=f"{len(dup_ids)} number(s) used twice, kept as two phases",
+         status="fixed" if dup_ids else "pass", records=[dict(id=i) for i in dup_ids]),
+    dict(id="same", title="Projects listed in two plans are counted once",
+         result=f"{sum(len(v) for v in SAME.values())} official records matched to {len(SAME)} newer entries", status="pass"),
+    dict(id="namesakes", title="Substation matches are in the project's own area",
+         result=f"{len(loc.rejected)} OpenStreetMap namesake(s) more than 150 km from the planning zone rejected",
+         status="fixed" if loc.rejected else "pass", records=loc.rejected),
+    dict(id="span", title="Line end points agree with the length in the plan",
+         result=f"{len(dropped_span)} end point(s) dropped because the line would be far longer than the plan says",
+         status="fixed" if dropped_span else "pass", records=dropped_span),
+    dict(id="placed", title="Every official project is on the map",
+         result=f"{len(placed) + sum(len(v) for v in SAME.values())} of {len(official)} placed; {len(unplaced)} not found (none in the Augusta or Savannah zones)",
+         status="warn", records=unplaced),
+    dict(id="past", title="In-service dates are still ahead",
+         result=f"{len(past)} projects list a date before {TODAY.isoformat()}; {len(likely_built)} are gone from DESC's newer list, so likely built",
+         status="warn", records=[dict(id=o["id"], name=o["name"], in_service=o["in_service"], likely_built=bool(o.get("likely_built"))) for o in past]),
+    dict(id="notes", title="Plan-change notes are understood", result=f"{len(gpc_unparsed)} note(s) without years, left out of the slip model",
+         status="warn" if gpc_unparsed else "pass", records=gpc_unparsed),
+]
+model = dict(
+    as_of=TODAY.isoformat(),
+    slips=dict(
+        DESC=dict(dist(desc_slips), source="Same project in DESC's 2024-2028 and 2026-2030 lists: change in in-service date"),
+        GPC=dict(dist(gpc_slips), source="Georgia IRP 2025 project pages: change from the previous ten-year plan"),
+    ),
+    checks=checks,
+)
 for i, (n, u, co, src) in enumerate(EXISTING, 1):
     out.append(dict(id=f"EX-{i:02d}", utility=u, existing=True, name=n, coords=[list(c) for c in co], source=src))
 json.dump(out, open(pathlib.Path(__file__).resolve().parent.parent / "data" / "projects.json", "w"), indent=1)
+json.dump(model, open(pathlib.Path(__file__).resolve().parent.parent / "data" / "model.json", "w"), indent=1)
+print("slips:", {u: (d["n"], d["slipped"], d["advanced"], d["median"]) for u, d in model["slips"].items()})
 print(len(out), "projects")

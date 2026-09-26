@@ -175,7 +175,7 @@ class Locator:
             self.index.setdefault(k, []).append(p)
             if p["kind"] != "town" and p["state"]:
                 self.power.append((k, p))
-        self.centre = {}
+        self.centre, self.rejected = {}, []
         pts = {}
         for name, state, zone in projects:
             for e in endpoints(name):
@@ -207,7 +207,10 @@ class Locator:
         def dist(p):
             return min((haversine((p["lat"], p["lon"]), c) for c in near), default=0)
         # A match far from the rest of its planning zone is a namesake, not the project.
-        c = [p for p in sorted(self._candidates(k, state), key=dist) if dist(p) <= FAR_KM]
+        allc = sorted(self._candidates(k, state), key=dist)
+        c = [p for p in allc if dist(p) <= FAR_KM]
+        if allc and not c:
+            self.rejected.append(dict(endpoint=endpoint, zone=zone, candidate=allc[0]["name"], km=round(dist(allc[0]))))
         if c:
             p = c[0]
             conf = "high" if len(c) == 1 and norm(p["name"]) == k else "medium"

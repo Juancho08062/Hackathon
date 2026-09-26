@@ -170,6 +170,27 @@ A project that appears in both an official list and our newer lists (SCRTP 2026-
 
 With everything loaded, DESC (64 projects) against Georgia (161) is 10,304 pairs, of which 169 (1.6%) are within 40 km, all of them along the Savannah River between Savannah and Lake Thurmond.
 
+## Schedule risk and plan drift
+
+Planned dates move, so an overlap on paper is not an overlap in the field. Seamline measures how much they move, from the plans themselves:
+
+- **DESC:** 30 projects appear in both the 2024-2028 and the 2026-2030 lists. 23 of them moved later (median 12 months, up to 55); none moved earlier.
+- **Georgia:** each IRP project page says how it changed from the previous ten-year plan. Of 94 projects with a history, 65 kept their date, 16 moved later and 12 earlier (up to 3 years either way).
+
+`data/model.json` holds these month counts. For each flagged pair, `Engine.overlapChance` draws 2,000 times a month count for each project from its utility's list, moves both projects' windows by it, and counts how often they still share a window from today on (a window that has already closed cannot be shared). The draws are seeded from the pair, so the answer is the same every time. A project that is listed for a date that has passed and is gone from DESC's newer list is treated as likely built, with no window left. `Engine.expectedSavings` counts the items that need both crews in the field together (yards, deliveries, crews, cranes, contractors) by that chance, and outage, crossing, right-of-way, access-road and permit items in full.
+
+What it shows on the built-in data:
+
+- Of the 41 pairs that share a window on paper, 23 have less than a 50% chance of still sharing one, mostly because their shared months are already behind us. Reference overlap OVL_2 (Jasper - Okatie #2 / McIntosh - Purrysburg reactors) drops to 12%.
+- 13 pairs that do not share a window on paper have a 50% or better chance of sharing one, because DESC's dates usually move later. Example: Jasper - Okatie #2 and the McIntosh Unit 12 combined cycle, 4.3 km apart, 68%.
+- `Engine.driftChanges` replays each pair with the dates the previous plan listed. The latest updates opened 9 shared windows and closed 3. Reference overlap OVL_3 shares a window only because Jasper - Okatie #2 moved 11 months later.
+
+The model assumes each project moves once more, by an amount like the moves already seen, and that the two utilities' moves are independent. It is a planning aid, not a forecast.
+
+## Validation report
+
+`scripts/build_projects.py` writes a list of checks into `data/model.json` every time the data is rebuilt: every row of both PDFs read, detail pages matched, start dates before need dates, TEAMS numbers unique, projects in two plans counted once, OpenStreetMap namesakes rejected, line end points consistent with the plan's line length, projects not placed, in-service dates already passed and plan-change notes not understood. Each check lists the records it caught.
+
 ## Data sources and caveats
 
 - DESC: [SCRTP 2026–2030 project descriptions ($2M and above)](https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf). This list includes costs and exact dates.
