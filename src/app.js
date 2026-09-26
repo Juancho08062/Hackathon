@@ -27,7 +27,8 @@ const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
   tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
-  basemap: store.get("basemap", "plain"),
+  grid: true,
+  basemap: ["plain", "relief", "satellite", "topo"].includes(store.get("basemap", "plain")) ? store.get("basemap", "plain") : "plain",
 };
 const STATUS = store.get("status", {});
 const STATUSES = ["Open", "Contacted", "Coordinating", "Not pursuing"];
@@ -135,7 +136,7 @@ function renderMap() {
   const shown = VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
   const moved = state.showMoves && optimize() ? new Set(optimize().moves.map(m => m.id)) : null;
-  const raster = state.basemap !== "plain";
+  const raster = state.basemap === "satellite" || state.basemap === "topo";
   const casing = state.basemap === "satellite" ? "rgba(255,255,255,.85)" : raster ? "rgba(20,24,28,.55)" : css("--panel");
   const phaseOp = { all: 1, building: 1, done: .45, planned: .15 };
   const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
@@ -192,6 +193,7 @@ function mapClick(hit) {
 }
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
+  if (hit.layer === "grid") return tip(ev, `<b>Existing ${hit.kv} kV line</b>${hit.op ? "<br>" + esc(hit.op) : ""}<br><span style="opacity:.7">OpenStreetMap</span>`);
   const p = PROJECTS.find(v => v.id === hit.id) || EXIST.find(v => v.id === hit.id);
   if (p) return showTip(ev, p);
   const x = VIEW.find(v => keyOf(v) === hit.id);
@@ -207,6 +209,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
@@ -284,7 +287,7 @@ function renderTimeline() {
 
 // ---------- panel: tabs ----------
 function renderTabs() {
-  document.querySelectorAll(".tabs [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
+  document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -295,6 +298,22 @@ function renderTabs() {
   }
   const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
   $("#n-checks").innerHTML = review ? `<span class="warn">${review} to review</span>` : "";
+  $("#b-checks").hidden = !review; $("#b-checks").textContent = review;
+}
+// Switch the panel's view, as the rail's tabs do.
+function goTab(t) { state.tab = t; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); }
+// Four headline numbers at the top of the Overlaps view; the last two open the Plan and Checks views.
+function renderKpis() {
+  const el = $("#kpis");
+  if (!el) return;
+  const exp = VIEW.reduce((t, x) => t + x.risk.expected, 0), plan = VIEW.reduce((t, x) => t + x.sav.total, 0), o = optimize();
+  const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
+  const gain = o && o.moves.length ? o.after - o.before : 0;
+  el.innerHTML = `<div class="kpi"><b>${RESULT.pairs.length}</b><span>overlaps</span><small>of ${RESULT.checked.toLocaleString()} pairs checked</small></div>
+    <div class="kpi"><b>${money(exp)}</b><span>expected savings</span><small>${money(plan)} if every date held</small></div>
+    <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " suggested date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
+    <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks to review</small></button>`;
+  el.querySelectorAll("[data-kt]").forEach(b => b.onclick = () => goTab(b.dataset.kt));
 }
 function renderPanel() {
   renderTabs();
@@ -311,7 +330,7 @@ function renderPanel() {
 function overlapsHead(P) {
   if (P.dataset.view === "overlaps" && $("#q")) return;
   P.dataset.view = "overlaps";
-  P.innerHTML = `<div class="ph">
+  P.innerHTML = `<div class="ph">${solo() ? "" : `<div class="kpis" id="kpis"></div>`}
       <div class="ph-row"><div class="chips" id="chips" role="group" aria-label="Filter by distance"></div></div>
       <div class="ph-row"><label class="fl">Sort <select id="sort"><option value="expected">Expected savings</option><option value="chance">Chance of a shared window</option><option value="distance">Distance</option></select></label>
         <span class="grow"></span><input id="q" type="search" placeholder="Filter by project, substation, TEAMS id" aria-label="Filter overlaps"></div>
@@ -328,6 +347,7 @@ function overlapsHead(P) {
 function renderOverlaps(P) {
   overlapsHead(P);
   if (solo()) return renderSoloRows();
+  renderKpis();
   $("#chips").innerHTML = [`<button type="button" class="chip" data-t="all" aria-pressed="${state.tiers.size >= 5}">All ${RESULT.pairs.length}</button>`]
     .concat(TIERS.slice(0, 4).map((t, i) => `<button type="button" class="chip" data-t="${i}" aria-pressed="${state.tiers.has(i) && state.tiers.size < 5}"><i style="background:${tcol(i)}"></i>${SEV[i]} ${RESULT.pairs.filter(x => x.tier === i).length}</button>`)).join("");
   $("#chips").querySelectorAll(".chip").forEach(b => b.onclick = () => {
@@ -839,18 +859,58 @@ function closeBrief() { $("#brief").hidden = true; }
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
-function open3d(x) {
+function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
-  Scene3D.open(x, {
+  Scene3D.open(x, Object.assign({
     title: `${short(x.p)} and ${short(x.q)}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
-  });
+  }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
 function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
+
+// ---------- drop-in walker ----------
+// Drag the orange figure onto a project: the 3D illustration opens at that spot in walk mode, with the project's
+// pair that is worth the most (or the selected pair, if it includes the project).
+function pairFor(p) {
+  if (state.sel && state.sel.p && state.sel.q && (state.sel.p === p || state.sel.q === p)) return state.sel;
+  return (VIEW.concat(RESULT.pairs)).filter(x => x.p === p || x.q === p).sort((a, b) => b.risk.expected - a.risk.expected)[0] || null;
+}
+function setupPeg() {
+  const peg = $("#peg");
+  let ghost = null, over = null;
+  const end = () => { if (ghost) ghost.remove(); ghost = null; peg.classList.remove("dragging"); hideTip(); };
+  peg.addEventListener("pointerdown", e => {
+    e.preventDefault(); peg.setPointerCapture(e.pointerId); peg.classList.add("dragging");
+    ghost = peg.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("ghost"); document.body.appendChild(ghost);
+    move(e);
+  });
+  const move = e => {
+    if (!ghost) return;
+    ghost.style.transform = `translate(${e.clientX - 14}px, ${e.clientY - 44}px)`;
+    const hit = mapReady ? SeamMap.pick(e.clientX, e.clientY) : null;
+    over = hit && hit.id ? { p: PROJECTS.find(v => v.id === hit.id), at: hit.at } : null;
+    const x = over && over.p && pairFor(over.p);
+    ghost.classList.toggle("ok", !!x);
+    if (over && over.p) tip(e, x ? `<b>${esc(short(over.p))}</b><br>Drop to walk here in 3D` : `<b>${esc(short(over.p))}</b><br>No overlap with ${esc(lbl(state.utilB))} for this project`);
+    else if (hit) tip(e, "Drop onto a project line or substation"); else hideTip();
+  };
+  peg.addEventListener("pointermove", move);
+  peg.addEventListener("pointerup", () => {
+    const o = over; end(); over = null;
+    if (!o || !o.p) return;
+    const x = pairFor(o.p);
+    if (!x) return;
+    const ll = Engine.closest({ coords: [o.at] }, o.p)[2]; // the point on the project nearest the drop
+    if (x !== state.sel) select(x);
+    open3d(x, { walkAt: ll });
+  });
+  peg.addEventListener("pointercancel", end);
+  peg.addEventListener("click", e => { if (e.detail === 0) tip({ clientX: peg.getBoundingClientRect().left, clientY: peg.getBoundingClientRect().top }, "Drag onto a project to walk around it in 3D"); });
+}
 
 // ---------- pickers, datasets, import ----------
 function renderPickers() {
@@ -940,6 +1000,75 @@ function saveAssume(vals) {
 }
 { const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
+
+// ---------- shareable link ----------
+// The URL hash carries what's on screen (utilities, filters, tab, selection, basemap, 3D and camera), so a link
+// pasted into an email opens the same view. It is rewritten as the view changes, without adding history entries.
+let pendingView = null, hashTimer = null;
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.toString()) return;
+  const num = (k, ok) => { const v = +h.get(k); return h.has(k) && isFinite(v) && (!ok || ok(v)) ? v : null; };
+  if (h.get("a")) state.utilA = h.get("a");
+  if (h.get("b")) state.utilB = h.get("b");
+  if (num("d") != null) state.D = num("d");
+  if (num("w") != null) state.B = num("w");
+  if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
+  if (num("h") != null) state.horizon = num("h");
+  if (h.get("past") === "0") state.past = false;
+  if (h.get("grid") === "0") state.grid = false;
+  if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
+  if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
+  const cam = (h.get("cam") || "").split(",").map(Number);
+  pendingView = { sel: h.get("sel"), d3: h.get("3d") === "1", cam: cam.length === 5 && cam.every(isFinite) ? cam : null };
+}
+function syncControls() {
+  $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
+  $("#buf").value = String(state.B);
+  for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
+  document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
+  $("#pastOn").checked = state.past;
+}
+function applyPendingView() {
+  const v = pendingView; pendingView = null;
+  if (!v) return false;
+  const m = SeamMap.raw();
+  if (v.d3) { SeamMap.set3D(true); $("#b3d").setAttribute("aria-pressed", "true"); }
+  if (v.sel) {
+    const x = RESULT.pairs.find(y => keyOf(y) === v.sel), p = !x && PROJECTS.find(q => q.id === v.sel);
+    if (x) { state.sel = VIEW.find(y => y === x) || x; if (state.tab !== "overlaps" && state.tab !== "ask") state.tab = "overlaps"; }
+    else if (p && solo()) state.sel = { p, solo: true };
+    renderMap(); renderPanel(); renderTimeline();
+  }
+  if (v.cam) { m.jumpTo({ center: [v.cam[0], v.cam[1]], zoom: v.cam[2], pitch: v.cam[3], bearing: v.cam[4] }); return true; }
+  if (state.sel) { flyTo(state.sel); return true; }
+  return false;
+}
+function writeHash() {
+  if (!mapReady) return; // until the map is up, the link being opened is still being applied
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const h = new URLSearchParams();
+    h.set("a", state.utilA); h.set("b", state.utilB);
+    if (state.D !== 40) h.set("d", state.D);
+    if (state.B) h.set("w", state.B);
+    if (state.mode !== "near") h.set("m", state.mode);
+    if (state.horizon) h.set("h", state.horizon);
+    if (!state.past) h.set("past", "0");
+    if (!state.grid) h.set("grid", "0");
+    if (state.tab !== "overlaps") h.set("tab", state.tab);
+    const x = state.sel;
+    if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
+    if (state.basemap !== "plain") h.set("map", state.basemap);
+    {
+      const m = SeamMap.raw(), c = m.getCenter();
+      if (SeamMap.get3D()) h.set("3d", "1");
+      h.set("cam", [c.lng.toFixed(4), c.lat.toFixed(4), m.getZoom().toFixed(2), Math.round(m.getPitch()), Math.round(m.getBearing())].join(","));
+    }
+    history.replaceState(null, "", "#" + h.toString().replace(/%7C/gi, "|").replace(/%2C/gi, ","));
+  }, 250);
+}
+
 // ---------- modals ----------
 function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
 function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
@@ -952,15 +1081,18 @@ function select(x) {
   if (x && !x.moves) state.tab = "overlaps";
   renderMap(); renderPanel(); renderTimeline();
   if (changed && x) flyTo(x); else if (changed && !x) fitAll(700);
+  writeHash();
 }
 function refresh() {
   compute();
   if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); }
   else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
+  $("#filtCt").textContent = `${state.D} km · ${state.horizon ? (state.horizon === 12 ? "next 12 mo" : "next " + state.horizon / 12 + " yr") : "all dates"}`;
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
+  writeHash();
 }
 function rebuild() {
   state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
@@ -969,7 +1101,7 @@ function rebuild() {
 function setBasemap(b) {
   state.basemap = b; store.set("basemap", b);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === b));
-  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap();
+  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap(); writeHash();
 }
 function theme() {
   SeamMap.setTheme({ water: css("--water"), land: css("--land"), county: css("--grid"), stateLine: css("--ink3"), river: css("--river"), place: css("--ink2") });
@@ -987,8 +1119,26 @@ $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
 for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
-$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
-document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#bgrid").onclick = () => { state.grid = !state.grid; $("#bgrid").setAttribute("aria-pressed", state.grid); SeamMap.setGrid(state.grid); legend(); writeHash(); };
+$("#share").onclick = () => {
+  clearTimeout(hashTimer); writeHash();
+  setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
+};
+document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => goTab(b.dataset.tab));
+// Windows: unfold the build-windows chart under the map (the Play bar is always there).
+$("#railTl").onclick = () => {
+  const on = !$(".left").classList.contains("tl-open");
+  $(".left").classList.toggle("tl-open", on); $("#railTl").setAttribute("aria-pressed", on);
+  renderTimeline(); SeamMap.resize();
+};
+// Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
+const pops = [["filtersBtn", "controls"], ["moreBtn", "moreMenu"]];
+const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });
+pops.forEach(([b, p]) => $("#" + b).addEventListener("click", e => { e.stopPropagation(); closePops(b); const open = $("#" + p).hidden; $("#" + p).hidden = !open; $("#" + b).setAttribute("aria-expanded", open); }));
+document.addEventListener("click", e => { if (!e.target.closest("#controls, #moreMenu")) closePops(); });
+$("#moreMenu").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; closePops(); if (b.dataset.go) $("#" + b.dataset.go).click(); });
+addEventListener("keydown", e => { if (e.key === "Escape") closePops(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
@@ -1044,14 +1194,24 @@ addEventListener("resize", () => renderTimeline());
 
 renderAssume();
 renderDatasets();
+setupPeg();
 SEAM = seamCoords();
+readHash();
+syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
   click: mapClick, hover: mapHover, recenter: () => fitAll(700),
   tilesFailed: name => { setBasemap("plain"); $("#tileNote").textContent = `${SeamMap.BASEMAPS[name].label} tiles couldn't load (they need an internet connection), so the map switched to Plain.`; $("#tileNote").hidden = false; },
 }).then(() => {
   mapReady = true;
+  // the walker sits on top of the corner controls, like Street View's figure, so it never covers the scale bars
+  const peg = $("#peg"); peg.classList.add("maplibregl-ctrl", "in-ctrl");
+  SeamMap.raw().addControl({ onAdd: () => peg, onRemove: () => {} }, "bottom-right");
   SeamMap.setBasemap(state.basemap);
+  SeamMap.setGrid(state.grid); $("#bgrid").setAttribute("aria-pressed", state.grid);
+  document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
-  fitAll(0);
+  if (!applyPendingView()) fitAll(0);
+  SeamMap.raw().on("moveend", writeHash);
+  writeHash();
 });
