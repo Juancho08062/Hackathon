@@ -26,7 +26,10 @@ const store = {
 const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
-  tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  tab: "overlaps", sort: "expected", shown: 60, askKey: false, keyNote: null,
+  lastView: "overlaps",
+  askLang: store.get("askLang", (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en"),
+  opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
   grid: true,
   basemap: ["plain", "relief", "satellite", "topo"].includes(store.get("basemap", "plain")) ? store.get("basemap", "plain") : "plain",
 };
@@ -159,9 +162,11 @@ function renderMap() {
   const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
     const hi = inSel(focus, p) || (moved && moved.has(p.id));
     let op = (solo() || flagged.has(p.id) ? 1 : .28) * phaseOp[phase(p, t)];
-    if (isPast(p)) op *= .45;
+    // A passed date is encoded by the dash pattern below, not by fading the line out of sight: at .45 of an
+    // already-dimmed line it fell under the 3:1 a meaningful graphic needs.
+    if (isPast(p)) op = Math.max(op * .45, .55);
     if (focus || moved) op = hi ? 1 : Math.min(op, .18);
-    return { id: p.id, parts: Engine.partsOf(p), kv: p.kv, color: uColor(p.utility), casing, opacity: op, dash: p.loc === "low",
+    return { id: p.id, parts: Engine.partsOf(p), kv: p.kv, color: uColor(p.utility), casing, opacity: op, dash: p.loc === "low" || isPast(p),
       width: (p.kv >= 500 ? 3.4 : p.kv >= 230 ? 2.6 : p.kv >= 115 ? 1.9 : 1.4) + (hi ? 2 : 0) + (phase(p, t) === "building" ? 1.2 : 0), r: hi ? 7 : 4.5 };
   });
   const pairOp = d => focus ? (d === focus || (focus.cluster && focus.cluster.pairs.includes(d)) ? 1 : .1) : t != null ? (live(d, t) ? 1 : .08) : .75;
@@ -232,7 +237,7 @@ function legend() {
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
     ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
-    (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
+    (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
 
 // ---------- time scrubber ----------
@@ -260,7 +265,10 @@ function togglePlay() {
   if (playTimer) return stopPlay();
   const r = $("#tslider");
   if (state.t == null || state.t >= +r.max) { r.value = r.min; setT(+r.min); }
-  playTimer = setInterval(() => { const n = state.t + 1; if (n > +r.max) return stopPlay(); r.value = n; setT(n); }, 120);
+  // Slower under reduced motion rather than disabled: the scrubber is the control, not decoration, so it still has
+  // to advance — just without a 120 ms strobe.
+  const step = matchMedia("(prefers-reduced-motion: reduce)").matches ? 600 : 120;
+  playTimer = setInterval(() => { const n = state.t + 1; if (n > +r.max) return stopPlay(); r.value = n; setT(n); }, step);
   scrubUI();
 }
 
@@ -293,7 +301,7 @@ function renderTimeline() {
     d.bars.forEach((p, i) => {
       const y = n === 1 ? 9 : 5 + i * 9;
       G.append("rect").attr("x", X(mon(p.start))).attr("width", Math.max(3, X(mon(p.in_service)) - X(mon(p.start)))).attr("y", y).attr("height", 6)
-        .attr("fill", uColor(p.utility)).attr("fill-opacity", isPast(p) ? .3 : .9);
+        .attr("fill", uColor(p.utility)).attr("fill-opacity", isPast(p) ? .55 : .9);
     });
     if (n === 2) {
       const a = Math.max(mon(d.bars[0].start), mon(d.bars[1].start)), b = Math.min(mon(d.bars[0].in_service), mon(d.bars[1].in_service));
@@ -309,6 +317,8 @@ function renderTimeline() {
 // ---------- panel: tabs ----------
 function renderTabs() {
   document.querySelectorAll(".rail [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
+  $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
+  $("#askFab").hidden = state.tab === "ask";
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -322,6 +332,15 @@ function renderTabs() {
   $("#b-checks").hidden = !review; $("#b-checks").textContent = review;
 }
 // Switch the panel's view, as the rail's tabs do.
+// Ask toggles; every other rail item switches. Leaving Ask returns to the view that was open before it, which is what
+// a panel you opened over your work should do.
+function toggleTab(t) {
+  if (t === "ask" && state.tab === "ask") return goTab(state.lastView || "overlaps");
+  if (t === "ask") store.set("askSeen", true);
+  else state.lastView = t;
+  goTab(t);
+}
+
 function goTab(t) { const keep = t === "overlaps" && state.tab === "ask"; state.tab = t; if (state.sel && !state.sel.cluster && !keep) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); }
 // Four headline numbers at the top of the Overlaps view; the last two open the Plan and Checks views.
 function renderKpis() {
@@ -393,7 +412,8 @@ function renderOverlaps(P) {
   const side = (p, cls) => `<span class="pp${isPast(p) ? " past" : ""}"><i class="${cls}"></i>${esc(short(p))}${p.likely_built ? ` <em>likely built</em>` : isPast(p) ? ` <em>date passed</em>` : ""}</span>`;
   R.innerHTML = VIEW.slice(0, state.shown).map((x, i) => {
     const st = STATUS[keyOf(x)];
-    return `<div class="tr${state.hover === x ? " hov" : ""}" tabindex="0" data-i="${i}">
+    const label = `${SEV[Math.min(x.tier, 4)]}, ${km(x.km)}, ${short(x.p)} and ${short(x.q)}, ${x.risk.why === "built" ? "likely built" : pct(x.risk.chance) + " chance of a shared window"}, expected ${x.risk.expected ? money(x.risk.expected) : "no saving"}`;
+    return `<div class="tr${state.hover === x ? " hov" : ""}" tabindex="0" role="button" aria-label="${esc(label)}" data-i="${i}">
       <span class="muted">${i + 1}</span>
       <span class="dist"><b class="sev s${Math.min(x.tier, 4)}">${SEV[Math.min(x.tier, 4)]}</b><span>${km(x.km)}</span></span>
       <span class="pair">${side(x.p, "a")}${side(x.q, "b")}${st && st !== "Open" ? `<span class="status">${esc(st)}</span>` : ""}</span>
@@ -632,7 +652,7 @@ function renderChanges(P) {
     for (const p of [x.p, x.q]) if (p.drift && p.drift.months) r.push(`${lbl(p.utility)} moved ${short(p)} ${Math.abs(p.drift.months)} months ${p.drift.months > 0 ? "later" : "earlier"}`);
     return r.join("; ") + (REFS[keyOf(x)] ? ` · challenge reference ${REFS[keyOf(x)]}` : "");
   };
-  const list = xs => xs.map((x, i) => `<div class="tr lite" tabindex="0" data-k="${esc(keyOf(x))}"><span class="muted">${km(x.km)}</span><span class="pair"><span class="pp"><i class="a"></i>${esc(short(x.p))}</span><span class="pp"><i class="b"></i>${esc(short(x.q))}</span><small>${esc(why(x))}</small></span></div>`).join("") || `<div class="empty">None.</div>`;
+  const list = xs => xs.map((x, i) => `<button type="button" class="tr lite" data-k="${esc(keyOf(x))}"><span class="muted">${km(x.km)}</span><span class="pair"><span class="pp"><i class="a"></i>${esc(short(x.p))}</span><span class="pp"><i class="b"></i>${esc(short(x.q))}</span><small>${esc(why(x))}</small></span></button>`).join("") || `<div class="empty">None.</div>`;
   const u = k => S[k] ? `<div class="hist"><span><b>${esc(lbl(k))}</b> · ${S[k].n} projects with a history</span>${histogram(S[k].months, k === state.utilA ? "var(--u0)" : "var(--u1)")}<small>${S[k].slipped} later, ${S[k].advanced} earlier, ${S[k].n - S[k].slipped - S[k].advanced} unchanged · months moved between the last two plans</small><small class="muted">${esc(S[k].source)}</small></div>` : "";
   P.innerHTML = `<div class="detail"><h2>How dates moved between the last two plans</h2><div class="hists">${u(state.utilA)}${u(state.utilB)}</div>
     <p class="note">Seamline replays each pair with the dates the previous plan listed. These are the shared build windows the latest updates opened and closed.</p></div>
@@ -654,9 +674,9 @@ function renderOptimize(P) {
     <div class="thead opt"><span>#</span><span>Move</span><span>Shift</span><span class="r">Adds</span></div>
     <div class="rows">${o.moves.map((m, i) => {
       const best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0], other = best ? (best.x.p === m.project ? best.x.q : best.x.p) : null;
-      return `<div class="tr opt" tabindex="0" data-i="${i}"><span class="muted">${i + 1}</span><span class="pair"><span class="pp"><i class="${m.project.utility === state.utilA ? "a" : "b"}"></i>${esc(short(m.project))}</span>
+      return `<button type="button" class="tr opt" data-i="${i}"><span class="muted">${i + 1}</span><span class="pair"><span class="pp"><i class="${m.project.utility === state.utilA ? "a" : "b"}"></i>${esc(short(m.project))}</span>
         <small>In service ${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</small>${other ? `<small>Best effect · ${esc(short(other))}: ${pct(best.before)} → ${pct(best.after)}</small>` : ""}</span>
-        <span class="${m.months > 0 ? "amber" : "blue"}"><b>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} mo</b></span><span class="r up"><b>+${money(m.gain)}</b></span></div>`;
+        <span class="${m.months > 0 ? "amber" : "blue"}"><b>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} mo</b></span><span class="r up"><b>+${money(m.gain)}</b></span></button>`;
     }).join("")}</div>
     <p class="note pad">Planning aid: assumes each date moves once more, like past plan updates, and that the utilities move independently.</p>`;
   $("#oMax").value = state.opt.maxShift; $("#oWho").value = state.opt.who;
@@ -700,13 +720,19 @@ How Seamline measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
+The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version — open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves — and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
-  { name: "search_projects", description: "Find planned projects by words in their name, description, substation names, TEAMS number or source page. Returns up to `limit` matches with id, utility, kV, type, construction window, in-service date, cost and location confidence.", input_schema: { type: "object", properties: { query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'" }, utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" }, limit: { type: "integer", description: "Max results, default 10" } }, required: ["query"] } },
+  { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
+    query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'. Omit to rank everything." },
+    utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" },
+    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to order the results. cost covers Dominion only; kv and length_km cover both utilities." },
+    order: { type: "string", enum: ["desc", "asc"], description: "desc = largest or latest first (default), asc = smallest or earliest first" },
+    limit: { type: "integer", description: "Max results, default 10" } } } },
   { name: "get_project", description: "Everything Seamline knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
   { name: "list_overlaps", description: "Ranked flagged pairs of projects (one from each utility). Filter and sort them; each row has a key for get_overlap and show_on_map.", input_schema: { type: "object", properties: {
     sort: { type: "string", enum: ["expected", "chance", "distance"], description: "expected = expected savings (default), chance = chance of a shared window, distance = closest first" },
+    order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking — the least valuable pairs, or the farthest apart — since only `limit` rows come back." },
     max_distance_km: { type: "number", description: "Only pairs at most this far apart" },
     min_chance: { type: "number", description: "Only pairs with at least this chance (0 to 1)" },
     same_window_on_paper: { type: "boolean", description: "true: only pairs whose planned windows overlap; false: only pairs that don't" },
@@ -718,18 +744,52 @@ const TOOLS = [
   { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
   { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
   { name: "show_on_map", description: "Select a pair or a project in Seamline so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
+  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Seamline flagged them as a coordination pair. Use this for any question of the form 'compare A and B' — reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
+    project_ids: { type: "array", items: { type: "string" }, description: "Two to five project ids, e.g. ['DESC-11', 'IRP-20277']" } }, required: ["project_ids"] } },
   { name: "why_not", description: "Why two specific projects are NOT flagged as an opportunity: too far apart, the same utility, a location that could not be established, or one of them already likely built. Most pairs do not overlap, so use this whenever the user asks about a pair that is missing from the list rather than guessing at the reason.", input_schema: { type: "object", properties: {
     project_id_a: { type: "string", description: "A project id, e.g. DESC-12" },
     project_id_b: { type: "string", description: "The other project id, e.g. IRP-20277" } }, required: ["project_id_a", "project_id_b"] } },
   { name: "open_brief", description: "Open the printable coordination brief for one pair: the memo a planner would take to the other utility, with both projects, the distance, the build windows, what can be shared with the arithmetic behind each figure, the best shared yard and the proposed next steps. Use it when the user asks for a brief, a memo, a write-up or something to send or print.", input_schema: { type: "object", properties: {
     key: { type: "string", description: "Pair key from list_overlaps, 'PROJECTID|PROJECTID'" },
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing why this pair is worth coordinating. This is the only text in the brief you write; every figure in it is computed from the plans." } }, required: ["key"] } },
+  { name: "open_report", description: "Open a printable report over the whole comparison rather than one pair: the totals, the projects ranked by whichever measure the user asked for, the strongest coordination opportunities, and what the data does and does not cover. The reader can save it as PDF from the document. Use it when someone asks for a report, a list they can keep, or something to send that is not about a single pair.", input_schema: { type: "object", properties: {
+    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to rank the project table. Default cost, which only Dominion publishes — prefer kv or length_km when the question covers both utilities." },
+    order: { type: "string", enum: ["desc", "asc"] },
+    utility: { type: "string", description: "Optional: restrict the project table to one utility code, e.g. DESC" },
+    limit: { type: "integer", description: "Rows in the project table, default 20, at most 40" },
+    narrative: { type: "string", description: "One short paragraph, in the user's language, framing what the report shows. The only text in it you write." } } } },
   { name: "open_schedule_brief", description: "Open the printable joint schedule proposal: the date moves that most raise expected savings, with each move and what it adds. Use it when the user asks for a brief or memo about rescheduling rather than about one pair.", input_schema: { type: "object", properties: {
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing the proposal. The only text in the brief you write." },
     max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" } } } },
 ];
+// The shape of the loaded data, handed to the model with the system prompt. Without it every turn starts blind: the
+// model has to spend a tool call discovering how many projects there are, which utilities they belong to and what the
+// comparison found, before it can answer anything. With it, a one-line question gets a one-turn answer, and the model
+// knows what it is allowed to claim — that Georgia publishes no costs, and how many pairs were rejected.
+function dataDigest() {
+  const tiers = TIERS.slice(0, 4).map((t, k) => `${t.label}: ${RESULT.pairs.filter(x => x.tier === k).length}`).join(", ");
+  const priced = PROJECTS.filter(p => p.cost);
+  const dates = PROJECTS.map(p => p.in_service).filter(Boolean).sort();
+  const top = RESULT.pairs.slice(0, 5).map(x =>
+    `  ${keyOf(x)} — ${x.km.toFixed(1)} km, ${TIERS[Math.min(x.tier, 4)].label}, ${x.sameWindow ? "same window on paper" : `${Math.round(x.gap)} mo apart`}, expected ${Engine.fmtMoney(x.risk.expected)}`).join("\n");
+  const lines = [
+    `As of ${TODAY}. Comparing ${utilities().map(u => `${lblLong(u)} (${u}, ${PROJECTS.filter(p => p.utility === u).length} projects)`).join(" against ")}.`,
+    `In-service dates run ${dates[0]} to ${dates[dates.length - 1]}. ${priced.length} of ${PROJECTS.length} projects publish a cost; the rest are redacted in their filing, so no figure may be attributed to them.`,
+    `Filters in effect: within ${state.D} km, window buffer ±${state.B} months, match rule "${state.mode}".`,
+    `${RESULT.checked.toLocaleString("en-US")} pairs checked, ${RESULT.pairs.length} flagged. By tier: ${tiers}. ${RESULT.pairs.filter(x => x.sameWindow).length} share a build window on paper.`,
+    `Total expected savings ${Engine.fmtMoney(RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0))}, or ${Engine.fmtMoney(RESULT.pairs.reduce((a, x) => a + x.sav.total, 0))} if every date holds.`,
+    `${borderline().length} further pairs fall just outside the ${state.D} km screen and are deliberately excluded from every ranking and total.`,
+    "",
+    "The five strongest pairs right now, so you can answer without a tool call when the question is about them:",
+    top,
+  ];
+  return lines.join("\n");
+}
+
 const projOut = p => ({ id: p.id, utility: p.utility, name: p.name, kv: p.kv, type: TYPE[p.type] || p.type, construction: `${p.start} to ${p.in_service}`, start_published: !!p.start_published,
-  in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built, cost_usd: p.cost || null, location_confidence: p.loc, source: p.page ? `${p.source} (${p.page})` : p.source });
+  in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built,
+  cost_usd: p.cost || null, cost_note: p.cost ? undefined : "not published in this utility's filing",
+  length_km: +Engine.lengthKm(p).toFixed(1) || null, location_confidence: p.loc, source: p.page ? `${p.source} (${p.page})` : p.source });
 const pairOut = x => ({ key: keyOf(x), distance_km: +x.km.toFixed(2), tier: TIERS[Math.min(x.tier, 4)].label, project_a: `${x.p.name} (${x.p.utility}, in service ${x.p.in_service})`, project_b: `${x.q.name} (${x.q.utility}, in service ${x.q.in_service})`,
   windows_on_paper: x.ov > 0 ? `${Math.round(x.ov)} months shared` : `${Math.round(x.gap)} months apart`, chance_of_shared_window: x.risk.why === "built" ? "none, one side is likely built" : +x.risk.chance.toFixed(2),
   expected_savings_usd: Math.round(x.risk.expected), savings_if_dates_hold_usd: Math.round(x.sav.total), challenge_reference: REFS[keyOf(x)] || null });
@@ -746,8 +806,17 @@ function runTool(name, i) {
       savings_if_dates_hold_usd: Math.round(RESULT.pairs.reduce((a, x) => a + x.sav.total, 0)), as_of: TODAY, sources: $("#asof").textContent };
   }
   if (name === "search_projects") {
-    const ps = PROJECTS.filter(p => (!i.utility || p.utility.toLowerCase() === String(i.utility).toLowerCase()) && hit(`${p.id} ${p.name} ${p.desc || ""} ${p.page || ""} ${(p.located || []).map(l => l.name).join(" ")}`, i.query));
-    return { matches: ps.length, projects: ps.slice(0, Math.min(25, i.limit || 10)).map(projOut) };
+    const ps = PROJECTS.filter(p => (!i.utility || p.utility.toLowerCase() === String(i.utility).toLowerCase()) &&
+      (!i.query || hit(`${p.id} ${p.name} ${p.desc || ""} ${p.page || ""} ${(p.located || []).map(l => l.name).join(" ")}`, i.query)));
+    const key = { cost: p => p.cost || 0, kv: p => p.kv || 0, length_km: p => Engine.lengthKm(p), in_service: p => mon(p.in_service), name: p => p.name };
+    const sorted = i.sort && key[i.sort]
+      ? ps.slice().sort((a, b) => { const x = key[i.sort](a), y = key[i.sort](b); const c = typeof x === "string" ? x.localeCompare(y) : x - y; return i.order === "asc" ? c : -c; })
+      : ps;
+    const out = { matches: ps.length, projects: sorted.slice(0, Math.min(25, i.limit || 10)).map(projOut) };
+    // If the ranking is by money, say which side of the comparison has no figures at all, so the answer cannot present
+    // a Dominion project as the largest of both utilities.
+    if (i.sort === "cost") out.note = `Ranked by published cost. ${PROJECTS.filter(p => !p.cost).length} of ${PROJECTS.length} projects publish no cost and are ordered last; every Georgia project is among them.`;
+    return out;
   }
   if (name === "get_project") {
     const p = PROJECTS.find(v => v.id === i.id);
@@ -761,7 +830,7 @@ function runTool(name, i) {
       (i.same_window_on_paper == null || x.sameWindow === i.same_window_on_paper) && (i.include_past !== false || (!isPast(x.p) && !isPast(x.q))) &&
       (!i.project_query || hit(`${x.p.name} ${x.q.name} ${x.p.id} ${x.q.id}`, i.project_query)));
     const by = { expected: (a, b) => b.risk.expected - a.risk.expected, chance: (a, b) => b.risk.chance - a.risk.chance, distance: (a, b) => a.km - b.km }[i.sort || "expected"] || ((a, b) => b.risk.expected - a.risk.expected);
-    xs = xs.slice().sort(by);
+    xs = xs.slice().sort(i.order === "asc" ? (a, b) => -by(a, b) : by);
     return { matching_pairs: xs.length, rows: xs.slice(0, Math.min(25, i.limit || 10)).map(pairOut) };
   }
   if (name === "get_overlap") {
@@ -807,6 +876,32 @@ function runTool(name, i) {
     if (y) { if (!y.solo && !VIEW.includes(y)) clearFilters(); show(y.solo ? y : (VIEW.find(v => v === y) || y)); } else SeamMap.fit(p.coords, { padKm: 6 });
     return { shown: p.name };
   }
+  if (name === "compare_projects") {
+    const ids = (Array.isArray(i.project_ids) ? i.project_ids : []).map(v => String(v || "").toUpperCase()).slice(0, 5);
+    if (ids.length < 2) throw new Error("Give at least two project ids.");
+    const ps = ids.map(id => {
+      const p = PROJECTS.find(v => v.id === id);
+      if (!p) throw new Error(`No project with id ${id}. Use search_projects to find its id.`);
+      return p;
+    });
+    // Every unordered pair among them, since "compare A and B" is really a question about the relationship.
+    const between = [];
+    for (let a = 0; a < ps.length; a++) for (let b = a + 1; b < ps.length; b++) {
+      const p = ps[a], q = ps[b], km = Engine.closest(p, q)[0], ov = Engine.windowOverlap(p, q);
+      const flagged = RESULT.pairs.find(x => (x.p === p && x.q === q) || (x.p === q && x.q === p));
+      between.push({
+        projects: `${p.id} and ${q.id}`,
+        same_utility: p.utility === q.utility,
+        distance_km: +km.toFixed(2),
+        tier: km <= state.D ? TIERS[Math.min(Engine.tierOf(km), 4)].label : `beyond the ${state.D} km screen`,
+        windows: ov > 0 ? `${Math.round(ov)} months shared` : `${Math.round(-ov)} months apart`,
+        flagged_pair: flagged ? keyOf(flagged) : null,
+        expected_savings_usd: flagged ? Math.round(flagged.risk.expected) : null,
+        why_not_flagged: flagged ? null : runTool("why_not", { project_id_a: p.id, project_id_b: q.id }).explanation,
+      });
+    }
+    return { projects: ps.map(p => Object.assign(projOut(p), { description: p.desc || null, plan_drift: p.drift || null })), between };
+  }
   if (name === "why_not") {
     const p = PROJECTS.find(v => v.id === String(i.project_id_a).toUpperCase()), q = PROJECTS.find(v => v.id === String(i.project_id_b).toUpperCase());
     if (!p || !q) { const missing = !p ? i.project_id_a : i.project_id_b; throw new Error(`No project with id ${missing}. Use search_projects to find its id.`); }
@@ -832,6 +927,10 @@ function runTool(name, i) {
     openBrief(x, i.narrative);
     return { opened: "coordination brief", pair: pairOut(x).project_a + " and " + pairOut(x).project_b };
   }
+  if (name === "open_report") {
+    openReport({ sort: i.sort, order: i.order, utility: i.utility ? String(i.utility).toUpperCase() : null, limit: i.limit }, i.narrative);
+    return { opened: "project report", ranked_by: i.sort || "cost", projects: PROJECTS.length, flagged_pairs: RESULT.pairs.length };
+  }
   if (name === "open_schedule_brief") {
     if (i.max_shift_months) state.opt.maxShift = i.max_shift_months;
     const o = optimize();
@@ -841,41 +940,241 @@ function runTool(name, i) {
   }
   throw new Error("Unknown tool " + name);
 }
-const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
-  .split(/\n{2,}/).map(par => /^\s*[-*] /m.test(par) ? "<ul>" + par.split("\n").filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*[-*]\s+/, "")}</li>`).join("") + "</ul>" : `<p>${par.replace(/\n/g, "<br>")}</p>`).join("");
+// Minimal markdown for the assistant's answers: headings, ordered and unordered lists with one level of nesting,
+// pipe tables, bold, italic and inline code. Text is escaped before any of it, so a model that emits HTML gets it shown
+// rather than run. Deliberately small — this renders answers, not documents.
+const md = text => {
+  const inline = t => esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[\s([])\*([^*\n]+)\*/g, "$1<i>$2</i>")
+    .replace(/(^|\s)_([^_\n]+)_(?=$|[\s.,;:)])/g, "$1<i>$2</i>");
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  const out = [];
+  let para = [], table = null;
+  // A stack of open list types, so a nested list is emitted inside its parent item rather than beside it, and an item
+  // is only closed once whatever it contains has been closed.
+  const stack = [];
+  let liOpen = false;
+
+  const flushPara = () => { if (para.length) { out.push(`<p>${para.map(inline).join("<br>")}</p>`); para = []; } };
+  const closeItem = () => { if (liOpen) { out.push("</li>"); liOpen = false; } };
+  const flushList = () => {
+    while (stack.length) { closeItem(); out.push(`</${stack.pop()}>`); liOpen = stack.length > 0; }
+    liOpen = false;
+  };
+  const flushTable = () => {
+    if (!table) return;
+    const [head, ...body] = table;
+    out.push(`<table class="mt"><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>` +
+      body.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("") + "</tbody></table>");
+    table = null;
+  };
+  const flushAll = () => { flushPara(); flushList(); flushTable(); };
+  const cells = line => line.replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+
+  for (const line of lines) {
+    if (!line.trim()) { flushAll(); continue; }
+
+    // A pipe table: the row after the header is all dashes, which is what tells one apart from a line with a pipe in it.
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      flushPara(); flushList();
+      const row = cells(line.trim());
+      if (table && row.every(c => /^:?-{2,}:?$/.test(c))) continue;   // the separator row carries no data
+      table = table || [];
+      table.push(row);
+      continue;
+    }
+    flushTable();
+
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) { flushPara(); flushList(); out.push(`<h4>${inline(heading[2])}</h4>`); continue; }
+
+    const item = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+    if (item) {
+      flushPara();
+      const want = /\d/.test(item[2]) ? "ol" : "ul";
+      const level = Math.min(1, Math.floor(item[1].length / 2)) + 1;  // one level of nesting is enough here
+      while (stack.length > level) { closeItem(); out.push(`</${stack.pop()}>`); liOpen = stack.length > 0; }
+      if (stack.length === level) closeItem();                        // a sibling: close the item before the next one
+      while (stack.length < level) { out.push(`<${want}>`); stack.push(want); }
+      out.push(`<li>${inline(item[3])}`);
+      liOpen = true;
+      continue;
+    }
+
+    // An indented line under a list item belongs to that item, not to a new paragraph.
+    if (stack.length && /^\s{2,}\S/.test(line)) { out.push(`<div class="li-note">${inline(line.trim())}</div>`); continue; }
+
+    flushList();
+    para.push(line.trim());
+  }
+  flushAll();
+  return out.join("");
+};
 const apiKey = () => { try { return sessionStorage.getItem("seamline.key") || localStorage.getItem("seamline.key") || ""; } catch (err) { return CHAT.key || ""; } };
 function saveKey(k, remember) {
   CHAT.key = k;
   try { sessionStorage.setItem("seamline.key", k); if (remember) localStorage.setItem("seamline.key", k); else localStorage.removeItem("seamline.key"); } catch (err) { /* storage blocked: key lives for this page only */ }
 }
-const SUGGEST = ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "How reliable is the data?"];
+const SUGGEST_BY_LANG = {
+  en: ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "Which is the biggest project?", "How reliable is the data?"],
+  es: ["¿Qué solapes son más probables y cuánto podrían ahorrar?", "Explícame el par de Jasper - Okatie con McIntosh - Purrysburg", "¿Qué cambió entre los dos últimos planes de DESC?", "¿Qué tres movimientos de fecha ahorrarían más?", "¿Qué hay planeado cerca de Augusta?", "¿Cuál es el proyecto más grande?", "¿Qué tan confiable es el dato?"],
+};
+// The flags set the panel's language. The browser's own preference is only the first guess; after that the choice sticks.
+const askLang = () => state.askLang;
+const SUGGEST = () => SUGGEST_BY_LANG[askLang()] || SUGGEST_BY_LANG.en;
+// The panel leads with what it can do, not with a key field. The common questions are answered from the loaded plans
+// with no model at all (agent-offline.js), so opening with "Anthropic API key" in bold reads as a paywall on a feature
+// that is already working. The key is offered at the bottom, for the open-ended questions that do need it.
 function renderAsk(P) {
   P.dataset.view = "ask";
   const has = !!apiKey();
+  const keyForm = has
+    ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
+    : state.askKey
+      ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
+        <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
+        <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
+        <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
+      : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
+  const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
-    <div class="ask-key${has ? " set" : ""}">${has ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
-      : `<label for="kIn"><b>Anthropic API key</b></label><div class="ph-row"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" class="btn sm primary" id="kSave">Use key</button></div>
-      <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
-      <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else. Without a key you can still ask the common questions &mdash; they are answered from the same data by pattern, with no model.</span>`}</div>
-    <div class="ask-log" id="askLog">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
-      : `<div class="msg hint"><p>Ask about the planned projects, overlaps, plan changes or data quality. Answers come from the same data the map and tables show.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
-      ${CHAT.busy ? `<div class="msg tool">Thinking…</div>` : ""}</div>
-    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="Ask about the plans…" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form></div>`;
+    <div class="ask-bar">
+      <span class="muted">${esc(C.hero)}</span><span class="grow"></span>
+      ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
+    </div>
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
+      : askWelcome()}
+      ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
+    <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
+    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
+    <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
-  if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); renderAsk(P); $("#askQ").focus(); } };
-  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } renderAsk(P); };
-  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => sendQuestion(b.textContent));
+  cycleHint();
+  if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
+  // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
+  // asking: is this key good? The panel is mutated in place rather than re-rendered while the check runs, so the typed
+  // value survives it.
+  if ($("#kForm")) $("#kForm").onsubmit = async e => {
+    e.preventDefault();
+    const input = $("#kIn"), btn = $("#kSave"), note = () => $("#kNote");
+    const k = input.value.trim();
+    const say = (text, cls) => { const n = note(); if (n) { n.textContent = text; n.className = `note ${cls}`; } };
+    if (!k) return say("Paste a key first.", "warn");
+    // Not a hard gate — key formats change — but a pasted URL or a truncated string is better caught here than as an
+    // authentication error a moment later.
+    if (!/^sk-[\w-]{20,}$/.test(k)) return say("That does not look like an Anthropic API key. They start with sk- and are much longer.", "warn");
+
+    input.disabled = btn.disabled = true;
+    btn.textContent = "Checking…";
+    say("Asking the API whether this key works…", "");
+    const r = await SeamAgent.verify(k);
+    input.disabled = btn.disabled = false;
+    btn.textContent = "Use key";
+
+    if (r.ok) {
+      saveKey(k, $("#kRem").checked);
+      state.askKey = false; state.keyNote = null;
+      CHAT.log.push({ role: "tool", text: `Key accepted. Open-ended questions now go to ${r.model}.` });
+      renderAsk(P); $("#askQ").focus();
+      return;
+    }
+    if (r.transient) {
+      // The key could not be judged, only the connection. Keep it, and say exactly that.
+      saveKey(k, $("#kRem").checked);
+      state.askKey = false;
+      state.keyNote = null;
+      CHAT.log.push({ role: "tool", text: `Key saved but not verified — ${r.reason} It will be used as soon as the API is reachable.` });
+      renderAsk(P); $("#askQ").focus();
+      return;
+    }
+    say(r.reason, "warn");
+  };
+  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
+  P.querySelectorAll(".flag").forEach(b => b.onclick = () => {
+    if (b.dataset.lang === state.askLang) return;
+    state.askLang = b.dataset.lang; store.set("askLang", state.askLang);
+    hintAt = 0;
+    renderAsk(P);
+  });
+  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
+// What the assistant can do, with the numbers of the plans currently loaded. Written out in full because none of it is
+// discoverable otherwise: a reader would not guess that it opens the printable briefs, or that it will explain the
+// pairs it rejected.
+const ASK_COPY = {
+  en: {
+    flag: "🇺🇸", code: "EN", label: "Answer in English",
+    hero: "Ask about the plans",
+    scopePair: (n, who, pairs) => `I answer from the data on this page — ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
+    scopeSolo: (n, who) => `I answer from the data on this page — ${n} planned projects from ${who}. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
+    head: "What I can do for you",
+    items: [
+      ["Find the overlaps that matter.", "The closest pairs, the ones most likely to actually happen, anything within a distance you name, or only pairs that share a build window."],
+      ["Explain any pair.", "How far apart at their closest points, both build windows, everything the two utilities could share with the arithmetic behind each figure, and where one staging yard would serve both."],
+      ["Tell you why a pair is <em>not</em> on the list.", "Too far, same utility, or a location that could not be established. Most planned projects do not overlap, and I will say which reason applies."],
+      ["Rank the projects themselves.", "The biggest by cost, the longest, the highest voltage, the first or last to be built — and which measure I ranked by."],
+      ["Show what changed.", "How each utility's dates moved between its last two published plans, and which shared build windows that opened or closed."],
+      ["Propose a schedule.", "The few date moves that most raise the expected savings, and what each one adds."],
+      ["Write the report.", "I can open the printable coordination brief for a pair, or the joint schedule proposal, ready to print or send — with a paragraph framing why it matters."],
+      ["Check the data.", "What the pipeline validated, what it caught and fixed, and what still needs a human."],
+      ["Put it on the map.", "When an answer is about one pair or project, the map flies to it."],
+    ],
+    foot: "Everything above works with no API key. Connect one for open-ended questions.",
+    placeholder: "e.g. Which three date moves would save the most?",
+  },
+  es: {
+    flag: "🇪🇸", code: "ES", label: "Responder en español",
+    hero: "Preguntá sobre los planes",
+    scopePair: (n, who, pairs) => `Respondo con los datos de esta página — ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
+    scopeSolo: (n, who) => `Respondo con los datos de esta página — ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
+    head: "Qué puedo hacer por vos",
+    items: [
+      ["Encontrar los solapes que importan.", "Los pares más cercanos, los más probables, los que estén a menos de la distancia que digas, o solo los que comparten ventana de obra."],
+      ["Explicar cualquier par.", "A qué distancia están en sus puntos más cercanos, las dos ventanas de obra, todo lo que las dos utilities podrían compartir con la aritmética de cada cifra, y dónde un solo patio serviría a ambas."],
+      ["Decirte por qué un par <em>no</em> está en la lista.", "Muy lejos, misma utility, o una ubicación que no se pudo establecer. La mayoría de los proyectos planeados no se solapan, y te digo cuál es el motivo."],
+      ["Rankear los proyectos.", "El más grande por costo, el más largo, el de mayor voltaje, el primero o el último en construirse — y con qué medida los ordené."],
+      ["Mostrar qué cambió.", "Cómo se movieron las fechas de cada utility entre sus dos últimos planes publicados, y qué ventanas compartidas abrió o cerró eso."],
+      ["Proponer un cronograma.", "Los pocos movimientos de fecha que más suben el ahorro esperado, y cuánto agrega cada uno."],
+      ["Escribir el informe.", "Puedo abrir el brief de coordinación imprimible de un par, o la propuesta conjunta de cronograma, listos para imprimir o enviar — con un párrafo que encuadra por qué importa."],
+      ["Revisar el dato.", "Qué validó el pipeline, qué atrapó y corrigió, y qué todavía necesita un humano."],
+      ["Ponerlo en el mapa.", "Cuando la respuesta es sobre un par o un proyecto, el mapa vuela ahí."],
+    ],
+    foot: "Todo lo de arriba funciona sin API key. Conectá una para preguntas abiertas.",
+    placeholder: "ej. ¿Qué tres movimientos de fecha ahorrarían más?",
+  },
+};
+
+// What the assistant can do, with the numbers of the plans currently loaded. Written out in full because none of it is
+// discoverable otherwise: a reader would not guess that it opens the printable briefs, or that it will explain the
+// pairs it rejected.
+function askWelcome() {
+  const C = ASK_COPY[askLang()] || ASK_COPY.en;
+  const n = PROJECTS.length, pairs = RESULT.pairs.length;
+  const who = solo() ? esc(lblLong(state.utilA)) : `${esc(lblLong(state.utilA))} ${askLang() === "es" ? "y" : "and"} ${esc(lblLong(state.utilB))}`;
+  return `<div class="msg hint welcome">
+    <p class="ask-hero">${SPARK}${esc(C.hero)}</p>
+    <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
+    <p class="wl-head">${esc(C.head)}</p>
+    <ul class="wl">${C.items.map(([b, rest]) => `<li><b>${b}</b> ${esc(rest)}</li>`).join("")}</ul>
+    <p class="wl-foot">${esc(C.foot)}</p>
+    <p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`;
+}
+
+// The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
+const SPARK = `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
-  open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal" };
+  open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal",
+  open_report: "Writing the project report", compare_projects: "Comparing projects", why_not: "Checking why a pair was rejected" };
 // Answer a question without the model: the same tools, routed by pattern (agent-offline.js). Returns the answer text,
 // or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
 // saying the model is needed. reason, when given, is why the model was unavailable.
 function answerOffline(q, reason) {
-  const lang = SeamOffline.language(q), plan = SeamOffline.interpret(q);
+  const lang = askLang(), plan = SeamOffline.interpret(q);
   if (!plan) return null;
   CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
   let text;
@@ -898,13 +1197,17 @@ async function sendQuestion(q) {
   // No key: answer by pattern if the question is one the tools cover, otherwise ask for the key and say what does work.
   if (!apiKey()) {
     const offline = answerOffline(q, null);
-    const lang = SeamOffline.language(q);
+    const lang = askLang();
     return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key above.`);
   }
 
   CHAT.messages.push({ role: "user", content: q });
   try {
-    const r = await SeamAgent.ask({ apiKey: apiKey(), system: SYSTEM, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
+    const answerIn = askLang() === "es" ? "Answer in Spanish." : "Answer in English.";
+    // The digest goes after the prompt and before the conversation, so the stable part of the request stays stable and
+    // only changes when the data or the filters do.
+    const system = `${SYSTEM}\n\n## What is loaded right now\n\n${dataDigest()}\n\n${answerIn}`;
+    const r = await SeamAgent.ask({ apiKey: apiKey(), system, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
       onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
     finish(r.text + (r.truncated ? "\n\n(The answer was cut short.)" : ""));
   } catch (err) {
@@ -912,60 +1215,224 @@ async function sendQuestion(q) {
     CHAT.messages.length = mark;
     // The API is unreachable, the key was refused or the SDK would not load. Fall back to the pattern path rather than
     // leaving the question unanswered, and say which happened.
-    finish(answerOffline(q, SeamAgent.explain(err)) || SeamAgent.explain(err));
+    const why = `Your API key is set, but the request failed. ${SeamAgent.explain(err)}`;
+    finish(answerOffline(q, why) || why);
   }
 }
 
 // ---------- coordination brief ----------
 // narrative, when given, is the assistant's one-paragraph framing. It is the only generated prose in a brief:
 // every figure, date, table and next step below is computed from the plans.
+// One example question at a time, changing every few seconds while the field is untouched. It is the only motion in
+// the app that also teaches something: it shows the grammar the input accepts instead of describing it. It stops the
+// moment the user engages with the field, and under reduced motion it shows a single example and never changes it.
+let hintTimer = null, hintAt = 0;
+function cycleHint() {
+  clearInterval(hintTimer); hintTimer = null;
+  const el = $("#askHint"), q = $("#askQ");
+  if (!el) return;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const paint = () => { const list = SUGGEST(); el.innerHTML = `${askLang() === "es" ? "Probá" : "Try"}: <b>${esc(list[hintAt % list.length])}</b>`; };
+  paint();
+  if (reduced) return;
+  hintTimer = setInterval(() => {
+    if (!$("#askHint") || CHAT.busy || (q && (q.value.trim() || document.activeElement === q))) return;
+    hintAt++; paint();
+  }, 3800);
+  if (q) q.addEventListener("focus", () => { clearInterval(hintTimer); hintTimer = null; el.textContent = ""; }, { once: true });
+}
+
 function openBrief(x0, narrative) {
   // the what-if applies only when it was set on this pair; the assistant can open a brief for a pair nobody selected
   const wi = state.wi && state.wi.key === keyOf(x0) ? state.wi : { who: "q", shift: 0 };
   const y = whatIf(x0, wi.who, wi.shift), better = wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
-  const x = better ? y : x0, moved = better ? x[wi.who] : null, s = x.sav, T = TIERS[x.tier];
-  const uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(wi.shift)}` : ""}.`
-    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = Engine.recommendShift(x0, "q", TODAY); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
-  const risk = x.risk.why === "built" ? "One of the projects is likely built already." : `Given how both utilities' dates have moved between plans, there is a ${pct(x.risk.chance)} chance both are in the field together from today on; expected savings ${money(x.risk.expected)}.`;
-  const steps = [
-    "Confirm both project locations and the closest-point distance with each utility's GIS team.",
-    x.tier === 0 && "Agree one outage window and crossing-structure design for where the projects meet.",
-    x.tier <= 1 && "Scope a shared right-of-way and access road, and file one joint permit package.",
-    x.tier <= 2 && "Site one laydown yard between the projects for material deliveries.",
-    "Compare contractor and crew plans; share mobilization where the windows overlap.",
-    "Name one coordinator at each utility and set a monthly check-in until both are in service.",
-  ].filter(Boolean);
-  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} to ${fmtD(p, "in_service")}${p === moved ? "<br><em>proposed</em>" : ""}</td><td>${c.est ? "est. " : ""}${money(c.v)}</td></tr>`;
+  const x = better ? y : x0, moved = better ? x[wi.who] : null, s = x.sav;
+  const D = doc(), uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = docDate();
+  const when = x.ov > 0 ? D.windowsShare(Math.round(x.ov), moved ? esc(moved.name) : null, moved ? moLabel(wi.shift) : null)
+    : D.windowsApart(Math.round(x.gap)) + (() => { const r = Engine.recommendShift(x0, "q", TODAY); return r ? D.windowsFix(esc(x0.q.name), moLabel(r)) : ""; })();
+  const risk = x.risk.why === "built" ? D.riskBuilt : D.risk(pct(x.risk.chance), money(x.risk.expected));
+  const steps = [D.steps[0], x.tier === 0 && D.steps[1], x.tier <= 1 && D.steps[2], x.tier <= 2 && D.steps[3], D.steps[4], D.steps[5]].filter(Boolean);
+  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} ${esc(D.to2)} ${fmtD(p, "in_service")}${p === moved ? `<br><em>${esc(D.proposed)}</em>` : ""}</td><td>${c.est ? esc(D.est) : ""}${money(c.v)}</td></tr>`;
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">SEAMLINE <span>Coordination brief</span></div><div class="b-date">${today}</div></header>
-    <dl class="b-memo"><dt>To</dt><dd>${esc(uA)} transmission planning<br>${esc(uB)} transmission planning</dd>
-      <dt>Re</dt><dd>Coordinating ${esc(x.p.name)} and ${esc(x.q.name)}</dd></dl>
+    <header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandBrief)}</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(uA)} ${esc(D.planning)}<br>${esc(uB)} ${esc(D.planning)}</dd>
+      <dt>${esc(D.re)}</dt><dd>${esc(D.reCoord(x.p.name, x.q.name))}</dd></dl>
     ${briefNote(narrative)}
-    <p class="b-lede">These two planned projects come within <b>${km(x.km)}</b> of each other at their closest points (<b>${esc(T.label.toLowerCase())}</b>). ${esc(T.means)}. ${when} ${risk}</p>
+    <p class="b-lede">${D.ledePair(km(x.km), esc(D.tiers[x.tier]), esc(D.means[x.tier]))} ${when} ${risk}</p>
     <div class="b-grid"><div>${briefMap(x)}</div>
-      <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</b><span>chance of a shared window</span></div><div><b>${money(x.risk.expected)}</b><span>expected savings (${s.total ? money(s.total) : "$0"} if dates hold)</span></div></div></div>
-    <h4>The projects</h4>
-    <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
-    ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total if dates hold${Engine.customized() ? " (with edited unit costs)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
+      <div class="b-kpis"><div><b>${km(x.km)}</b><span>${esc(D.kpiApart)}</span></div><div><b>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</b><span>${esc(D.kpiChance)}</span></div><div><b>${money(x.risk.expected)}</b><span>${esc(D.kpiExpected(s.total ? money(s.total) : "$0"))}</span></div></div></div>
+    <h4>${esc(D.hProjects)}</h4>
+    <table class="b-tab"><thead><tr><th>${esc(D.thProject)}</th><th>${esc(D.thType)}</th><th>${esc(D.thWindow)}</th><th>${esc(D.thCost)}</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
+    ${s.items.length ? `<h4>${esc(D.hShare)}</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>${esc(D.totalHold)}${Engine.customized() ? esc(D.edited) : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
     ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles and ${im.co2t.toFixed(1)} t of CO2` : ""}.</p>`; })() : ""}
-    <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
-    <p class="b-foot">Prepared with Seamline from public plans (${esc([...new Set([x.p, x.q].map(srcName))].join("; "))}). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
+    <h4>${esc(D.hSteps)}</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+    <p class="b-foot">${esc(D.footBrief([...new Set([x.p, x.q].map(srcName))].join("; ")))}${x.p.loc === "low" || x.q.loc === "low" ? esc(D.footApprox) : ""}${esc(D.footBriefEnd)}</p>`;
   showBrief();
 }
-function openScheduleBrief(o, narrative) {
-  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>Joint schedule proposal</span></div><div class="b-date">${today}</div></header>
-    <dl class="b-memo"><dt>To</dt><dd>${esc(lblLong(state.utilA))} transmission planning<br>${esc(lblLong(state.utilB))} transmission planning</dd><dt>Re</dt><dd>${o.moves.length} date moves that line up nearby construction</dd></dl>
+// The printable documents in both languages. They follow the panel's flag, because a report is read by whoever asked
+// for it. Tier labels and unit-cost wording come from the engine in English, so the ones that reach a document are
+// translated here rather than in the engine, which has no notion of a reader.
+const DOC = {
+  en: {
+    locale: "en-US",
+    brandBrief: "Coordination brief", brandSchedule: "Joint schedule proposal", brandReport: "Project report",
+    to: "To", re: "Re", planning: "transmission planning",
+    reCoord: (a, b) => `Coordinating ${a} and ${b}`,
+    reMoves: n => `${n} date moves that line up nearby construction`,
+    reReport: (n, util, by) => `${n} planned projects${util ? ` (${util} only)` : ""}, ranked by ${by}`,
+    tiers: ["touching or crossing", "under 1.6 km", "under 8 km", "under 40 km", "over 40 km"],
+    means: ["Outage timing and crossing structures have to be coordinated", "They can share right-of-way, access roads and permits",
+      "They can share laydown yards and deliveries", "They can share crews, cranes and contractors", "They are beyond one staging yard's daily drive"],
+    ledePair: (d, tier, means) => `These two planned projects come within <b>${d}</b> of each other at their closest points (<b>${tier}</b>). ${means}.`,
+    windowsShare: (m, who, by) => `Their build windows overlap by about ${m} months${who ? `, if ${who} moves ${by}` : ""}.`,
+    windowsApart: m => `Their build windows are about ${m} months apart.`,
+    windowsFix: (who, by) => ` Moving ${who} ${by} would give them a shared window.`,
+    riskBuilt: "One of the projects is likely built already.",
+    risk: (p, m) => `Given how both utilities' dates have moved between plans, there is a ${p} chance both are in the field together from today on; expected savings ${m}.`,
+    kpiApart: "apart at the closest points", kpiChance: "chance of a shared window",
+    kpiExpected: hold => `expected savings (${hold} if dates hold)`,
+    hProjects: "The projects", thProject: "Project", thType: "Type", thWindow: "Build window", thCost: "Cost",
+    to2: "to", est: "est. ", proposed: "proposed",
+    hShare: "What they can share, and what each saves",
+    totalHold: "Total if dates hold", edited: " (with edited unit costs)",
+    yardLead: "Shared yard.", yardBest: "The best spot for one staging yard is", atCoords: "at", yardNear: n => `next to ${n}`, yardOpen: "open land",
+    yardSaves: (mi, co2) => `, saving about ${mi} truck-miles and ${co2} t of CO2`,
+    hSteps: "Proposed next steps",
+    steps: [
+      "Confirm both project locations and the closest-point distance with each utility's GIS team.",
+      "Agree one outage window and crossing-structure design for where the projects meet.",
+      "Scope a shared right-of-way and access road, and file one joint permit package.",
+      "Site one laydown yard between the projects for material deliveries.",
+      "Compare contractor and crew plans; share mobilization where the windows overlap.",
+      "Name one coordinator at each utility and set a monthly check-in until both are in service.",
+    ],
+    footBrief: srcs => `Prepared with Seamline from public plans (${srcs}). Locations are matched from substation names to OpenStreetMap and checked by hand`,
+    footApprox: ", and at least one of these is approximate",
+    footBriefEnd: "; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.",
+    ledeSchedule: (n, mo, before, after) => `Moving these ${n} projects by at most ${mo} months raises the expected savings from coordinating nearby work from <b>${before}</b> to <b>${after}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.`,
+    thMove: "Move", thInService: "In service", thAdds: "Adds", months: "months",
+    stepsSchedule: ["Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.",
+      "Agree the moves that fit at the next SERTP coordination meeting.", "Re-run Seamline on the next published plans to track the result."],
+    footSchedule: "Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.",
+    measures: { cost: "published cost", kv: "voltage", length_km: "length", in_service: "in-service date", name: "name" },
+    ledeReport: (n, checked, screen, flagged, expected, hold, priced) =>
+      `${n} planned projects are loaded${checked ? `, and ${checked} cross-utility pairs were checked against a ${screen} km screen` : ""}. ${flagged ? `<b>${flagged}</b> pairs are close enough to coordinate on, worth <b>${expected}</b> in expected savings (${hold} if every date holds).` : ""} Only ${priced} of the ${n} projects publish a cost; the rest are redacted in their own filing, so no figure is attributed to them here.`,
+    kpiChecked: "pairs checked", kpiFlagged: "flagged", kpiSavings: "expected savings", kpiOutside: "just outside the screen",
+    hRanked: by => `Projects by ${by}`, thLength: "Length", notPublished: "not published",
+    hTop: "Strongest coordination opportunities", thPair: "Pair", thApart: "Apart", thWindows: "Windows", thExpected: "Expected",
+    shared: m => `${m} mo shared`, apart: m => `${m} mo apart`,
+    hCovers: "What this covers",
+    coverPlaced: (ok, n, bad) => `${ok} of ${n} projects could be placed on a map${bad ? `; ${bad} could not and are excluded from every distance` : ""}.`,
+    coverBand: (n, from, to) => `${n} further pairs fall between ${from} km and ${to} km. They are deliberately outside the ranking and the totals; ${from} km is a chosen threshold, not a cliff.`,
+    coverFilters: (d, b, mode) => `Filters in effect: within ${d} km, window buffer ±${b} months, match rule "${mode}".`,
+    footReport: "Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand; costs are reproduced from the filings that publish them and never estimated for the ones that do not. Confirm with both utilities before acting.",
+  },
+  es: {
+    locale: "es-ES",
+    brandBrief: "Informe de coordinación", brandSchedule: "Propuesta conjunta de cronograma", brandReport: "Informe de proyectos",
+    to: "Para", re: "Asunto", planning: "planeación de transmisión",
+    reCoord: (a, b) => `Coordinar ${a} y ${b}`,
+    reMoves: n => `${n} movimientos de fecha que alinean obra cercana`,
+    reReport: (n, util, by) => `${n} proyectos planeados${util ? ` (solo ${util})` : ""}, ordenados por ${by}`,
+    tiers: ["se tocan o se cruzan", "a menos de 1,6 km", "a menos de 8 km", "a menos de 40 km", "a más de 40 km"],
+    means: ["Hay que coordinar las ventanas de corte y las estructuras de cruce", "Pueden compartir servidumbre, vías de acceso y permisos",
+      "Pueden compartir patios de acopio y entregas", "Pueden compartir cuadrillas, grúas y contratistas", "Están más lejos de lo que un patio cubre en un día"],
+    ledePair: (d, tier, means) => `Estos dos proyectos planeados quedan a <b>${d}</b> uno del otro en sus puntos más cercanos (<b>${tier}</b>). ${means}.`,
+    windowsShare: (m, who, by) => `Sus ventanas de obra se solapan unos ${m} meses${who ? `, si ${who} se mueve ${by}` : ""}.`,
+    windowsApart: m => `Sus ventanas de obra están separadas unos ${m} meses.`,
+    windowsFix: (who, by) => ` Mover ${who} ${by} les daría una ventana compartida.`,
+    riskBuilt: "Uno de los dos proyectos probablemente ya está construido.",
+    risk: (p, m) => `Según cómo se movieron las fechas de las dos utilities entre planes, hay ${p} de probabilidad de que ambos estén en obra al mismo tiempo de hoy en adelante; ahorro esperado ${m}.`,
+    kpiApart: "de separación en los puntos más cercanos", kpiChance: "probabilidad de ventana compartida",
+    kpiExpected: hold => `ahorro esperado (${hold} si las fechas se mantienen)`,
+    hProjects: "Los proyectos", thProject: "Proyecto", thType: "Tipo", thWindow: "Ventana de obra", thCost: "Costo",
+    to2: "a", est: "est. ", proposed: "propuesto",
+    hShare: "Qué pueden compartir, y cuánto ahorra cada cosa",
+    totalHold: "Total si las fechas se mantienen", edited: " (con costos unitarios editados)",
+    yardLead: "Patio compartido.", yardBest: "El mejor lugar para un solo patio de acopio es", atCoords: "en", yardNear: n => `junto a ${n}`, yardOpen: "campo abierto",
+    yardSaves: (mi, co2) => `, ahorrando unas ${mi} millas-camión y ${co2} t de CO2`,
+    hSteps: "Próximos pasos propuestos",
+    steps: [
+      "Confirmar las ubicaciones de ambos proyectos y la distancia entre puntos más cercanos con el equipo de GIS de cada utility.",
+      "Acordar una sola ventana de corte y un diseño de estructuras de cruce donde los proyectos se encuentran.",
+      "Dimensionar una servidumbre y una vía de acceso compartidas, y presentar un solo paquete de permisos.",
+      "Ubicar un único patio de acopio entre los dos proyectos para las entregas de material.",
+      "Comparar los planes de contratistas y cuadrillas; compartir la movilización donde las ventanas se solapan.",
+      "Nombrar un coordinador en cada utility y fijar una reunión mensual hasta que ambos entren en servicio.",
+    ],
+    footBrief: srcs => `Preparado con Seamline desde planes públicos (${srcs}). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano`,
+    footApprox: ", y al menos una de estas es aproximada",
+    footBriefEnd: "; los costos son estimaciones de nivel de planeación salvo que el plan publique uno. Confirmar con ambas utilities antes de actuar.",
+    ledeSchedule: (n, mo, before, after) => `Mover estos ${n} proyectos a lo sumo ${mo} meses sube el ahorro esperado por coordinar obra cercana de <b>${before}</b> a <b>${after}</b>. Cada movimiento es sobre un proyecto que no ha arrancado. Las probabilidades salen de cómo se movieron las fechas de cada utility entre sus dos últimos planes.`,
+    thMove: "Movimiento", thInService: "Entra en servicio", thAdds: "Agrega", months: "meses",
+    stepsSchedule: ["Cada utility revisa si sus movimientos calzan con fechas de necesidad de confiabilidad, temporadas de corte y ciclos de presupuesto.",
+      "Acordar los movimientos que calzan en la próxima reunión de coordinación de SERTP.", "Volver a correr Seamline sobre los próximos planes publicados para seguir el resultado."],
+    footSchedule: "Preparado con Seamline. Es una ayuda de planeación: asume que cada fecha se mueve una vez más como en las actualizaciones de plan anteriores, y que las utilities se mueven de forma independiente.",
+    measures: { cost: "costo publicado", kv: "voltaje", length_km: "longitud", in_service: "fecha de entrada en servicio", name: "nombre" },
+    ledeReport: (n, checked, screen, flagged, expected, hold, priced) =>
+      `Hay ${n} proyectos planeados cargados${checked ? `, y se revisaron ${checked} pares entre utilities contra un filtro de ${screen} km` : ""}. ${flagged ? `<b>${flagged}</b> pares están lo bastante cerca para coordinarse, por <b>${expected}</b> de ahorro esperado (${hold} si todas las fechas se mantienen).` : ""} Solo ${priced} de los ${n} proyectos publican un costo; el resto lo tienen tachado en su propio filing, así que acá no se les atribuye ninguna cifra.`,
+    kpiChecked: "pares revisados", kpiFlagged: "marcados", kpiSavings: "ahorro esperado", kpiOutside: "justo afuera del filtro",
+    hRanked: by => `Proyectos por ${by}`, thLength: "Longitud", notPublished: "no publicado",
+    hTop: "Oportunidades de coordinación más fuertes", thPair: "Par", thApart: "Separación", thWindows: "Ventanas", thExpected: "Esperado",
+    shared: m => `${m} meses compartidos`, apart: m => `${m} meses de diferencia`,
+    hCovers: "Qué cubre esto",
+    coverPlaced: (ok, n, bad) => `${ok} de ${n} proyectos se pudieron ubicar en el mapa${bad ? `; ${bad} no, y quedan excluidos de toda distancia` : ""}.`,
+    coverBand: (n, from, to) => `Otros ${n} pares caen entre ${from} km y ${to} km. Quedan deliberadamente afuera del ranking y de los totales; ${from} km es un umbral elegido, no un acantilado.`,
+    coverFilters: (d, b, mode) => `Filtros vigentes: a menos de ${d} km, margen de ventana ±${b} meses, regla de coincidencia "${mode}".`,
+    footReport: "Preparado con Seamline desde planes públicos (las listas de proyectos SCRTP de DESC, el plan a diez años del IRP 2025 de Georgia Power y SERTP). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano; los costos se reproducen de los filings que los publican y nunca se estiman para los que no. Confirmar con ambas utilities antes de actuar.",
+  },
+};
+const doc = () => DOC[askLang()] || DOC.en;
+const docDate = () => new Date().toLocaleDateString(doc().locale, { year: "numeric", month: "long", day: "numeric" });
+
+function openReport(opts, narrative) {
+  const o = Object.assign({ sort: "cost", order: "desc", limit: 20 }, opts || {});
+  const D = doc(), today = docDate();
+  const ranked = runTool("search_projects", { sort: o.sort, order: o.order, utility: o.utility, limit: Math.min(40, o.limit) });
+  const top = RESULT.pairs.slice(0, 8);
+  const priced = PROJECTS.filter(p => p.cost);
+  const MEASURE = D.measures;
+  const unlocated = PROJECTS.filter(p => !(p.coords || []).length).length;
+  const totals = { expected: RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0), hold: RESULT.pairs.reduce((a, x) => a + x.sav.total, 0) };
+
+  $("#briefDoc").innerHTML = `
+    <header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandReport)}</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}${solo() ? "" : `<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}`}</dd>
+      <dt>${esc(D.re)}</dt><dd>${esc(D.reReport(PROJECTS.length, o.utility ? lblLong(o.utility) : null, MEASURE[o.sort] || o.sort))}</dd></dl>
     ${briefNote(narrative)}
-    <p class="b-lede">Moving these ${o.moves.length} projects by at most ${state.opt.maxShift} months raises the expected savings from coordinating nearby work from <b>${money(o.before)}</b> to <b>${money(o.after)}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.</p>
-    <table class="b-tab"><thead><tr><th>Project</th><th>Move</th><th>In service</th><th>Adds</th></tr></thead><tbody>${o.moves.map(m => `<tr><td><b>${esc(m.project.name)}</b><br><span>${esc(lblLong(m.project.utility))}</span></td><td>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} months</td><td>${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</td><td class="n">${money(m.gain)}</td></tr>`).join("")}</tbody></table>
-    <h4>Proposed next steps</h4><ol><li>Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.</li><li>Agree the moves that fit at the next SERTP coordination meeting.</li><li>Re-run Seamline on the next published plans to track the result.</li></ol>
-    <p class="b-foot">Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.</p>`;
+    <p class="b-lede">${D.ledeReport(PROJECTS.length, solo() ? null : RESULT.checked.toLocaleString(D.locale), state.D, solo() ? null : RESULT.pairs.length, money(totals.expected), money(totals.hold), priced.length)}</p>
+    ${solo() ? "" : `<div class="b-kpis b-row"><div><b>${RESULT.checked.toLocaleString(D.locale)}</b><span>${esc(D.kpiChecked)}</span></div><div><b>${RESULT.pairs.length}</b><span>${esc(D.kpiFlagged)}</span></div><div><b>${money(totals.expected)}</b><span>${esc(D.kpiSavings)}</span></div><div><b>${borderline().length}</b><span>${esc(D.kpiOutside)}</span></div></div>`}
+    <h4>${esc(D.hRanked(MEASURE[o.sort] || o.sort))}</h4>
+    <table class="b-tab"><thead><tr><th>#</th><th>${esc(D.thProject)}</th><th>${esc(D.thType)}</th><th>${esc(D.thInService)}</th><th>${esc(D.thLength)}</th><th>${esc(D.thCost)}</th></tr></thead><tbody>
+      ${ranked.projects.map((p, i) => `<tr><td>${i + 1}</td><td><b>${esc(p.name)}</b><br><span>${esc(p.id)} · ${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(p.type || "")}</td><td>${esc(p.in_service)}</td><td class="n">${p.length_km ? p.length_km + " km" : "–"}</td><td class="n">${p.cost_usd ? money(p.cost_usd) : `<span>${esc(D.notPublished)}</span>`}</td></tr>`).join("")}
+    </tbody></table>
+    ${top.length ? `<h4>${esc(D.hTop)}</h4>
+    <table class="b-tab"><thead><tr><th>${esc(D.thPair)}</th><th>${esc(D.thApart)}</th><th>${esc(D.thWindows)}</th><th>${esc(D.thExpected)}</th></tr></thead><tbody>
+      ${top.map(x => `<tr><td><b>${esc(short(x.p))}</b> × <b>${esc(short(x.q))}</b><br><span>${esc(D.tiers[Math.min(x.tier, 4)])}</span></td><td class="n">${km(x.km)}</td><td>${x.ov > 0 ? esc(D.shared(Math.round(x.ov))) : esc(D.apart(Math.round(x.gap)))}</td><td class="n">${money(x.risk.expected)}</td></tr>`).join("")}
+    </tbody></table>` : ""}
+    <h4>${esc(D.hCovers)}</h4>
+    <ul><li>${esc(D.coverPlaced(PROJECTS.length - unlocated, PROJECTS.length, unlocated))}</li>
+      ${solo() ? "" : `<li>${esc(D.coverBand(borderline().length, state.D, Math.round(state.D * 1.05)))}</li>`}
+      <li>${esc(D.coverFilters(state.D, state.B, state.mode))}</li></ul>
+    <p class="b-foot">${esc(D.footReport)}</p>`;
+  showBrief();
+}
+
+function openScheduleBrief(o, narrative) {
+  const D = doc(), today = docDate();
+  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandSchedule)}</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}</dd><dt>${esc(D.re)}</dt><dd>${esc(D.reMoves(o.moves.length))}</dd></dl>
+    ${briefNote(narrative)}
+    <p class="b-lede">${D.ledeSchedule(o.moves.length, state.opt.maxShift, money(o.before), money(o.after))}</p>
+    <table class="b-tab"><thead><tr><th>${esc(D.thProject)}</th><th>${esc(D.thMove)}</th><th>${esc(D.thInService)}</th><th>${esc(D.thAdds)}</th></tr></thead><tbody>${o.moves.map(m => `<tr><td><b>${esc(m.project.name)}</b><br><span>${esc(lblLong(m.project.utility))}</span></td><td>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} ${esc(D.months)}</td><td>${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</td><td class="n">${money(m.gain)}</td></tr>`).join("")}</tbody></table>
+    <h4>${esc(D.hSteps)}</h4><ol>${D.stepsSchedule.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+    <p class="b-foot">${esc(D.footSchedule)}</p>`;
   showBrief();
 }
 const briefNote = text => text ? `<p class="b-note"><span>Assistant summary</span>${esc(String(text).slice(0, 1200))}</p>` : "";
-function showBrief() { $("#brief").hidden = false; $("#briefClose").focus(); }
+let returnFocus = null;
+function lockApp(on) { document.body.classList.toggle("modal-open", on); }
+function showBrief() { returnFocus = document.activeElement; $("#brief").hidden = false; lockApp(true); $("#briefClose").focus(); }
 function briefMap(x) {
   const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
@@ -981,7 +1448,7 @@ function briefMap(x) {
     <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B42318" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B42318" stroke-width="1.5"/>
     <text x="10" y="${H - 10}" font-size="10" fill="#57606A">${esc(km(x.km))} at the closest points</text></svg>`;
 }
-function closeBrief() { $("#brief").hidden = true; }
+function closeBrief() { $("#brief").hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; }
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => Scene3D.qualityKey(store.get("3dquality", "detailed"));
@@ -1197,8 +1664,8 @@ function writeHash() {
 }
 
 // ---------- modals ----------
-function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
-function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
+function openModal(id) { const m = $("#" + id); returnFocus = document.activeElement; m.hidden = false; lockApp(true); const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
+function closeModal(id) { $("#" + id).hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
 
 // ---------- selection and refresh ----------
 function select(x) {
@@ -1254,7 +1721,8 @@ $("#share").onclick = () => {
   clearTimeout(hashTimer); writeHash();
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
 };
-document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => goTab(b.dataset.tab));
+$("#askFab").onclick = () => { toggleTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
+document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
 $("#railTl").onclick = () => {
   const on = !$(".left").classList.contains("tl-open");

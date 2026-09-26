@@ -127,6 +127,39 @@ at("an API failure propagates so the caller can fall back", async () => {
   await assert.rejects(() => run(fakeClient(boom)), /connection refused/);
 });
 
+// ---------- key verification ----------
+// verify() is what "Use key" calls before accepting a key. It asks the Models endpoint, which spends no tokens, and has
+// to separate three outcomes: the key works, the key is refused, and the key could not be judged at all.
+at("a key that can reach the model is accepted", async () => {
+  const client = { models: { retrieve: async id => ({ id, display_name: "Claude Opus 5" }) } };
+  const r = await SeamAgent.verify("sk-test", client);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.model, "Claude Opus 5");
+});
+
+at("the model asked about is the one the assistant uses", async () => {
+  let asked = null;
+  const client = { models: { retrieve: async id => { asked = id; return { id }; } } };
+  await SeamAgent.verify("sk-test", client);
+  assert.strictEqual(asked, SeamAgent.MODEL);
+});
+
+at("a failure that cannot be attributed to the key is reported as transient", async () => {
+  // Without the SDK loaded there are no typed errors to match, so anything unrecognised must not be called a bad key:
+  // saying "your key is invalid" when the network is down sends the user to rotate a key that was fine.
+  const client = { models: { retrieve: async () => { throw new Error("network down"); } } };
+  const r = await SeamAgent.verify("sk-test", client);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.transient, true);
+  assert.match(r.reason, /network down/);
+});
+
+at("a client that cannot be built is transient too", async () => {
+  const r = await SeamAgent.verify("");   // no injected client and no SDK: the import fails
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.transient, true);
+});
+
 t("error messages are readable without the SDK loaded", () => {
   assert.match(SeamAgent.explain(new TypeError("failed to fetch module")), /internet connection/);
   assert.strictEqual(SeamAgent.explain(new Error("plain")), "plain");
@@ -157,6 +190,18 @@ const routes = [
   ["qué hay planeado cerca de Augusta", "search_projects", { query: "Augusta" }],
   ["qué tan confiable es el dato", "get_data_checks", {}],
   ["cuántos pares se revisaron", "get_overview", {}],
+  // what the Ask panel says works without a key: why-not, briefs, the map, and counts in either word order
+  ["why is DESC-11 not paired with IRP-20277?", "why_not", { project_id_a: "DESC-11", project_id_b: "IRP-20277" }],
+  ["¿por qué DESC-11 no está con IRP-20277?", "why_not", { project_id_a: "DESC-11", project_id_b: "IRP-20277" }],
+  ["write the brief for DESC-12|IRP-20277", "open_brief", { key: "DESC-12|IRP-20277" }],
+  ["escribe el informe del par DESC-12|IRP-20277", "open_brief", { key: "DESC-12|IRP-20277" }],
+  ["open the schedule proposal", "open_schedule_brief", {}],
+  ["abrí la propuesta de calendario", "open_schedule_brief", {}],
+  ["show DESC-12 on the map", "show_on_map", { project_id: "DESC-12" }],
+  ["muéstrame DESC-12|IRP-20277 en el mapa", "show_on_map", { key: "DESC-12|IRP-20277" }],
+  ["in the 3 closest pairs", "list_overlaps", { limit: 3, sort: "distance" }],
+  ["¿cuáles son los 3 pares más probables?", "list_overlaps", { limit: 3, sort: "chance" }],
+  ["los tres pares más cercanos", "list_overlaps", { limit: 3 }],
 ];
 t("the offline matcher routes every question it claims to cover", () => {
   for (const [q, tool, input] of routes) {
@@ -238,6 +283,15 @@ t("plan changes and schedule moves render", () => {
   assert.deepStrictEqual(top.match(/P-\d/g), ["P-1", "P-3", "P-2"]);
   assert.match(O.render("optimize_schedule", many, "es", { show: 3 }), /Los 3 que más suman, de 4/);
   assert.strictEqual(O.render("optimize_schedule", many, "en").match(/P-\d/g).length, 4);
+});
+
+t("offline answers for why-not, briefs and the map, in both languages, and partial lists say so", () => {
+  assert.match(O.render("why_not", { reason: "too_far", project_id_a: "A-1", project_id_b: "B-2", distance_km: 40.45, just_outside: true }, "en"), /40\.45 km apart, just beyond/);
+  assert.match(O.render("why_not", { reason: "flagged", project_id_a: "A-1", project_id_b: "B-2", key: "A-1|B-2", distance_km: 3.3 }, "es"), /sí están marcados/);
+  assert.match(O.render("open_brief", { pair: "X and Y" }, "en"), /coordination brief for X and Y/);
+  assert.match(O.render("open_schedule_brief", { moves: 8, adds_usd: 2500000 }, "es"), /8 movimientos/);
+  assert.match(O.render("show_on_map", { shown: "Jasper" }, "es"), /Mostrando Jasper/);
+  assert.match(O.render("list_overlaps", { matching_pairs: 17, rows: [] }, "en") + O.render("list_overlaps", { matching_pairs: 17, rows: [{ key: "A|B", km: 1, tier: "x", project_a: "a", project_b: "b" }] }, "en"), /first 1 of 17/);
 });
 
 t("the offline note names why the model was skipped", () => {

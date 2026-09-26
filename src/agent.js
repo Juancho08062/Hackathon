@@ -57,6 +57,31 @@
     return { text: "That took more steps than expected. Try a narrower question." };
   }
 
+  // Is this key usable? The Models endpoint is the cheapest possible check — it spends no tokens — and it answers both
+  // questions that matter at once: whether the key is accepted, and whether it can reach the model this page asks for.
+  // A network or SDK-loading failure is reported as transient, because a key cannot be judged without reaching the API.
+  async function verify(apiKey, injected) {
+    let c;
+    try {
+      c = injected || await getClient(apiKey);
+    } catch (err) {
+      return { ok: false, transient: true, reason: explain(err) };
+    }
+    try {
+      const m = await c.models.retrieve(MODEL);
+      return { ok: true, model: (m && (m.display_name || m.id)) || MODEL };
+    } catch (err) {
+      client = clientKey = null; // don't keep a client built from a key the API just refused
+      const A = sdk && sdk.default;
+      if (A && err instanceof A.AuthenticationError) return { ok: false, reason: "The API key was rejected." };
+      if (A && err instanceof A.PermissionDeniedError) return { ok: false, reason: `The key is valid, but it is not allowed to use ${MODEL}.` };
+      if (A && err instanceof A.NotFoundError) return { ok: false, reason: `The key works, but ${MODEL} is not available to it.` };
+      if (A && err instanceof A.APIConnectionError) return { ok: false, transient: true, reason: explain(err) };
+      if (A && err instanceof A.RateLimitError) return { ok: false, transient: true, reason: explain(err) };
+      return { ok: false, transient: true, reason: explain(err) };
+    }
+  }
+
   // Readable message for API errors, using the SDK's typed errors.
   function explain(err) {
     const A = sdk && sdk.default;
@@ -69,5 +94,5 @@
     return String(err && err.message || err);
   }
 
-  root.SeamAgent = { ask, explain, MODEL };
+  root.SeamAgent = { ask, verify, explain, MODEL };
 })(this);
