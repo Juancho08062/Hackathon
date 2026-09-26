@@ -393,7 +393,7 @@ function renderDetail() {
       <div class="wi-ctl"><input type="range" id="wiShift" min="-36" max="36" step="1" value="${state.wi.shift}" aria-label="Months to move the project"><output id="wiOut"></output></div>
       <svg id="wiChart" role="img" aria-label="Both build windows after the shift"></svg>
       <p class="wi-res" id="wiRes" aria-live="polite"></p>
-      <div class="row"><button type="button" class="btn" id="wiRec"></button><button type="button" class="btn" id="wiReset">Reset</button></div></div>
+      <div class="row"><button type="button" class="btn" id="wiRec"></button><button type="button" class="btn" id="wiReset">Reset to plan</button></div></div>
     <div><h3>Cost and impact estimate</h3><div id="impBox">${imp}</div></div></div>`;
   $("#clr").onclick = () => select(null);
   $("#v3d").onclick = () => open3d(x);
@@ -453,8 +453,9 @@ function updateWhatIf(x) {
   $("#wiRes").innerHTML = (y.ov > 0 ? `Build windows overlap <b>${Math.round(y.ov)} months</b>.` : `Build windows are <b>${Math.round(y.gap)} months apart</b>.`) +
     ` Rough savings <b>${(y.sav.total ? money(y.sav.total) : "$0")}</b>` + (shift ? (d ? ` (<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${money(Math.abs(d))}</span> vs. as planned).` : " (no change from as planned).") : ".");
   const recBtn = $("#wiRec");
-  recBtn.hidden = rec == null || rec === 0 && shift === 0;
-  if (rec != null) { recBtn.textContent = rec === 0 ? "Back to the plan (already aligned)" : `Try ${moLabel(rec)}`; recBtn.onclick = () => { state.wi.shift = rec; $("#wiShift").value = rec; updateWhatIf(x); }; }
+  // The plan already shares a window when rec is 0; then Reset is the only way back, so no suggestion button.
+  recBtn.hidden = rec == null || rec === 0 || rec === shift;
+  if (rec) { recBtn.textContent = `Try ${moLabel(rec)}`; recBtn.onclick = () => { state.wi.shift = rec; $("#wiShift").value = rec; updateWhatIf(x); }; }
   $("#wiReset").hidden = !shift;
   const s = y.sav;
   $("#impBox").innerHTML = s.items.length
@@ -465,7 +466,9 @@ function updateWhatIf(x) {
 // ---------- coordination brief ----------
 // A one-page memo for one pair, addressed to both utilities' planners. Printable, or copy as plain text.
 function openBrief(x0) {
-  const x = whatIf(x0, state.wi.who, state.wi.shift), moved = state.wi.shift ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
+  // Use the what-if move only when it improves on the plan (more shared months or more savings); otherwise brief the plan as published.
+  const y = whatIf(x0, state.wi.who, state.wi.shift), better = state.wi.shift && (y.ov > x0.ov || y.sav.total > x0.sav.total);
+  const x = better ? y : x0, moved = better ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
   const uA = lbl(x.p.utility), uB = lbl(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(state.wi.shift)}` : ""}.`
     : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = recommendShift(x0, "q"); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
