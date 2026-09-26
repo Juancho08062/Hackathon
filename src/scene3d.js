@@ -179,9 +179,11 @@
     if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put, g)) return;
     if (g && root.Vehicles3D && V3D[kind] && root.Vehicles3D.KINDS.includes(V3D[kind])) {
       const v = root.Vehicles3D.build(T, V3D[kind], { level: vehLevel });
-      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot;
+      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot; v.userData.vehicle = kind;
       v.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      g.add(v); return;
+      g.add(v); v.updateMatrixWorld(true);
+      const box = new T.Box3().setFromObject(v);
+      return { box, move(dx, dz) { v.position.x += dx; v.position.z += dz; box.translate(new T.Vector3(dx, 0, dz)); } };
     }
     const P = {}, box = (key, w, h, d, px, py, pz) => put(P, key, boxAt(T, w, h, d, px, py, pz));
     const wheel = (px, pz, r, w) => { put(P, "tire", cylZ(T, r, r, w, 18, px, r, pz)); put(P, "rim", cylZ(T, r * 0.58, r * 0.58, w + 0.02, 12, px, r, pz)); };
@@ -258,7 +260,25 @@
       box("darkSteel", 0.9, 0.8, 1.1, 4.7, 0.9, -0.35);
     }
     const mtx = new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), rot), new T.Vector3(k, k, k));
-    Object.entries(P).forEach(([key, list]) => list.forEach(g => put(B, key, g.applyMatrix4(mtx))));
+    const geos = [], fp = new T.Box3();
+    Object.entries(P).forEach(([key, list]) => list.forEach(g => { put(B, key, g.applyMatrix4(mtx)); g.computeBoundingBox(); fp.union(g.boundingBox); geos.push(g); }));
+    return { box: fp, move(dx, dz) { geos.forEach(q => q.translate(dx, 0, dz)); fp.translate(new T.Vector3(dx, 0, dz)); } };
+  }
+
+  // Slide a vehicle to the free spot nearest where it was asked for: its full footprint (booms, outriggers and
+  // buckets included) plus a margin must clear everything already placed and stay inside [x0, x1] x [z0, z1].
+  function park(v, taken, lim, m = 0.12) {
+    if (!v) return;
+    const b = v.box, hits = (dx, dz) => b.min.x + dx < lim[0] || b.max.x + dx > lim[1] || b.min.z + dz < lim[2] || b.max.z + dz > lim[3] ||
+      taken.some(t => b.min.x + dx < t.max.x + m && b.max.x + dx > t.min.x - m && b.min.z + dz < t.max.z + m && b.max.z + dz > t.min.z - m);
+    let best = null;
+    for (let r = 0; r <= 160 && !best; r++) for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) {
+      if (Math.max(Math.abs(i), Math.abs(j)) !== r) continue;
+      const dx = i * 0.1, dz = j * 0.1;
+      if (!hits(dx, dz) && (!best || dx * dx + dz * dz < best[0] * best[0] + best[1] * best[1])) best = [dx, dz];
+    }
+    if (best && (best[0] || best[1])) v.move(best[0], best[1]);
+    taken.push(b.clone());
   }
 
   // ---------- structures ----------
@@ -474,14 +494,19 @@
     put(B, "orange", boxAt(T, 0.3, 0.7, 0.3, hw - 0.4, Y + 0.35, hd - 0.4), boxAt(T, 0.3, 0.7, 0.3, hw - 0.75, Y + 0.35, hd - 0.4));
     // cones along the gate
     for (let i = 0; i < 6; i++) put(B, "orange", cylAt(T, 0.015, 0.07, 0.22, 10, hw * 0.5 - 0.6 + i * 0.24, Y + 0.11, hd + 0.3));
-    // equipment, in meters times U
-    vehicle(T, B, "pickup", -hw + 0.8, Y, 0.2, Math.PI / 2, U, g);
-    vehicle(T, B, "pickup", -hw + 1.6, Y, 0.2, Math.PI / 2, U, g);
-    vehicle(T, B, "pickup", -hw + 2.4, Y, 0.25, Math.PI / 2 + 0.05, U, g);
-    vehicle(T, B, "flatbed", -0.3, Y, 0.55, 0, U, g);
-    vehicle(T, B, "bucket", 0.1, Y, -0.55, Math.PI, U, g);
-    vehicle(T, B, "crane", hw - 2.0, Y, 1.3, Math.PI, U, g);
-    vehicle(T, B, "excavator", hw - 1.2, Y, -0.95, Math.PI, U, g);
+    // equipment, in meters times U, each slid to the nearest spot clear of the stock, the trailer, the crew and the
+    // vehicles parked before it (big ones first, so the pickups fill in around them)
+    const Bx = (x0, x1, z0, z1) => new T.Box3(new T.Vector3(x0, 0, z0), new T.Vector3(x1, 2, z1));
+    const taken = [Bx(-hw + 0.6, -hw + 4.8, -hd, -hd + 1.1), Bx(hw - 3.65, hw - 0.35, -hd, -hd + 1.35),
+      Bx(-hw, -hw + 2.85, hd - 1.25, hd), Bx(hw - 0.95, hw, hd - 0.6, hd), Bx(-2.65, -1.15, -2.1, -0.6)];
+    const lim = [-hw + 0.08, hw - 0.08, -hd + 0.08, hd - 0.08];
+    park(vehicle(T, B, "flatbed", -0.6, Y, 0.3, 0, U, g), taken, lim);
+    park(vehicle(T, B, "crane", hw - 3.0, Y, 2.2, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "bucket", 1.2, Y, -1.0, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "excavator", hw - 1.3, Y, -0.6, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 0.8, Y, -0.3, Math.PI / 2, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 1.8, Y, -0.3, Math.PI / 2, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 2.8, Y, -0.3, Math.PI / 2 + 0.05, U, g), taken, lim);
     flush(T, B, K, g);
     const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-1.9, Y, -1.35); g.add(crew);
     return g;
@@ -657,7 +682,7 @@
     // speckled grass texture, multiplied over the vertex colors
     const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
-    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 188 + Math.floor(gr() * 55); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
     // grass blades and a few bare patches
     {
       for (let i = 0; i < 2200 * (GS / 256) ** 2; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
@@ -665,7 +690,7 @@
     }
     const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(26, 26);
     groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = Q.aniso || 4;
-    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
+    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.015 })); ground.receiveShadow = true; scene.add(ground);
 
     // earthen side walls, like a cut-out terrain model: topsoil, then clay and sand layers down to the base
     const wallGeo = () => {
@@ -808,7 +833,7 @@
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
       // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
-      const yd = yardGroup(T, 9, 6, K), yr = 5.6 * TS;
+      const yd = yardGroup(T, 12, 8, K), yr = 7.4 * TS;
       let spot = null;
       for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
         const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
@@ -816,7 +841,7 @@
         if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
       }
       if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
-      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 5 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 6.6 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
       obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
@@ -905,10 +930,19 @@
       const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
       cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
       // their pickup, parked beside them facing along the line
-      const px = x + perp.x * sg * 1.6 * TS, pz = z + perp.z * sg * 1.6 * TS, VB = {};
-      const tr = new T.Group();
-      vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
-      flush(T, VB, K, tr); tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
+      // their truck, parked beside them facing along the line: far enough out that its whole footprint (bucket boom
+      // included) clears the crew and any plant, substation or yard
+      const VB = {}, tr = new T.Group();
+      const v3 = vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
+      flush(T, VB, K, tr);
+      const half = v3 ? Math.hypot(v3.box.max.x - v3.box.min.x, v3.box.max.z - v3.box.min.z) / 2 : 0.8 * TS;
+      const crewR = 0.75 * 1.4 * Math.min(1.6, TS);
+      let d = crewR + half + 0.15, px, pz;
+      for (; d < crewR + half + 14; d += 0.25) {
+        px = x + perp.x * sg * d; pz = z + perp.z * sg * d;
+        if (obstacles.every(([ox, oz, r]) => Math.hypot(px - ox, pz - oz) > r + half)) break;
+      }
+      tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
     });
 
     // steam sprites over stacks and cooling towers

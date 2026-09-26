@@ -2021,9 +2021,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put, g)) return;
     if (g && root.Vehicles3D && V3D[kind] && root.Vehicles3D.KINDS.includes(V3D[kind])) {
       const v = root.Vehicles3D.build(T, V3D[kind], { level: vehLevel });
-      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot;
+      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot; v.userData.vehicle = kind;
       v.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      g.add(v); return;
+      g.add(v); v.updateMatrixWorld(true);
+      const box = new T.Box3().setFromObject(v);
+      return { box, move(dx, dz) { v.position.x += dx; v.position.z += dz; box.translate(new T.Vector3(dx, 0, dz)); } };
     }
     const P = {}, box = (key, w, h, d, px, py, pz) => put(P, key, boxAt(T, w, h, d, px, py, pz));
     const wheel = (px, pz, r, w) => { put(P, "tire", cylZ(T, r, r, w, 18, px, r, pz)); put(P, "rim", cylZ(T, r * 0.58, r * 0.58, w + 0.02, 12, px, r, pz)); };
@@ -2100,7 +2102,25 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       box("darkSteel", 0.9, 0.8, 1.1, 4.7, 0.9, -0.35);
     }
     const mtx = new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), rot), new T.Vector3(k, k, k));
-    Object.entries(P).forEach(([key, list]) => list.forEach(g => put(B, key, g.applyMatrix4(mtx))));
+    const geos = [], fp = new T.Box3();
+    Object.entries(P).forEach(([key, list]) => list.forEach(g => { put(B, key, g.applyMatrix4(mtx)); g.computeBoundingBox(); fp.union(g.boundingBox); geos.push(g); }));
+    return { box: fp, move(dx, dz) { geos.forEach(q => q.translate(dx, 0, dz)); fp.translate(new T.Vector3(dx, 0, dz)); } };
+  }
+
+  // Slide a vehicle to the free spot nearest where it was asked for: its full footprint (booms, outriggers and
+  // buckets included) plus a margin must clear everything already placed and stay inside [x0, x1] x [z0, z1].
+  function park(v, taken, lim, m = 0.12) {
+    if (!v) return;
+    const b = v.box, hits = (dx, dz) => b.min.x + dx < lim[0] || b.max.x + dx > lim[1] || b.min.z + dz < lim[2] || b.max.z + dz > lim[3] ||
+      taken.some(t => b.min.x + dx < t.max.x + m && b.max.x + dx > t.min.x - m && b.min.z + dz < t.max.z + m && b.max.z + dz > t.min.z - m);
+    let best = null;
+    for (let r = 0; r <= 160 && !best; r++) for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) {
+      if (Math.max(Math.abs(i), Math.abs(j)) !== r) continue;
+      const dx = i * 0.1, dz = j * 0.1;
+      if (!hits(dx, dz) && (!best || dx * dx + dz * dz < best[0] * best[0] + best[1] * best[1])) best = [dx, dz];
+    }
+    if (best && (best[0] || best[1])) v.move(best[0], best[1]);
+    taken.push(b.clone());
   }
 
   // ---------- structures ----------
@@ -2316,14 +2336,19 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     put(B, "orange", boxAt(T, 0.3, 0.7, 0.3, hw - 0.4, Y + 0.35, hd - 0.4), boxAt(T, 0.3, 0.7, 0.3, hw - 0.75, Y + 0.35, hd - 0.4));
     // cones along the gate
     for (let i = 0; i < 6; i++) put(B, "orange", cylAt(T, 0.015, 0.07, 0.22, 10, hw * 0.5 - 0.6 + i * 0.24, Y + 0.11, hd + 0.3));
-    // equipment, in meters times U
-    vehicle(T, B, "pickup", -hw + 0.8, Y, 0.2, Math.PI / 2, U, g);
-    vehicle(T, B, "pickup", -hw + 1.6, Y, 0.2, Math.PI / 2, U, g);
-    vehicle(T, B, "pickup", -hw + 2.4, Y, 0.25, Math.PI / 2 + 0.05, U, g);
-    vehicle(T, B, "flatbed", -0.3, Y, 0.55, 0, U, g);
-    vehicle(T, B, "bucket", 0.1, Y, -0.55, Math.PI, U, g);
-    vehicle(T, B, "crane", hw - 2.0, Y, 1.3, Math.PI, U, g);
-    vehicle(T, B, "excavator", hw - 1.2, Y, -0.95, Math.PI, U, g);
+    // equipment, in meters times U, each slid to the nearest spot clear of the stock, the trailer, the crew and the
+    // vehicles parked before it (big ones first, so the pickups fill in around them)
+    const Bx = (x0, x1, z0, z1) => new T.Box3(new T.Vector3(x0, 0, z0), new T.Vector3(x1, 2, z1));
+    const taken = [Bx(-hw + 0.6, -hw + 4.8, -hd, -hd + 1.1), Bx(hw - 3.65, hw - 0.35, -hd, -hd + 1.35),
+      Bx(-hw, -hw + 2.85, hd - 1.25, hd), Bx(hw - 0.95, hw, hd - 0.6, hd), Bx(-2.65, -1.15, -2.1, -0.6)];
+    const lim = [-hw + 0.08, hw - 0.08, -hd + 0.08, hd - 0.08];
+    park(vehicle(T, B, "flatbed", -0.6, Y, 0.3, 0, U, g), taken, lim);
+    park(vehicle(T, B, "crane", hw - 3.0, Y, 2.2, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "bucket", 1.2, Y, -1.0, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "excavator", hw - 1.3, Y, -0.6, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 0.8, Y, -0.3, Math.PI / 2, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 1.8, Y, -0.3, Math.PI / 2, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 2.8, Y, -0.3, Math.PI / 2 + 0.05, U, g), taken, lim);
     flush(T, B, K, g);
     const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-1.9, Y, -1.35); g.add(crew);
     return g;
@@ -2499,7 +2524,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     // speckled grass texture, multiplied over the vertex colors
     const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
-    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 188 + Math.floor(gr() * 55); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
     // grass blades and a few bare patches
     {
       for (let i = 0; i < 2200 * (GS / 256) ** 2; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
@@ -2507,7 +2532,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
     const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(26, 26);
     groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = Q.aniso || 4;
-    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
+    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.015 })); ground.receiveShadow = true; scene.add(ground);
 
     // earthen side walls, like a cut-out terrain model: topsoil, then clay and sand layers down to the base
     const wallGeo = () => {
@@ -2650,7 +2675,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
       // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
-      const yd = yardGroup(T, 9, 6, K), yr = 5.6 * TS;
+      const yd = yardGroup(T, 12, 8, K), yr = 7.4 * TS;
       let spot = null;
       for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
         const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
@@ -2658,7 +2683,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
       }
       if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
-      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 5 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 6.6 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
       obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
@@ -2747,10 +2772,19 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
       cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
       // their pickup, parked beside them facing along the line
-      const px = x + perp.x * sg * 1.6 * TS, pz = z + perp.z * sg * 1.6 * TS, VB = {};
-      const tr = new T.Group();
-      vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
-      flush(T, VB, K, tr); tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
+      // their truck, parked beside them facing along the line: far enough out that its whole footprint (bucket boom
+      // included) clears the crew and any plant, substation or yard
+      const VB = {}, tr = new T.Group();
+      const v3 = vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
+      flush(T, VB, K, tr);
+      const half = v3 ? Math.hypot(v3.box.max.x - v3.box.min.x, v3.box.max.z - v3.box.min.z) / 2 : 0.8 * TS;
+      const crewR = 0.75 * 1.4 * Math.min(1.6, TS);
+      let d = crewR + half + 0.15, px, pz;
+      for (; d < crewR + half + 14; d += 0.25) {
+        px = x + perp.x * sg * d; pz = z + perp.z * sg * d;
+        if (obstacles.every(([ox, oz, r]) => Math.hypot(px - ox, pz - oz) > r + half)) break;
+      }
+      tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
     });
 
     // steam sprites over stacks and cooling towers
@@ -3045,18 +3079,18 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
   const TEX = {
     // galvanized steel: spangle patches, fine grain and a few dull weathering stains
-    metal: T => tex(T, "metal", 256, (u, v) => { const s = 0.62 + 0.18 * vnoise(u * 18, v * 18, 18, 1) + 0.1 * vnoise(u * 64, v * 64, 64, 2) - 0.2 * Math.max(0, fbm(u * 4, v * 4, 4, 3) - 0.55); return [s, s, s * 1.01]; }),
+    metal: T => tex(T, "metal", 256, (u, v) => { const s = 0.62 + 0.18 * vnoise(u * 18, v * 18, 18, 1) + 0.05 * vnoise(u * 64, v * 64, 64, 2) - 0.2 * Math.max(0, fbm(u * 4, v * 4, 4, 3) - 0.55); return [s, s, s * 1.01]; }),
     // painted steel: faint orange peel
     paint: T => tex(T, "paint", 128, (u, v) => { const s = 0.8 + 0.08 * vnoise(u * 32, v * 32, 32, 4) + 0.06 * fbm(u * 4, v * 4, 4, 5); return [s, s, s]; }),
     // cast concrete: blotches, pits and faint form lines
     concrete: T => tex(T, "concrete", 256, (u, v) => {
-      let s = 0.62 + 0.22 * fbm(u * 6, v * 6, 6, 6, 5) + 0.08 * vnoise(u * 90, v * 90, 90, 7);
+      let s = 0.62 + 0.22 * fbm(u * 6, v * 6, 6, 6, 5) + 0.04 * vnoise(u * 90, v * 90, 90, 7);
       if (hash(Math.floor(u * 180), Math.floor(v * 180), 8) > 0.985) s -= 0.25;
       if (Math.abs(((v * 4) % 1) - 0.5) > 0.49) s -= 0.08;
       return [s, s * 0.99, s * 0.96];
     }),
     // weathered concrete shell (cooling towers, stacks): vertical rain streaks
-    streak: T => tex(T, "streak", 256, (u, v) => { const s = 0.6 + 0.16 * fbm(u * 5, v * 5, 5, 9) - 0.2 * Math.pow(vnoise(u * 48, v * 1.5, 48, 10), 3) + 0.05 * vnoise(u * 96, v * 96, 96, 11); return [s, s * 0.98, s * 0.95]; }),
+    streak: T => tex(T, "streak", 256, (u, v) => { const s = 0.6 + 0.16 * fbm(u * 5, v * 5, 5, 9) - 0.2 * Math.pow(vnoise(u * 48, v * 1.5, 48, 10), 3) + 0.025 * vnoise(u * 96, v * 96, 96, 11); return [s, s * 0.98, s * 0.95]; }),
     // crushed stone: Voronoi stones with per-stone tone and dark gaps between them
     gravel: T => tex(T, "gravel", 512, (u, v) => {
       const G = 56, x = u * G, y = v * G, i = Math.floor(x), j = Math.floor(y);
@@ -3065,7 +3099,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         const ci = ((i + a) % G + G) % G, cj = ((j + b) % G + G) % G, px = i + a + hash(ci, cj, 12), py = j + b + hash(ci, cj, 13), d = Math.hypot(x - px, y - py);
         if (d < d1) { d2 = d1; d1 = d; id = hash(ci, cj, 14); } else if (d < d2) d2 = d;
       }
-      const edge = Math.min(1, (d2 - d1) * 5), s = (0.45 + 0.45 * id) * (0.35 + 0.65 * edge) * (0.85 + 0.3 * vnoise(u * 256, v * 256, 256, 15));
+      const edge = Math.min(1, (d2 - d1) * 5), s = (0.45 + 0.45 * id) * (0.35 + 0.65 * edge) * (0.92 + 0.16 * vnoise(u * 256, v * 256, 256, 15));
       const warm = id > 0.8 ? 1.06 : 1;
       return [s * warm, s, s * (2 - warm)];
     }),
@@ -3081,17 +3115,17 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       g.fillStyle = "#8a8a8a"; g.fillRect(0, 0, N, N);
       let s = 1; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
       for (let i = 0; i < 26000; i++) {
-        const x = r() * N, y = r() * N, l = 3 + r() * 9, a = -Math.PI / 2 + (r() - 0.5) * 1.1, v = 70 + r() * 150 | 0;
+        const x = r() * N, y = r() * N, l = 3 + r() * 9, a = -Math.PI / 2 + (r() - 0.5) * 1.1, v = 105 + r() * 90 | 0;
         g.strokeStyle = `rgb(${v * 0.95 | 0},${v},${v * 0.8 | 0})`; g.lineWidth = 0.7 + r() * 0.9;
         for (const ox of [0, -N, N]) for (const oy of [0, -N, N]) { g.beginPath(); g.moveTo(x + ox, y + oy); g.lineTo(x + ox + Math.cos(a) * l, y + oy + Math.sin(a) * l); g.stroke(); }
       }
     }),
     // foliage: overlapping leaves and needle clumps in several tones, with dark gaps
     foliage: T => tex(T, "foliage", 256, (u, v, b) => b, (g, N) => {
-      g.fillStyle = "#262626"; g.fillRect(0, 0, N, N);
+      g.fillStyle = "#4a4a4a"; g.fillRect(0, 0, N, N);
       let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
       for (let i = 0; i < 5200; i++) {
-        const x = r() * N, y = r() * N, v = 60 + r() * 170 | 0;
+        const x = r() * N, y = r() * N, v = 85 + r() * 120 | 0;
         g.fillStyle = `rgb(${v * 0.92 | 0},${v},${v * 0.75 | 0})`;
         for (const ox of [0, -N, N]) for (const oy of [0, -N, N]) { g.beginPath(); g.ellipse(x + ox, y + oy, 1.5 + r() * 3, 0.8 + r() * 1.4, r() * 3.14, 0, 7); g.fill(); }
       }
@@ -3127,14 +3161,16 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         }
         ` + sh.fragmentShader
         .replace("#include <map_fragment>", `#include <map_fragment>
+          // fade the fine detail as it shrinks below a few pixels, so distant ground reads calm instead of grainy
+          float triF = clamp(1.6 - 2.2 * length(fwidth(vTriP * triScale)), 0.0, 1.0);
           vec3 triT = triAt(1.0);
           ${tri.macro ? "triT = triT * 0.6 + triAt(" + tri.macro.toFixed(3) + ") * 0.4;" : ""}
-          diffuseColor.rgb *= mix(vec3(1.0), 0.5 + triT, triAmt);`)
+          diffuseColor.rgb *= mix(vec3(1.0), 0.5 + triT, triAmt * (0.55 + 0.45 * triF));`)
         .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
           roughnessFactor = clamp(roughnessFactor + (0.5 - triT.g) * triRough, 0.03, 1.0);`)
         .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
           float triH = dot(triT, vec3(0.3333));
-          normal = triBend(-vViewPosition, normal, vec2(dFdx(triH), dFdy(triH)) * triBump);`);
+          normal = triBend(-vViewPosition, normal, vec2(dFdx(triH), dFdy(triH)) * triBump * triF);`);
     };
     return m;
   }
@@ -3248,13 +3284,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       t.convertSRGBToLinear(); col.setXYZ(i, t.r, t.g, t.b);
     }
     col.needsUpdate = true;
-    ground.material.dispose(); ground.material = mat(T, 0xffffff, { vc: true, rough: 0.97, kind: "grass", scale: 1.1, amt: 0.55, rv: 0.1, bump: 0.9, macro: 0.19 });
+    ground.material.dispose(); ground.material = mat(T, 0xffffff, { vc: true, rough: 0.97, kind: "grass", scale: 1.1, amt: 0.38, rv: 0.08, bump: 0.45, macro: 0.19 });
     }
-    if (walls) { walls.material.dispose(); walls.material = mat(T, 0xffffff, { vc: true, rough: 1, kind: "soil", scale: 0.9, amt: 0.6, bump: 0.8, side: T.DoubleSide }); }
+    if (walls) { walls.material.dispose(); walls.material = mat(T, 0xffffff, { vc: true, rough: 1, kind: "soil", scale: 0.9, amt: 0.5, bump: 0.5, side: T.DoubleSide }); }
 
     // vegetation: same trees at the same spots, with irregular crowns, leaf and bark detail and deeper summer greens
     const bark = mat(T, 0x5a4636, { rough: 0.95, kind: "bark", scale: 9, amt: 0.8, bump: 0.8 });
-    const leaves = mat(T, 0xffffff, { rough: 0.85, kind: "foliage", scale: 3.2, amt: 0.9, rv: 0.2, bump: 1.2 });
+    const leaves = mat(T, 0xffffff, { rough: 0.85, kind: "foliage", scale: 3.2, amt: 0.75, rv: 0.2, bump: 0.8 });
     const rock = mat(T, 0xffffff, { rough: 0.85, kind: "rock", scale: 3, amt: 0.8, bump: 0.8 });
     const blades = mat(T, 0xffffff, { rough: 0.9, side: T.DoubleSide });
     const shapes = new Map(); let seed = 100;

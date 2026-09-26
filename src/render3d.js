@@ -42,18 +42,18 @@
   }
   const TEX = {
     // galvanized steel: spangle patches, fine grain and a few dull weathering stains
-    metal: T => tex(T, "metal", 256, (u, v) => { const s = 0.62 + 0.18 * vnoise(u * 18, v * 18, 18, 1) + 0.1 * vnoise(u * 64, v * 64, 64, 2) - 0.2 * Math.max(0, fbm(u * 4, v * 4, 4, 3) - 0.55); return [s, s, s * 1.01]; }),
+    metal: T => tex(T, "metal", 256, (u, v) => { const s = 0.62 + 0.18 * vnoise(u * 18, v * 18, 18, 1) + 0.05 * vnoise(u * 64, v * 64, 64, 2) - 0.2 * Math.max(0, fbm(u * 4, v * 4, 4, 3) - 0.55); return [s, s, s * 1.01]; }),
     // painted steel: faint orange peel
     paint: T => tex(T, "paint", 128, (u, v) => { const s = 0.8 + 0.08 * vnoise(u * 32, v * 32, 32, 4) + 0.06 * fbm(u * 4, v * 4, 4, 5); return [s, s, s]; }),
     // cast concrete: blotches, pits and faint form lines
     concrete: T => tex(T, "concrete", 256, (u, v) => {
-      let s = 0.62 + 0.22 * fbm(u * 6, v * 6, 6, 6, 5) + 0.08 * vnoise(u * 90, v * 90, 90, 7);
+      let s = 0.62 + 0.22 * fbm(u * 6, v * 6, 6, 6, 5) + 0.04 * vnoise(u * 90, v * 90, 90, 7);
       if (hash(Math.floor(u * 180), Math.floor(v * 180), 8) > 0.985) s -= 0.25;
       if (Math.abs(((v * 4) % 1) - 0.5) > 0.49) s -= 0.08;
       return [s, s * 0.99, s * 0.96];
     }),
     // weathered concrete shell (cooling towers, stacks): vertical rain streaks
-    streak: T => tex(T, "streak", 256, (u, v) => { const s = 0.6 + 0.16 * fbm(u * 5, v * 5, 5, 9) - 0.2 * Math.pow(vnoise(u * 48, v * 1.5, 48, 10), 3) + 0.05 * vnoise(u * 96, v * 96, 96, 11); return [s, s * 0.98, s * 0.95]; }),
+    streak: T => tex(T, "streak", 256, (u, v) => { const s = 0.6 + 0.16 * fbm(u * 5, v * 5, 5, 9) - 0.2 * Math.pow(vnoise(u * 48, v * 1.5, 48, 10), 3) + 0.025 * vnoise(u * 96, v * 96, 96, 11); return [s, s * 0.98, s * 0.95]; }),
     // crushed stone: Voronoi stones with per-stone tone and dark gaps between them
     gravel: T => tex(T, "gravel", 512, (u, v) => {
       const G = 56, x = u * G, y = v * G, i = Math.floor(x), j = Math.floor(y);
@@ -62,7 +62,7 @@
         const ci = ((i + a) % G + G) % G, cj = ((j + b) % G + G) % G, px = i + a + hash(ci, cj, 12), py = j + b + hash(ci, cj, 13), d = Math.hypot(x - px, y - py);
         if (d < d1) { d2 = d1; d1 = d; id = hash(ci, cj, 14); } else if (d < d2) d2 = d;
       }
-      const edge = Math.min(1, (d2 - d1) * 5), s = (0.45 + 0.45 * id) * (0.35 + 0.65 * edge) * (0.85 + 0.3 * vnoise(u * 256, v * 256, 256, 15));
+      const edge = Math.min(1, (d2 - d1) * 5), s = (0.45 + 0.45 * id) * (0.35 + 0.65 * edge) * (0.92 + 0.16 * vnoise(u * 256, v * 256, 256, 15));
       const warm = id > 0.8 ? 1.06 : 1;
       return [s * warm, s, s * (2 - warm)];
     }),
@@ -78,17 +78,17 @@
       g.fillStyle = "#8a8a8a"; g.fillRect(0, 0, N, N);
       let s = 1; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
       for (let i = 0; i < 26000; i++) {
-        const x = r() * N, y = r() * N, l = 3 + r() * 9, a = -Math.PI / 2 + (r() - 0.5) * 1.1, v = 70 + r() * 150 | 0;
+        const x = r() * N, y = r() * N, l = 3 + r() * 9, a = -Math.PI / 2 + (r() - 0.5) * 1.1, v = 105 + r() * 90 | 0;
         g.strokeStyle = `rgb(${v * 0.95 | 0},${v},${v * 0.8 | 0})`; g.lineWidth = 0.7 + r() * 0.9;
         for (const ox of [0, -N, N]) for (const oy of [0, -N, N]) { g.beginPath(); g.moveTo(x + ox, y + oy); g.lineTo(x + ox + Math.cos(a) * l, y + oy + Math.sin(a) * l); g.stroke(); }
       }
     }),
     // foliage: overlapping leaves and needle clumps in several tones, with dark gaps
     foliage: T => tex(T, "foliage", 256, (u, v, b) => b, (g, N) => {
-      g.fillStyle = "#262626"; g.fillRect(0, 0, N, N);
+      g.fillStyle = "#4a4a4a"; g.fillRect(0, 0, N, N);
       let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
       for (let i = 0; i < 5200; i++) {
-        const x = r() * N, y = r() * N, v = 60 + r() * 170 | 0;
+        const x = r() * N, y = r() * N, v = 85 + r() * 120 | 0;
         g.fillStyle = `rgb(${v * 0.92 | 0},${v},${v * 0.75 | 0})`;
         for (const ox of [0, -N, N]) for (const oy of [0, -N, N]) { g.beginPath(); g.ellipse(x + ox, y + oy, 1.5 + r() * 3, 0.8 + r() * 1.4, r() * 3.14, 0, 7); g.fill(); }
       }
@@ -124,14 +124,16 @@
         }
         ` + sh.fragmentShader
         .replace("#include <map_fragment>", `#include <map_fragment>
+          // fade the fine detail as it shrinks below a few pixels, so distant ground reads calm instead of grainy
+          float triF = clamp(1.6 - 2.2 * length(fwidth(vTriP * triScale)), 0.0, 1.0);
           vec3 triT = triAt(1.0);
           ${tri.macro ? "triT = triT * 0.6 + triAt(" + tri.macro.toFixed(3) + ") * 0.4;" : ""}
-          diffuseColor.rgb *= mix(vec3(1.0), 0.5 + triT, triAmt);`)
+          diffuseColor.rgb *= mix(vec3(1.0), 0.5 + triT, triAmt * (0.55 + 0.45 * triF));`)
         .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
           roughnessFactor = clamp(roughnessFactor + (0.5 - triT.g) * triRough, 0.03, 1.0);`)
         .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
           float triH = dot(triT, vec3(0.3333));
-          normal = triBend(-vViewPosition, normal, vec2(dFdx(triH), dFdy(triH)) * triBump);`);
+          normal = triBend(-vViewPosition, normal, vec2(dFdx(triH), dFdy(triH)) * triBump * triF);`);
     };
     return m;
   }
@@ -245,13 +247,13 @@
       t.convertSRGBToLinear(); col.setXYZ(i, t.r, t.g, t.b);
     }
     col.needsUpdate = true;
-    ground.material.dispose(); ground.material = mat(T, 0xffffff, { vc: true, rough: 0.97, kind: "grass", scale: 1.1, amt: 0.55, rv: 0.1, bump: 0.9, macro: 0.19 });
+    ground.material.dispose(); ground.material = mat(T, 0xffffff, { vc: true, rough: 0.97, kind: "grass", scale: 1.1, amt: 0.38, rv: 0.08, bump: 0.45, macro: 0.19 });
     }
-    if (walls) { walls.material.dispose(); walls.material = mat(T, 0xffffff, { vc: true, rough: 1, kind: "soil", scale: 0.9, amt: 0.6, bump: 0.8, side: T.DoubleSide }); }
+    if (walls) { walls.material.dispose(); walls.material = mat(T, 0xffffff, { vc: true, rough: 1, kind: "soil", scale: 0.9, amt: 0.5, bump: 0.5, side: T.DoubleSide }); }
 
     // vegetation: same trees at the same spots, with irregular crowns, leaf and bark detail and deeper summer greens
     const bark = mat(T, 0x5a4636, { rough: 0.95, kind: "bark", scale: 9, amt: 0.8, bump: 0.8 });
-    const leaves = mat(T, 0xffffff, { rough: 0.85, kind: "foliage", scale: 3.2, amt: 0.9, rv: 0.2, bump: 1.2 });
+    const leaves = mat(T, 0xffffff, { rough: 0.85, kind: "foliage", scale: 3.2, amt: 0.75, rv: 0.2, bump: 0.8 });
     const rock = mat(T, 0xffffff, { rough: 0.85, kind: "rock", scale: 3, amt: 0.8, bump: 0.8 });
     const blades = mat(T, 0xffffff, { rough: 0.9, side: T.DoubleSide });
     const shapes = new Map(); let seed = 100;
