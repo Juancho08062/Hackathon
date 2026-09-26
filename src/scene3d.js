@@ -14,8 +14,15 @@
   let ctx = null, last = null, walkCtl = null;
   // Extension points for add-on files (loaded after this one) to plug in without editing it:
   //   hooks.vehicle(T, bag, kind, x, y, z, rot, k, put) returns true when it built that kind itself;
-  //   hooks.setupRender({ T, renderer, scene, cam, composer, Q, built }) runs once per open, before the first frame.
-  const hooks = { vehicle: null, setupRender: null };
+  //   hooks.setupRender({ T, renderer, scene, cam, composer, Q, built }) runs once per open, before the first frame;
+  //   hooks.enhance(T, scene, { PAL, ground, walls, dem }) and hooks.post(T, composer, tone, bloom) run only in
+  //   Ultra-realistic: enhance just before colors are linearized, post right after the gamma pass. Both default to
+  //   realism3d.js when it is loaded.
+  const hooks = {
+    vehicle: null, setupRender: null,
+    enhance: (...a) => root.Realism3D && root.Realism3D.enhance(...a),
+    post: (...a) => root.Realism3D && root.Realism3D.post(...a),
+  };
   // Two looks. Detailed (the default) is the stylized scene with full models, ambient occlusion and SMAA.
   // Ultra-realistic adds texture maps, galvanized steel and bare aluminum wires, loblolly pines, denser ground
   // cover, finer terrain and a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass
@@ -919,6 +926,7 @@
     const focus = va.clone().lerp(vb, 0.5);
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
+    if (REAL && hooks.enhance) hooks.enhance(T, scene, { PAL, ground, walls, dem }); // ground, trees, crews, light
     linearize(T, scene, REAL ? 0.55 : 0.35);
     return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
@@ -1082,9 +1090,10 @@
         ssao.overrideVisibility = function () { hide(); skip.forEach(o => { o.visible = false; }); };
         composer.addPass(ssao);
       } else composer.addPass(new T.RenderPass(built.scene, cam));
-      composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95));
+      const bloom = new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95); composer.addPass(bloom);
       const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = Q.real ? 0.78 : 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
+      if (Q.real && hooks.post) hooks.post(T, composer, tone, bloom); // exposure and color grade
       // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.
       const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
       composer.addPass(fxaa || smaa);
