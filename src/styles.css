@@ -245,8 +245,23 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
   body>*:not(#brief){display:none!important}
   .brief-wrap{position:static;background:none;padding:0;backdrop-filter:none}
   .brief-bar{display:none}
-  .brief{box-shadow:none;width:100%;padding:0}
+  .brief{box-shadow:none;width:100%;padding:0;font-size:10.5px;line-height:1.35;border-radius:0}
+  .b-head{margin-bottom:8px;padding-bottom:6px}
+  .b-memo{margin-bottom:6px}
+  .b-lede{font-size:11.5px;margin-bottom:6px}
+  .b-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;margin-bottom:0}
+  .b-map{max-height:135px;width:auto;max-width:100%}
+  .b-kpis{gap:6px}
+  .b-kpis b{font-size:20px}
+  .brief h4{font-size:12.5px;margin:8px 0 2px}
+  .b-tab td span{font-size:9.5px}
+  .brief ol{columns:2;column-gap:20px;display:block}
+  .brief ol li{break-inside:avoid;margin-bottom:2px}
+  .b-tab td{padding:3px 8px 3px 0}
+  .brief ul,.brief ol{gap:1px}
+  .b-foot{margin-top:10px;padding-top:6px;font-size:10px}
 }
+@page{size:letter;margin:10mm}
 
 /* ---------- timeline and footer ---------- */
 #tl{display:block;width:100%}
