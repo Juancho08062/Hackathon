@@ -291,5 +291,23 @@ t("flat projection stays close to geodesic distance", () => {
   assert(worst < 0.5, `worst deviation from geodesic distance is ${worst.toFixed(3)} km`);
   assert.strictEqual(flips, 0, `${flips} pairs would change tier if measured geodesically`);
 });
+t("rows without a date load as undated, geography-only projects", () => {
+  const csv = "utility,name,in_service,lat,lon\nA,Dated,2029,33,-81\nB,No date,,33.01,-81";
+  const r = I.parsePlan(csv, "t.csv", {});
+  assert.strictEqual(r.projects.length, 2); assert.strictEqual(r.errors.length, 0);
+  const u = r.projects.find(p => p.name === "No date");
+  assert.ok(u.undated && u.date_precision === "none" && !isNaN(E.monthIndex(u.in_service)));
+  const { pairs } = E.findOverlaps(r.projects, { utilA: "A", utilB: "B", maxKm: 40, bufferMonths: 0, mode: "near" });
+  assert.strictEqual(pairs.length, 1, "still paired on geography");
+  assert.strictEqual(pairs[0].sameWindow, false);
+  assert.strictEqual(E.overlapChance(pairs[0], {}).p, 0);
+  assert.strictEqual(E.findOverlaps(r.projects, { utilA: "A", utilB: "B", maxKm: 40, bufferMonths: 0, mode: "both" }).pairs.length, 0);
+});
+t("a per-row source link is kept, and falls back to the import default", () => {
+  const csv = "utility,name,in_service,lat,lon,source_url\nU,Linked,2029,33,-81,https://example.com/plan.pdf\nU,Plain,2029,33,-81,";
+  const r = I.parsePlan(csv, "t.csv", { source: "Typed source" });
+  assert.deepStrictEqual(r.projects.map(p => p.source), ["https://example.com/plan.pdf", "Typed source"]);
+  for (const col of ["source", "url", "link"]) assert.ok(I.ALIASES.source.includes(col));
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);

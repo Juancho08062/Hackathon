@@ -83,11 +83,11 @@ let n = 0;
   n++; console.log("ok - KML: attributes read from the HTML table in each description");
 
   const [bare] = await load(["edisto-electric-survey.gpx"]);
-  assert.strictEqual(bare.projects.length, 0); assert.match(bare.errors[0], /default in-service date/);
+  assert(bare.projects.length > 0 && bare.projects.every(p => p.undated && p.date_precision === "none"), "undated rows load, marked undated");
   const [gpx] = await load(["edisto-electric-survey.gpx"], { in_service: "2029" });
   assert(gpx.projects.every(p => p.in_service === "2029-06-01" && !p.start_published));
   assert.strictEqual(gpx.projects.find(p => /Route/.test(p.name)).coords.length, 5);
-  n++; console.log("ok - GPX: needs a default in-service date, then loads the route and waypoints");
+  n++; console.log("ok - GPX: loads undated without a date, and dated with a default in-service date");
 
   // Existing-infrastructure layer (HIFLD field layout): no dates or names needed; names come from SUB_1 and SUB_2.
   const [ex] = await load(["hifld-style-existing-lines.geojson"], { utility: "", in_service: "2000", existing: true });

@@ -179,9 +179,11 @@
     if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put, g)) return;
     if (g && root.Vehicles3D && V3D[kind] && root.Vehicles3D.KINDS.includes(V3D[kind])) {
       const v = root.Vehicles3D.build(T, V3D[kind], { level: vehLevel });
-      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot;
+      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot; v.userData.vehicle = kind;
       v.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      g.add(v); return;
+      g.add(v); v.updateMatrixWorld(true);
+      const box = new T.Box3().setFromObject(v);
+      return { box, move(dx, dz) { v.position.x += dx; v.position.z += dz; box.translate(new T.Vector3(dx, 0, dz)); } };
     }
     const P = {}, box = (key, w, h, d, px, py, pz) => put(P, key, boxAt(T, w, h, d, px, py, pz));
     const wheel = (px, pz, r, w) => { put(P, "tire", cylZ(T, r, r, w, 18, px, r, pz)); put(P, "rim", cylZ(T, r * 0.58, r * 0.58, w + 0.02, 12, px, r, pz)); };
@@ -258,7 +260,25 @@
       box("darkSteel", 0.9, 0.8, 1.1, 4.7, 0.9, -0.35);
     }
     const mtx = new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), rot), new T.Vector3(k, k, k));
-    Object.entries(P).forEach(([key, list]) => list.forEach(g => put(B, key, g.applyMatrix4(mtx))));
+    const geos = [], fp = new T.Box3();
+    Object.entries(P).forEach(([key, list]) => list.forEach(g => { put(B, key, g.applyMatrix4(mtx)); g.computeBoundingBox(); fp.union(g.boundingBox); geos.push(g); }));
+    return { box: fp, move(dx, dz) { geos.forEach(q => q.translate(dx, 0, dz)); fp.translate(new T.Vector3(dx, 0, dz)); } };
+  }
+
+  // Slide a vehicle to the free spot nearest where it was asked for: its full footprint (booms, outriggers and
+  // buckets included) plus a margin must clear everything already placed and stay inside [x0, x1] x [z0, z1].
+  function park(v, taken, lim, m = 0.12) {
+    if (!v) return;
+    const b = v.box, hits = (dx, dz) => b.min.x + dx < lim[0] || b.max.x + dx > lim[1] || b.min.z + dz < lim[2] || b.max.z + dz > lim[3] ||
+      taken.some(t => b.min.x + dx < t.max.x + m && b.max.x + dx > t.min.x - m && b.min.z + dz < t.max.z + m && b.max.z + dz > t.min.z - m);
+    let best = null;
+    for (let r = 0; r <= 160 && !best; r++) for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) {
+      if (Math.max(Math.abs(i), Math.abs(j)) !== r) continue;
+      const dx = i * 0.1, dz = j * 0.1;
+      if (!hits(dx, dz) && (!best || dx * dx + dz * dz < best[0] * best[0] + best[1] * best[1])) best = [dx, dz];
+    }
+    if (best && (best[0] || best[1])) v.move(best[0], best[1]);
+    taken.push(b.clone());
   }
 
   // ---------- structures ----------
@@ -474,14 +494,19 @@
     put(B, "orange", boxAt(T, 0.3, 0.7, 0.3, hw - 0.4, Y + 0.35, hd - 0.4), boxAt(T, 0.3, 0.7, 0.3, hw - 0.75, Y + 0.35, hd - 0.4));
     // cones along the gate
     for (let i = 0; i < 6; i++) put(B, "orange", cylAt(T, 0.015, 0.07, 0.22, 10, hw * 0.5 - 0.6 + i * 0.24, Y + 0.11, hd + 0.3));
-    // equipment, in meters times U
-    vehicle(T, B, "pickup", -hw + 0.8, Y, 0.2, Math.PI / 2, U, g);
-    vehicle(T, B, "pickup", -hw + 1.6, Y, 0.2, Math.PI / 2, U, g);
-    vehicle(T, B, "pickup", -hw + 2.4, Y, 0.25, Math.PI / 2 + 0.05, U, g);
-    vehicle(T, B, "flatbed", -0.3, Y, 0.55, 0, U, g);
-    vehicle(T, B, "bucket", 0.1, Y, -0.55, Math.PI, U, g);
-    vehicle(T, B, "crane", hw - 2.0, Y, 1.3, Math.PI, U, g);
-    vehicle(T, B, "excavator", hw - 1.2, Y, -0.95, Math.PI, U, g);
+    // equipment, in meters times U, each slid to the nearest spot clear of the stock, the trailer, the crew and the
+    // vehicles parked before it (big ones first, so the pickups fill in around them)
+    const Bx = (x0, x1, z0, z1) => new T.Box3(new T.Vector3(x0, 0, z0), new T.Vector3(x1, 2, z1));
+    const taken = [Bx(-hw + 0.6, -hw + 4.8, -hd, -hd + 1.1), Bx(hw - 3.65, hw - 0.35, -hd, -hd + 1.35),
+      Bx(-hw, -hw + 2.85, hd - 1.25, hd), Bx(hw - 0.95, hw, hd - 0.6, hd), Bx(-2.65, -1.15, -2.1, -0.6)];
+    const lim = [-hw + 0.08, hw - 0.08, -hd + 0.08, hd - 0.08];
+    park(vehicle(T, B, "flatbed", -0.6, Y, 0.3, 0, U, g), taken, lim);
+    park(vehicle(T, B, "crane", hw - 3.0, Y, 2.2, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "bucket", 1.2, Y, -1.0, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "excavator", hw - 1.3, Y, -0.6, Math.PI, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 0.8, Y, -0.3, Math.PI / 2, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 1.8, Y, -0.3, Math.PI / 2, U, g), taken, lim);
+    park(vehicle(T, B, "pickup", -hw + 2.8, Y, -0.3, Math.PI / 2 + 0.05, U, g), taken, lim);
     flush(T, B, K, g);
     const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-1.9, Y, -1.35); g.add(crew);
     return g;
@@ -654,10 +679,19 @@
     }
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
+    // Height of the drawn ground (its triangles, not the raw elevation between vertices), so a walker's feet stay on
+    // the surface that is on screen instead of sinking into or floating over it.
+    const GN = Q.seg, GC = 2 * H / GN, gy = pos.array;
+    const groundAt = (x, z) => {
+      const X = Math.max(0, Math.min(GN - 1e-4, (x + H) / GC)), Z = Math.max(0, Math.min(GN - 1e-4, (z + H) / GC));
+      const ix = Math.floor(X), iz = Math.floor(Z), fx = X - ix, fz = Z - iz, Y = (i, j) => gy[((j) * (GN + 1) + i) * 3 + 1];
+      const a = Y(ix, iz), b = Y(ix, iz + 1), c = Y(ix + 1, iz + 1), d = Y(ix + 1, iz);
+      return fx + fz <= 1 ? a + (d - a) * fx + (b - a) * fz : c + (b - c) * (1 - fx) + (d - c) * (1 - fz);
+    };
     // speckled grass texture, multiplied over the vertex colors
     const GS = Q.tex, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
-    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    for (let i = 0; i < 9000 * (GS / 256) ** 2; i++) { const v = 188 + Math.floor(gr() * 55); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
     // grass blades and a few bare patches
     {
       for (let i = 0; i < 2200 * (GS / 256) ** 2; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
@@ -665,7 +699,7 @@
     }
     const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(26, 26);
     groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = Q.aniso || 4;
-    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
+    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.015 })); ground.receiveShadow = true; scene.add(ground);
 
     // earthen side walls, like a cut-out terrain model: topsoil, then clay and sand layers down to the base
     const wallGeo = () => {
@@ -709,7 +743,7 @@
     }
 
     // ---------- the two projects ----------
-    const obstacles = [], steam = [];
+    const obstacles = [], steam = [], solids = []; // solids: what a walker bumps into, [x, z, radius]
     const towerCache = {};
     const place = (p, color) => {
       const kvH = (p.kv >= 500 ? 4.4 : p.kv >= 230 ? 3.4 : 2.6) * TS;
@@ -808,7 +842,7 @@
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
       // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
-      const yd = yardGroup(T, 9, 6, K), yr = 5.6 * TS;
+      const yd = yardGroup(T, 12, 8, K), yr = 7.4 * TS;
       let spot = null;
       for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
         const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
@@ -816,12 +850,13 @@
         if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
       }
       if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
-      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 5 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 6.6 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
       obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
     // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
     // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    obstacles.forEach(([x, z, r]) => solids.push([x, z, r * 0.7]));
     let walkStart = null;
     if (opts.walkAt) {
       const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
@@ -848,7 +883,7 @@
       if (Math.hypot(x, z) > RG - 10 || !clear(x, z, r + 1)) continue;
       const pond = new T.Mesh(new T.CircleGeometry(r, 14), water); pond.scale.set(1, 0.6 + rnd() * 0.4, 1);
       pond.rotation.x = -Math.PI / 2; pond.rotation.z = rnd() * 3; pond.position.set(x, heightAt(x, z) + 0.12, z); pond.receiveShadow = true; scene.add(pond);
-      obstacles.push([x, z, r]); made++;
+      obstacles.push([x, z, r]); solids.push([x, z, r]); made++;
     }
 
     // instanced pines
@@ -868,7 +903,7 @@
       if (Math.hypot(x, z) > edge(Math.atan2(z, x)) - 2.5 || !clear(x, z, 1.8)) continue;
       const k = 0.7 + rnd() * 0.9;
       mtx.compose(pv.set(x, heightAt(x, z) - 0.05, z), q.setFromAxisAngle(sv.set(0, 1, 0), rnd() * 6), sv.clone().set(k, k * (0.9 + rnd() * 0.4), k));
-      pinesF.setMatrixAt(np, mtx); pinesT.setMatrixAt(np, mtx);
+      pinesF.setMatrixAt(np, mtx); pinesT.setMatrixAt(np, mtx); solids.push([x, z, 0.14 * k]);
       pinesF.setColorAt(np, tmp.setHex(REAL ? 0x33502f : PAL.pine).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08)); np++;
     }
     pinesF.count = pinesT.count = np; pinesF.castShadow = pinesT.castShadow = true;
@@ -905,10 +940,19 @@
       const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
       cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
       // their pickup, parked beside them facing along the line
-      const px = x + perp.x * sg * 1.6 * TS, pz = z + perp.z * sg * 1.6 * TS, VB = {};
-      const tr = new T.Group();
-      vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
-      flush(T, VB, K, tr); tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
+      // their truck, parked beside them facing along the line: far enough out that its whole footprint (bucket boom
+      // included) clears the crew and any plant, substation or yard
+      const VB = {}, tr = new T.Group();
+      const v3 = vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
+      flush(T, VB, K, tr);
+      const half = v3 ? Math.hypot(v3.box.max.x - v3.box.min.x, v3.box.max.z - v3.box.min.z) / 2 : 0.8 * TS;
+      const crewR = 0.75 * 1.4 * Math.min(1.6, TS);
+      let d = crewR + half + 0.15, px, pz;
+      for (; d < crewR + half + 14; d += 0.25) {
+        px = x + perp.x * sg * d; pz = z + perp.z * sg * d;
+        if (obstacles.every(([ox, oz, r]) => Math.hypot(px - ox, pz - oz) > r + half)) break;
+      }
+      tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
     });
 
     // steam sprites over stacks and cooling towers
@@ -920,7 +964,7 @@
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene, REAL ? 0.55 : 0.35);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, groundAt, toV, TS, R, obstacles, solids, water: !!dem, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -1010,14 +1054,15 @@
       // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
       // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
       // terrain and inside the plateau.
-      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null, vx: 0, vz: 0, look: null };
+      const gAt = built.groundAt || built.heightAt, BODY = 0.3 * Math.min(1.6, built.TS);
       const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
       const setWalk = on => {
         const was = walk.on;
         walk.on = on; walk.keys.clear(); controls.enabled = !on && !(INTRO && !was); controls.autoRotate = false;
         if (on) {
-          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
-          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z); walk.vx = walk.vz = 0; walk.look = null;
+          cam.position.y = gAt(cam.position.x, cam.position.z) + eye;
         } else if (was) { // leaving walk: orbit around the spot ahead; opening straight into orbit keeps the overview target
           const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
           controls.target.copy(ahead); cam.position.y += 8;
@@ -1032,31 +1077,69 @@
       const onKeyUp = e => walk.keys.delete(e.code);
       const onBlur = () => walk.keys.clear(); // a key released while the window is in the background never sends keyup
       const cv = renderer.domElement;
-      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      // dragging sets where the view should point; the camera eases toward it each frame, so look-around is smooth
+      // even when pointer events arrive in bursts
+      const onDown = e => { if (walk.on && e.button === 0) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
       const onMove = e => {
         if (!walk.on || !walk.drag) return;
-        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        const L = walk.look || (walk.look = [walk.yaw, walk.pitch]);
+        L[0] -= (e.clientX - walk.drag[0]) * 0.005; L[1] = Math.max(-1.1, Math.min(0.9, L[1] - (e.clientY - walk.drag[1]) * 0.004));
         walk.drag = [e.clientX, e.clientY];
       };
-      const onUp = () => { walk.drag = null; };
+      const onUp = e => { walk.drag = null; if (cv.hasPointerCapture && cv.hasPointerCapture(e.pointerId)) cv.releasePointerCapture(e.pointerId); };
       addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp); addEventListener("blur", onBlur);
-      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp); cv.addEventListener("pointercancel", onUp);
       if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
       walkCtl = { on: () => walk.on, off: () => setWalk(false) };
+      // Walking: speed eases up and down instead of jumping, the walker slides around structures, tree trunks and
+      // ponds rather than passing through them, stays out of the river, and the eye follows the ground smoothly.
+      const solids = built.solids || [];
+      const wet = (x, z) => built.water && gAt(x, z) < 0.05;
+      const pushOut = (x, z) => {
+        for (let pass = 0; pass < 2; pass++) for (const [ox, oz, r] of solids) {
+          const dx = x - ox, dz = z - oz, d = Math.hypot(dx, dz), min = r + BODY;
+          if (d < min && d > 1e-6) { x = ox + dx / d * min; z = oz + dz / d * min; }
+        }
+        return [x, z];
+      };
       const stepWalk = dt => {
         let fw = 0, sd = 0;
         walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
-        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const n = Math.hypot(fw, sd) || 1; fw /= n; sd /= n; // diagonal is no faster
+        if (walk.look) {
+          const e = 1 - Math.exp(-18 * dt);
+          walk.yaw += (walk.look[0] - walk.yaw) * e; walk.pitch += (walk.look[1] - walk.pitch) * e;
+          if (!walk.drag && Math.abs(walk.look[0] - walk.yaw) + Math.abs(walk.look[1] - walk.pitch) < 1e-4) walk.look = null;
+        }
+        const top = walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5, p = cam.position;
         const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
-        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const e = 1 - Math.exp(-(fw || sd ? 9 : 12) * dt);
+        walk.vx += ((fx * fw + fz * sd) * top - walk.vx) * e; walk.vz += ((fz * fw - fx * sd) * top - walk.vz) * e;
+        let nx = p.x + walk.vx * dt, nz = p.z + walk.vz * dt;
         const r = Math.hypot(nx, nz), lim = built.R * 1.25;
         if (r > lim) { nx *= lim / r; nz *= lim / r; }
-        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        [nx, nz] = pushOut(nx, nz);
+        // the river and ground too steep to climb (the relief is stretched, so some bluffs are near-vertical) act as
+        // walls: keep whichever axis is still passable, like sliding along a wall
+        const h0 = gAt(p.x, p.z), stop = (x, z) => {
+          const d = Math.hypot(x - p.x, z - p.z);
+          return (wet(x, z) && !wet(p.x, p.z)) || (d > 1e-6 && (gAt(x, z) - h0) / d > 1.3);
+        };
+        if (stop(nx, nz)) {
+          if (!stop(nx, p.z)) nz = p.z; else if (!stop(p.x, nz)) nx = p.x; else { nx = p.x; nz = p.z; }
+          walk.vx *= 0.5; walk.vz *= 0.5;
+        }
+        // the eye rides the ground averaged over a stride around the feet, so the exaggerated relief reads as a
+        // slope rather than as steps; it catches up faster when the ground rises close to it, and never goes under
+        const g0 = gAt(nx, nz), sr = eye * 0.8;
+        let ga = g0 * 2; for (let k = 0; k < 6; k++) ga += gAt(nx + Math.cos(k * 1.047) * sr, nz + Math.sin(k * 1.047) * sr);
+        const g = Math.max(ga / 8, g0 - eye * 0.3) + eye, rate = p.y < g0 + eye * 0.6 ? 26 : 9;
+        p.set(nx, Math.max(g0 + eye * 0.3, p.y + (g - p.y) * (1 - Math.exp(-rate * dt))), nz);
         cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
       };
       if (built.walkStart) {
         const w0 = built.walkStart;
-        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        cam.position.set(w0.x, gAt(w0.x, w0.z) + eye, w0.z);
         setWalk(true);
       } else setWalk(false);
 
@@ -1082,7 +1165,7 @@
         ssao.overrideVisibility = function () { hide(); skip.forEach(o => { o.visible = false; }); };
         composer.addPass(ssao);
       } else composer.addPass(new T.RenderPass(built.scene, cam));
-      composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95));
+      const bloom = new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95); composer.addPass(bloom);
       const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = Q.real ? 0.78 : 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
       // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.

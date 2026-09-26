@@ -108,7 +108,8 @@ Column names are matched loosely. For example, `owner` or `Transmission Owner` w
 | name | yes | project name |
 | utility | no | taken from a utility column, the name typed in the import panel, or the file name, in that order |
 | location | yes | `lat, lon` for a substation; add `lat2, lon2` for a line. GIS files carry their own geometry. |
-| in_service | yes | `2029`, `2029-06`, `6/1/2029` or `Summer 2029`. Files without dates, like GPX, use the default in-service date typed in the import panel |
+| in_service | no | `2029`, `2029-06`, `6/1/2029` or `Summer 2029`. A row without one uses the default in-service date typed in the import panel; with no default it still loads as an undated project, compared on geography only (it is paired by distance but never counts as sharing a build window) |
+| source | no | a link or citation per row (`source`, `source_url`, `url` or `link`); rows without one use the source typed in the import panel |
 | kv, type, start, cost, description | no | type is `new_line`, `rebuild`, `substation` or `generation`, and is guessed from the name if left out |
 
 The [`samples/`](samples) folder has one fictional plan per format (nine files) plus an example existing-lines layer, each from a different made-up utility, with projects placed near the built-in DESC and Georgia work so overlaps show up:
@@ -119,12 +120,12 @@ The [`samples/`](samples) folder has one fictional plan per format (nine files) 
 | `aiken-edgefield-electric.tsv` | Aiken-Edgefield Electric Cooperative | other column names (`Owner`, `ISD`, `To Lat`), `$6.5M` costs, `Summer 2027` dates |
 | `ogeechee-transmission.json` | Ogeechee Transmission Cooperative | a JSON array with a `coords` list per project |
 | `coastal-georgia-power.geojson` | Coastal Georgia Power Authority | LineString, Point, Polygon and MultiLineString |
-| `midlands-rural-electric.xlsx` | Midlands Rural Electric | title rows, two sheets, real date cells, one row with no in-service date (reported as skipped) |
+| `midlands-rural-electric.xlsx` | Midlands Rural Electric | title rows, two sheets, real date cells, one row with no in-service date (loaded as undated) |
 | `savannah-river-transmission.kml` | Savannah River Transmission Co. | attributes in an ArcGIS-style HTML table in each description |
 | `piedmont-lakes-electric.kmz` | Piedmont Lakes Electric | zipped KML with ExtendedData and a MultiGeometry |
 | `tri-county-grid-shapefile.zip` | Tri-County Grid Cooperative | two layers in UTM zone 17N, reprojected using the `.prj` |
 | `hifld-style-existing-lines.geojson` | (existing lines, example) | the HIFLD field layout (`OWNER`, `VOLTAGE`, `SUB_1`, `SUB_2`); tick "These are existing lines" to load it as a background layer |
-| `edisto-electric-survey.gpx` | Edisto Electric Cooperative | a surveyed route and waypoints with no dates or utility: type the utility name and a default in-service date first |
+| `edisto-electric-survey.gpx` | Edisto Electric Cooperative | a surveyed route and waypoints with no dates or utility: type the utility name, and a default in-service date if the points should count toward build windows |
 
 `tests/samples.test.js` loads each one through the same readers the browser uses. After an import, Seamline compares the new utility with whichever loaded utility has the nearest project.
 

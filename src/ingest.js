@@ -8,6 +8,7 @@
     utility: ["utility", "owner", "company", "transmission_owner", "utility_name", "entity", "member"],
     name: ["name", "project", "project_name", "title", "description_short", "project_title", "facility", "facility_name", "proj_name"],
     desc: ["desc", "description", "scope", "details", "notes"],
+    source: ["source", "source_url", "url", "link"],
     kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv", "kv_nominal"],
     type: ["type", "project_type", "category", "work_type", "proj_type"],
     start: ["start", "start_date", "construction_start", "begin", "const_start", "start_year"],
@@ -121,7 +122,9 @@
     if (rawIsd && !toDate(rawIsd)) return { error: `in-service date "${rawIsd}" isn't a real date` };
     if (rawStart && !toDate(rawStart)) return { error: `start date "${rawStart}" isn't a real date` };
     const isd = toDate(rawIsd) || toDate(defaults.in_service);
-    if (!isd) return { error: "no in-service date (add a column, or set a default in-service date above)" };
+    // Real filings often list no date. Such a row still loads, as an undated project compared on geography only;
+    // it gets today as a placeholder date so date math keeps working, and never counts as sharing a window.
+    const undated = !isd, today = new Date().toISOString().slice(0, 10);
     const kv = num(pick(row, "kv")) || 115;
     const type = toType(pick(row, "type") || name, coords.length > 1);
     const kmv = num(pick(row, "km")), miles = num(pick(row, "miles")) ?? (kmv ? kmv / 1.609 : null);
@@ -130,9 +133,9 @@
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),
         name: String(name).trim(), desc: plainText(pick(row, "desc")), kv, miles, type,
-        in_service: isd.iso, date_precision: isd.precision === "day" ? "day" : "year",
-        start: st ? st.iso : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
-        cost: num(pick(row, "cost")), coords, ...(parts ? { parts } : {}), loc: "med", source: defaults.source || "", page: "", imported: true,
+        in_service: undated ? today : isd.iso, date_precision: undated ? "none" : isd.precision === "day" ? "day" : "year", ...(undated ? { undated: true } : {}),
+        start: st ? st.iso : undated ? today : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
+        cost: num(pick(row, "cost")), coords, ...(parts ? { parts } : {}), loc: "med", source: String(pick(row, "source") || defaults.source || "").trim(), page: "", imported: true,
       },
     };
   }
