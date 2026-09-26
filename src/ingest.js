@@ -1,17 +1,18 @@
-// Seamline importer: turns a utility's plan (CSV, TSV, JSON or GeoJSON) into Seamline projects.
+// Seamline importer: turns a utility's plan into Seamline projects. It takes text (CSV, TSV, JSON, GeoJSON),
+// spreadsheet rows (from src/formats.js) or GeoJSON (from KML, KMZ, GPX or shapefiles).
 // Column names are matched loosely so exports from different utilities load without editing.
 (function (root) {
   const Engine = root.Engine || (typeof require !== "undefined" ? require("./engine.js") : null);
 
   const ALIASES = {
-    utility: ["utility", "owner", "company", "transmission_owner", "to", "utility_name"],
-    name: ["name", "project", "project_name", "title", "description_short"],
+    utility: ["utility", "owner", "company", "transmission_owner", "to", "utility_name", "entity", "member"],
+    name: ["name", "project", "project_name", "title", "description_short", "project_title", "facility", "facility_name", "proj_name"],
     desc: ["desc", "description", "scope", "details", "notes"],
-    kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv"],
+    kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv"],
     type: ["type", "project_type", "category", "work_type"],
-    start: ["start", "start_date", "construction_start", "begin"],
-    in_service: ["in_service", "in_service_date", "isd", "expected_in_service", "completion", "year", "in_service_year"],
-    cost: ["cost", "cost_usd", "estimated_cost", "est_cost", "budget"],
+    start: ["start", "start_date", "construction_start", "begin", "const_start", "start_year"],
+    in_service: ["in_service", "in_service_date", "isd", "expected_in_service", "completion", "year", "in_service_year", "in_serv", "inservice", "expected_isd", "projected_isd", "isd_year", "planned_isd"],
+    cost: ["cost", "cost_usd", "estimated_cost", "est_cost", "budget", "cost_estimate", "project_cost"],
     miles: ["miles", "length_mi", "line_miles"],
     km: ["km", "length_km"],
     lat: ["lat", "latitude", "lat1", "from_lat", "start_lat", "y"],
@@ -26,8 +27,8 @@
     return undefined;
   }
 
-  // Minimal RFC 4180 parser (quoted fields, commas or tabs).
-  function parseDelimited(text) {
+  // Minimal RFC 4180 parser (quoted fields, commas or tabs). Returns rows as arrays.
+  function parseTable(text) {
     const delim = text.split("\n", 1)[0].includes("\t") ? "\t" : ",";
     const rows = []; let row = [], f = "", q = false;
     for (let i = 0; i < text.length; i++) {
@@ -39,8 +40,25 @@
       else f += c;
     }
     if (f !== "" || row.length) { row.push(f); rows.push(row); }
-    const [head, ...body] = rows.filter(r => r.some(v => v.trim() !== ""));
-    return (body || []).map(r => Object.fromEntries(head.map((h, i) => [h.trim(), (r[i] ?? "").trim()])));
+    return rows.filter(r => r.some(v => v.trim() !== ""));
+  }
+  function parseDelimited(text) {
+    const [head, ...body] = parseTable(text);
+    return head ? body.map(r => Object.fromEntries(head.map((h, i) => [h.trim(), (r[i] ?? "").trim()]))) : [];
+  }
+
+  // Spreadsheets often put a title and notes above the real header. Given rows as arrays, find the header
+  // (the first row in the top 25 that names a project and at least one other known field) and return row objects.
+  function rowsFromTable(table) {
+    const known = new Set([].concat(...Object.values(ALIASES)));
+    const score = r => { const n = r.map(norm); return ALIASES.name.some(a => n.includes(a)) ? n.filter(k => known.has(k)).length : 0; };
+    let h = -1;
+    for (let i = 0; i < Math.min(25, table.length); i++) if (score(table[i] || []) >= 2) { h = i; break; }
+    if (h < 0) return [];
+    const head = table[h].map(v => String(v).trim());
+    return table.slice(h + 1)
+      .filter(r => r && r.some(v => String(v).trim() !== ""))
+      .map(r => Object.fromEntries(head.map((k, i) => [k, r[i] == null ? "" : String(r[i]).trim()]).filter(([k]) => k)));
   }
 
   function toType(v, hasLine) {
@@ -93,39 +111,52 @@
     };
   }
 
+  // Reduce any GeoJSON geometry to the [lon, lat] points Seamline measures from.
+  function geomPoints(g) {
+    if (!g) return null;
+    switch (g.type) {
+      case "Point": return [g.coordinates];
+      case "MultiPoint": case "LineString": return g.coordinates;
+      case "MultiLineString": return g.coordinates.flat();
+      case "Polygon": return [centroid(g.coordinates[0])];
+      case "MultiPolygon": return g.coordinates.map(p => centroid(p[0]));
+      case "GeometryCollection": { const parts = g.geometries.map(geomPoints).filter(Boolean); return parts.length ? parts.sort((x, y) => y.length - x.length)[0] : null; }
+      default: return null;
+    }
+  }
   function fromGeoJSON(gj, defaults) {
-    const feats = gj.type === "FeatureCollection" ? gj.features : gj.type === "Feature" ? [gj] : [];
+    const list = Array.isArray(gj) ? gj : [gj];
+    const feats = list.flatMap(x => x.type === "FeatureCollection" ? x.features : x.type === "Feature" ? [x] : []);
     return feats.map((f, i) => {
-      const g = f.geometry || {};
-      let c = null;
-      if (g.type === "Point") c = [g.coordinates];
-      else if (g.type === "LineString") c = g.coordinates;
-      else if (g.type === "MultiLineString") c = g.coordinates.flat();
-      else if (g.type === "Polygon") c = [centroid(g.coordinates[0])];
-      else if (g.type === "MultiPoint") c = g.coordinates;
-      if (!c) return { error: `unsupported geometry ${g.type || "(none)"}` };
+      const c = geomPoints(f.geometry);
+      if (!c || !c.length) return { error: `unsupported geometry ${(f.geometry && f.geometry.type) || "(none)"}` };
       return toProject(f.properties || {}, c.map(([lon, lat]) => [lat, lon]), defaults, i);
     });
   }
   const centroid = ring => [ring.reduce((s, p) => s + p[0], 0) / ring.length, ring.reduce((s, p) => s + p[1], 0) / ring.length];
 
-  // Parse file text by extension/content. defaults: { utility, source, batch }.
-  function parsePlan(text, filename, defaults) {
-    const d = Object.assign({ batch: Date.now().toString(36) }, defaults);
-    let results;
-    const t = text.trim();
-    if (/\.(geo)?json$/i.test(filename) || t.startsWith("{") || t.startsWith("[")) {
-      const js = JSON.parse(t);
-      if (js.type === "FeatureCollection" || js.type === "Feature") results = fromGeoJSON(js, d);
-      else {
-        const arr = Array.isArray(js) ? js : js.projects || [];
-        results = arr.map((r, i) => r.coords ? toProject(r, r.coords, d, i) : toProject(r, null, d, i));
-      }
-    } else results = parseDelimited(text).map((r, i) => toProject(r, null, d, i));
+  function summarize(results) {
     const projects = results.filter(r => r.project).map(r => r.project);
     const errors = results.map((r, i) => r.error ? `row ${i + 1}: ${r.error}` : null).filter(Boolean);
     return { projects, errors, total: results.length };
   }
+  const withDefaults = defaults => Object.assign({ batch: Date.now().toString(36) }, defaults);
+
+  // Parse file text by extension/content. defaults: { utility, source, batch }.
+  function parsePlan(text, filename, defaults) {
+    const d = withDefaults(defaults), t = text.trim();
+    if (/\.(geo)?json$/i.test(filename) || t.startsWith("{") || t.startsWith("[")) {
+      const js = JSON.parse(t);
+      if (js.type === "FeatureCollection" || js.type === "Feature") return summarize(fromGeoJSON(js, d));
+      const arr = Array.isArray(js) ? js : js.projects || [];
+      return summarize(arr.map((r, i) => toProject(r, r.coords || null, d, i)));
+    }
+    return parseRows(rowsFromTable(parseTable(text)), d);
+  }
+  // Row objects, e.g. from a spreadsheet.
+  const parseRows = (rows, defaults) => { const d = withDefaults(defaults); return summarize(rows.map((r, i) => toProject(r, null, d, i))); };
+  // GeoJSON, e.g. converted from KML or a shapefile.
+  const parseGeoJSON = (gj, defaults) => summarize(fromGeoJSON(gj, withDefaults(defaults)));
 
   const TEMPLATE = [
     "utility,name,kv,type,start,in_service,lat,lon,lat2,lon2,cost,description",
@@ -133,6 +164,6 @@
     "Santee Cooper,Example substation,115,substation,,2029,33.05,-80.00,,,8000000,Year-only dates are fine",
   ].join("\n");
 
-  const api = { parsePlan, parseDelimited, toDate, toType, TEMPLATE, ALIASES };
+  const api = { parsePlan, parseRows, parseGeoJSON, parseDelimited, parseTable, rowsFromTable, toDate, toType, TEMPLATE, ALIASES };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Ingest = api;
 })(this);

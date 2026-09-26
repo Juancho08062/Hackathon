@@ -1,0 +1,19 @@
+{
+  "name": "seamline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Compare neighboring utilities' planned transmission construction and flag projects close enough to share crews, land and outages.",
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "build:data": "python3 scripts/build_projects.py && python3 scripts/build.py",
+    "test": "node tests/engine.test.js && node tests/samples.test.js",
+    "lint": "eslint .",
+    "check": "npm run lint && npm test && python3 scripts/build.py && git diff --exit-code -- index.html",
+    "start": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "globals": "^17.0.0"
+  }
+}

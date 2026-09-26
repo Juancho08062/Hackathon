@@ -142,6 +142,7 @@ select{font-weight:500;min-width:0}
 .drop:hover,.drop.over{border-color:var(--u0);background:var(--u0soft);color:var(--ink)}
 .drop input{position:absolute;width:1px;height:1px;opacity:0}
 .drop:focus-within{outline:2px solid var(--hot);outline-offset:2px}
+.drop .fmts{display:block;margin-top:6px;font:500 11px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;color:var(--ink3)}
 .report p{margin:8px 0 0;font-size:13px}.report .ok{color:var(--time)}.report .warn{color:var(--hot)}
 .import pre{font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:8px;overflow-x:auto;margin:0 0 8px;white-space:pre}
 .import textarea{width:100%;font-family:var(--mono);font-size:12px;margin-top:8px}

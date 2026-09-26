@@ -14,6 +14,7 @@ loc = "med" (named plant/town, within a few miles) or "low" (best guess).
 Plans give in-service dates only; construction windows are estimated
 (see est_months) and are adjustable in the app.
 """
+import pathlib
 import json, re
 from datetime import date
 
@@ -169,5 +170,5 @@ for i, (n, d, kv, mi, t, st, isd, co, loc, src) in enumerate(GA_PAGES, len(GA) +
                     start_published=bool(st), cost=None, coords=[list(c) for c in co], loc=loc, source=src, page=""))
 for i, (n, u, co, src) in enumerate(EXISTING, 1):
     out.append(dict(id=f"EX-{i:02d}", utility=u, existing=True, name=n, coords=[list(c) for c in co], source=src))
-json.dump(out, open(__file__.replace("build_projects.py", "projects.json"), "w"), indent=1)
+json.dump(out, open(pathlib.Path(__file__).resolve().parent.parent / "data" / "projects.json", "w"), indent=1)
 print(len(out), "projects")
