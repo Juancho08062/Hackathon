@@ -521,3 +521,11 @@ body.modal-open .app{visibility:hidden}
 .mapbar .mb-g{display:inline-flex;align-items:center;gap:6px;flex:none;white-space:nowrap}
 .mapbar .mb-sep{display:none}
 .mapbar{column-gap:16px}
+/* the strip under the map and the legend can both be closed */
+.left.tl-hidden .timeline{display:none}
+.xbtn,.lg-x{border:0;background:none;color:var(--ink2);font-size:18px;line-height:1;width:26px;height:26px;border-radius:6px;cursor:pointer;flex:none}
+.xbtn:hover,.lg-x:hover{background:var(--panel2);color:var(--ink)}
+.legend{padding-right:30px}
+.lg-x{position:absolute;right:3px;top:3px;width:22px;height:22px;font-size:16px}
+.legend-show{position:absolute;left:10px;bottom:10px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.legend-show[hidden],.legend[hidden]{display:none}

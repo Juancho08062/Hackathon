@@ -262,6 +262,7 @@ function legend() {
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
     ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
+    `<button type="button" class="lg-x" aria-label="Close the legend" title="Close the legend">×</button>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
 
@@ -1777,11 +1778,25 @@ $("#share").onclick = () => {
 };
 document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
-$("#railTl").onclick = () => {
-  const on = !$(".left").classList.contains("tl-open");
-  $(".left").classList.toggle("tl-open", on); $("#railTl").setAttribute("aria-pressed", on);
+// The strip under the map has three states: just its Play bar (the default), unfolded with the chart, or closed.
+// Its close button hides it; Windows in the rail unfolds it again or folds it away. The choice is remembered.
+function setTl(mode, quiet) {
+  const L = $(".left");
+  L.classList.toggle("tl-open", mode === "open"); L.classList.toggle("tl-hidden", mode === "hidden");
+  $("#railTl").setAttribute("aria-pressed", mode === "open");
+  if (mode === "hidden" && playTimer) stopPlay();
+  if (!quiet) store.set("tlMode", mode);
   renderTimeline(); SeamMap.resize();
-};
+}
+const tlMode = () => $(".left").classList.contains("tl-hidden") ? "hidden" : $(".left").classList.contains("tl-open") ? "open" : "bar";
+$("#railTl").onclick = () => setTl(tlMode() === "open" ? "hidden" : "open");
+$("#tlClose").onclick = () => setTl("hidden");
+// The legend can be closed too; a small Legend button takes its place.
+const setLegend = (off, quiet) => { $("#legend").hidden = off; $("#legendShow").hidden = !off; if (!quiet) store.set("legendOff", off); };
+$("#legend").addEventListener("click", e => { if (e.target.closest(".lg-x")) setLegend(true); });
+$("#legendShow").onclick = () => setLegend(false);
+{ const m = store.get("tlMode", "bar"); const L = $(".left"); L.classList.toggle("tl-open", m === "open"); L.classList.toggle("tl-hidden", m === "hidden"); $("#railTl").setAttribute("aria-pressed", m === "open"); }
+setLegend(store.get("legendOff", false), true);
 // Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
 const pops = [["moreFilters", "controls"], ["moreBtn", "moreMenu"]];
 const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });

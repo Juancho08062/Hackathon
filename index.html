@@ -530,6 +530,14 @@ body.modal-open .app{visibility:hidden}
 .mapbar .mb-g{display:inline-flex;align-items:center;gap:6px;flex:none;white-space:nowrap}
 .mapbar .mb-sep{display:none}
 .mapbar{column-gap:16px}
+/* the strip under the map and the legend can both be closed */
+.left.tl-hidden .timeline{display:none}
+.xbtn,.lg-x{border:0;background:none;color:var(--ink2);font-size:18px;line-height:1;width:26px;height:26px;border-radius:6px;cursor:pointer;flex:none}
+.xbtn:hover,.lg-x:hover{background:var(--panel2);color:var(--ink)}
+.legend{padding-right:30px}
+.lg-x{position:absolute;right:3px;top:3px;width:22px;height:22px;font-size:16px}
+.legend-show{position:absolute;left:10px;bottom:10px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.legend-show[hidden],.legend[hidden]{display:none}
 
 </style>
 
@@ -608,6 +616,7 @@ body.modal-open .app{visibility:hidden}
           <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
         </button>
         <div class="legend" id="legend"></div>
+        <button type="button" class="btn sm legend-show" id="legendShow" hidden>Legend</button>
         <p class="tilenote" id="tileNote" hidden></p>
       </div>
       <div class="timeline">
@@ -618,6 +627,7 @@ body.modal-open .app{visibility:hidden}
           <input type="range" id="tslider" step="1" aria-label="Month to show on the map">
           <b class="tyear" id="tyear">All years</b>
           <button type="button" class="btn sm" id="tall" hidden>All years</button>
+          <button type="button" class="xbtn" id="tlClose" aria-label="Close the build windows" title="Close (Windows in the rail brings it back)">×</button>
         </div>
         <div class="tlbody"><svg id="tl" role="img" aria-label="Build windows of the listed pairs"></svg></div>
       </div>
@@ -4659,6 +4669,7 @@ function legend() {
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
     ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
+    `<button type="button" class="lg-x" aria-label="Close the legend" title="Close the legend">×</button>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
 
@@ -6174,11 +6185,25 @@ $("#share").onclick = () => {
 };
 document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
-$("#railTl").onclick = () => {
-  const on = !$(".left").classList.contains("tl-open");
-  $(".left").classList.toggle("tl-open", on); $("#railTl").setAttribute("aria-pressed", on);
+// The strip under the map has three states: just its Play bar (the default), unfolded with the chart, or closed.
+// Its close button hides it; Windows in the rail unfolds it again or folds it away. The choice is remembered.
+function setTl(mode, quiet) {
+  const L = $(".left");
+  L.classList.toggle("tl-open", mode === "open"); L.classList.toggle("tl-hidden", mode === "hidden");
+  $("#railTl").setAttribute("aria-pressed", mode === "open");
+  if (mode === "hidden" && playTimer) stopPlay();
+  if (!quiet) store.set("tlMode", mode);
   renderTimeline(); SeamMap.resize();
-};
+}
+const tlMode = () => $(".left").classList.contains("tl-hidden") ? "hidden" : $(".left").classList.contains("tl-open") ? "open" : "bar";
+$("#railTl").onclick = () => setTl(tlMode() === "open" ? "hidden" : "open");
+$("#tlClose").onclick = () => setTl("hidden");
+// The legend can be closed too; a small Legend button takes its place.
+const setLegend = (off, quiet) => { $("#legend").hidden = off; $("#legendShow").hidden = !off; if (!quiet) store.set("legendOff", off); };
+$("#legend").addEventListener("click", e => { if (e.target.closest(".lg-x")) setLegend(true); });
+$("#legendShow").onclick = () => setLegend(false);
+{ const m = store.get("tlMode", "bar"); const L = $(".left"); L.classList.toggle("tl-open", m === "open"); L.classList.toggle("tl-hidden", m === "hidden"); $("#railTl").setAttribute("aria-pressed", m === "open"); }
+setLegend(store.get("legendOff", false), true);
 // Filters popover and More menu: one open at a time, closed by a click elsewhere or Esc.
 const pops = [["moreFilters", "controls"], ["moreBtn", "moreMenu"]];
 const closePops = except => pops.forEach(([b, p]) => { if (b !== except) { $("#" + p).hidden = true; $("#" + b).setAttribute("aria-expanded", "false"); } });

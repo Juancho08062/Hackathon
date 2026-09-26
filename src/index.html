@@ -85,6 +85,7 @@
           <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
         </button>
         <div class="legend" id="legend"></div>
+        <button type="button" class="btn sm legend-show" id="legendShow" hidden>Legend</button>
         <p class="tilenote" id="tileNote" hidden></p>
       </div>
       <div class="timeline">
@@ -95,6 +96,7 @@
           <input type="range" id="tslider" step="1" aria-label="Month to show on the map">
           <b class="tyear" id="tyear">All years</b>
           <button type="button" class="btn sm" id="tall" hidden>All years</button>
+          <button type="button" class="xbtn" id="tlClose" aria-label="Close the build windows" title="Close (Windows in the rail brings it back)">×</button>
         </div>
         <div class="tlbody"><svg id="tl" role="img" aria-label="Build windows of the listed pairs"></svg></div>
       </div>
