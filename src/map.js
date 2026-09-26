@@ -107,8 +107,8 @@
       btn("Measure a distance: click points on the map, Esc to finish", '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 12.5l2 2M10 9.5l1.5 1.5M13 6.5l2 2" stroke="currentColor" stroke-width="2"/></svg>', () => setMeasure(!measuring)));
     tools.lastChild.id = "mRuler";
     // (the first control added sits lowest in the corner)
-    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-right");
-    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "imperial" }), "bottom-right");
+    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 90, unit: "metric" }), "bottom-right");
+    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 90, unit: "imperial" }), "bottom-right");
     map.addControl(new root.maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
     map.addControl({ onAdd: () => tools, onRemove: () => tools.remove() }, "bottom-right");
     mRead = document.createElement("div"); mRead.className = "mread"; mRead.hidden = true; el.appendChild(mRead);
