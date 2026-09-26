@@ -367,6 +367,14 @@ body.m3d-open .app{visibility:hidden}
 .ask-key .chk{justify-self:start}
 .tabs button{padding:10px 10px 8px}
 
+/* ---------- drop-in walker ---------- */
+.peg{position:absolute;right:10px;bottom:44px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
+.peg:hover svg{fill:#FBB13C}
+.peg.dragging{opacity:.35}
+.peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}
+
 </style>
 
 <div class="app">
@@ -410,6 +418,9 @@ body.m3d-open .app{visibility:hidden}
           <div class="seg" role="group" aria-label="Basemap" id="basemaps"></div>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
+        <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
+          <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
+        </button>
         <div class="legend" id="legend"></div>
         <p class="tilenote" id="tileNote" hidden></p>
       </div>
@@ -489,6 +500,7 @@ body.m3d-open .app{visibility:hidden}
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
       <label class="m3d-q">Quality <select id="m3dQ" aria-label="3D image quality"><option value="standard">Standard</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
+      <button type="button" class="btn" id="m3dWalk" aria-pressed="false" title="Walk around at ground level">Walk</button>
       <button type="button" class="btn" id="m3dLabels" aria-pressed="true">Labels on</button>
       <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>
@@ -1740,6 +1752,20 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
+    // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
+    // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    let walkStart = null;
+    if (opts.walkAt) {
+      const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
+      if (away.lengthSq() < 1e-6) away.copy(perp);
+      away.normalize();
+      const clearOf = v => obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 3 * TS);
+      walkStart = at.clone().add(away.clone().multiplyScalar(4 * TS));
+      for (let k = 0; k < 30 && !clearOf(walkStart); k++) walkStart.add(away.clone().multiplyScalar(1.5));
+      const look = f0.clone().sub(walkStart); look.y = 0;
+      const steps = Math.min(8, Math.ceil(look.length() / 4));
+      for (let k = 0; k <= steps; k++) { const v = walkStart.clone().lerp(f0, k / Math.max(1, steps) * 0.6); obstacles.push([v.x, v.z, k ? 2.5 : 4]); }
+    }
     const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
     // ponds
@@ -1812,7 +1838,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -1875,7 +1901,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced ? 0 : 2.6;
+      const INTRO = reduced || opts.walkAt ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
       if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
       cam.lookAt(f);
@@ -1885,6 +1911,56 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+      // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
+      // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
+      // terrain and inside the plateau.
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot");
+      const setWalk = on => {
+        walk.on = on; controls.enabled = !on; controls.autoRotate = false;
+        if (on) {
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
+          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+        } else {
+          const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
+          controls.target.copy(ahead); cam.position.y += 8;
+        }
+        if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
+        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
+          : "Illustration of the pair: distances along the ground are to scale; terrain and towers are schematic. Drag to orbit, scroll to zoom.";
+      };
+      const typing = e => /input|select|textarea/i.test(e.target.tagName);
+      const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
+      const onKeyDown = e => { if (!walk.on || typing(e)) return; if (MOVE[e.code] || e.code === "ShiftLeft" || e.code === "ShiftRight") { walk.keys.add(e.code); e.preventDefault(); } };
+      const onKeyUp = e => walk.keys.delete(e.code);
+      const cv = renderer.domElement;
+      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      const onMove = e => {
+        if (!walk.on || !walk.drag) return;
+        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        walk.drag = [e.clientX, e.clientY];
+      };
+      const onUp = () => { walk.drag = null; };
+      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
+      const stepWalk = dt => {
+        let fw = 0, sd = 0;
+        walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
+        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
+        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const r = Math.hypot(nx, nz), lim = built.R * 1.25;
+        if (r > lim) { nx *= lim / r; nz *= lim / r; }
+        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
+      };
+      if (built.walkStart) {
+        const w0 = built.walkStart;
+        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        setWalk(true);
+      } else setWalk(false);
 
       // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
       const pmrem = new T.PMREMGenerator(renderer);
@@ -1928,8 +2004,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       size();
       const clock = new T.Clock();
       let raf;
+      let lastT = 0;
       const loop = () => {
-        const t = clock.getElapsedTime();
+        const t = clock.getElapsedTime(), dt = Math.min(0.05, t - lastT); lastT = t;
         if (INTRO && !controls.enabled) {
           const k = Math.min(1, t / INTRO), e = 1 - Math.pow(1 - k, 3);
           orbitAt(endR * (2.3 - 1.3 * e), endAz + 1.1 * (1 - e), endEl + (Math.min(1.25, endEl + 0.5) - endEl) * (1 - e)); cam.lookAt(f);
@@ -1948,7 +2025,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         });
         built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 260) c.position.x = -260; });
         built.waterTex.offset.set(t * 0.012, t * 0.007);
-        controls.update();
+        if (walk.on) stepWalk(dt); else controls.update();
         composer.render();
         placeTags(); raf = requestAnimationFrame(loop);
       };
@@ -1959,6 +2036,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       ctx = {
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
+          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp);
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
@@ -2198,7 +2276,20 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     map.fitBounds([[w - pad, s - pad], [e + pad, n + pad]], { padding: opts.padding ?? 40, duration: opts.duration ?? 900, maxZoom: opts.maxZoom ?? 12.5, pitch: is3d ? 62 : 0, bearing: is3d ? map.getBearing() : 0 });
   }
 
-  root.SeamMap = { BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
+  // The project under a screen point (client pixels), for the drop-in figure: the nearest line or substation within
+  // `radius` pixels, and the map coordinates of that point.
+  function pick(clientX, clientY, radius = 22) {
+    if (!map) return null;
+    const r = map.getCanvas().getBoundingClientRect(), x = clientX - r.left, y = clientY - r.top;
+    if (x < 0 || y < 0 || x > r.width || y > r.height) return null;
+    const box = [[x - radius, y - radius], [x + radius, y + radius]];
+    const f = map.queryRenderedFeatures(box, { layers: ["proj", "proj-dash", "points"].filter(l => map.getLayer(l)) })
+      .filter(g => g.properties.opacity == null || g.properties.opacity > 0.25)[0];
+    const ll = map.unproject([x, y]);
+    return { id: f ? f.properties.id : null, at: [ll.lat, ll.lng] };
+  }
+
+  root.SeamMap = { pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
 })(this);
 
 </script>
@@ -3115,18 +3206,58 @@ function closeBrief() { $("#brief").hidden = true; }
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
-function open3d(x) {
+function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
-  Scene3D.open(x, {
+  Scene3D.open(x, Object.assign({
     title: `${short(x.p)} and ${short(x.q)}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
-  });
+  }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
 function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
+
+// ---------- drop-in walker ----------
+// Drag the orange figure onto a project: the 3D illustration opens at that spot in walk mode, with the project's
+// pair that is worth the most (or the selected pair, if it includes the project).
+function pairFor(p) {
+  if (state.sel && state.sel.p && state.sel.q && (state.sel.p === p || state.sel.q === p)) return state.sel;
+  return (VIEW.concat(RESULT.pairs)).filter(x => x.p === p || x.q === p).sort((a, b) => b.risk.expected - a.risk.expected)[0] || null;
+}
+function setupPeg() {
+  const peg = $("#peg");
+  let ghost = null, over = null;
+  const end = () => { if (ghost) ghost.remove(); ghost = null; peg.classList.remove("dragging"); hideTip(); };
+  peg.addEventListener("pointerdown", e => {
+    e.preventDefault(); peg.setPointerCapture(e.pointerId); peg.classList.add("dragging");
+    ghost = peg.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("ghost"); document.body.appendChild(ghost);
+    move(e);
+  });
+  const move = e => {
+    if (!ghost) return;
+    ghost.style.transform = `translate(${e.clientX - 14}px, ${e.clientY - 44}px)`;
+    const hit = mapReady ? SeamMap.pick(e.clientX, e.clientY) : null;
+    over = hit && hit.id ? { p: PROJECTS.find(v => v.id === hit.id), at: hit.at } : null;
+    const x = over && over.p && pairFor(over.p);
+    ghost.classList.toggle("ok", !!x);
+    if (over && over.p) tip(e, x ? `<b>${esc(short(over.p))}</b><br>Drop to walk here in 3D` : `<b>${esc(short(over.p))}</b><br>No overlap with ${esc(lbl(state.utilB))} for this project`);
+    else if (hit) tip(e, "Drop onto a project line or substation"); else hideTip();
+  };
+  peg.addEventListener("pointermove", move);
+  peg.addEventListener("pointerup", () => {
+    const o = over; end(); over = null;
+    if (!o || !o.p) return;
+    const x = pairFor(o.p);
+    if (!x) return;
+    const ll = Engine.closest({ coords: [o.at] }, o.p)[2]; // the point on the project nearest the drop
+    if (x !== state.sel) select(x);
+    open3d(x, { walkAt: ll });
+  });
+  peg.addEventListener("pointercancel", end);
+  peg.addEventListener("click", e => { if (e.detail === 0) tip({ clientX: peg.getBoundingClientRect().left, clientY: peg.getBoundingClientRect().top }, "Drag onto a project to walk around it in 3D"); });
+}
 
 // ---------- pickers, datasets, import ----------
 function renderPickers() {
@@ -3393,6 +3524,7 @@ addEventListener("resize", () => renderTimeline());
 
 renderAssume();
 renderDatasets();
+setupPeg();
 SEAM = seamCoords();
 readHash();
 syncControls();

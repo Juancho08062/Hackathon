@@ -494,6 +494,20 @@
       obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
+    // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
+    // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    let walkStart = null;
+    if (opts.walkAt) {
+      const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
+      if (away.lengthSq() < 1e-6) away.copy(perp);
+      away.normalize();
+      const clearOf = v => obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 3 * TS);
+      walkStart = at.clone().add(away.clone().multiplyScalar(4 * TS));
+      for (let k = 0; k < 30 && !clearOf(walkStart); k++) walkStart.add(away.clone().multiplyScalar(1.5));
+      const look = f0.clone().sub(walkStart); look.y = 0;
+      const steps = Math.min(8, Math.ceil(look.length() / 4));
+      for (let k = 0; k <= steps; k++) { const v = walkStart.clone().lerp(f0, k / Math.max(1, steps) * 0.6); obstacles.push([v.x, v.z, k ? 2.5 : 4]); }
+    }
     const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
     // ponds
@@ -566,7 +580,7 @@
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -629,7 +643,7 @@
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced ? 0 : 2.6;
+      const INTRO = reduced || opts.walkAt ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
       if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
       cam.lookAt(f);
@@ -639,6 +653,56 @@
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+      // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
+      // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
+      // terrain and inside the plateau.
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot");
+      const setWalk = on => {
+        walk.on = on; controls.enabled = !on; controls.autoRotate = false;
+        if (on) {
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
+          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+        } else {
+          const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
+          controls.target.copy(ahead); cam.position.y += 8;
+        }
+        if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
+        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
+          : "Illustration of the pair: distances along the ground are to scale; terrain and towers are schematic. Drag to orbit, scroll to zoom.";
+      };
+      const typing = e => /input|select|textarea/i.test(e.target.tagName);
+      const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
+      const onKeyDown = e => { if (!walk.on || typing(e)) return; if (MOVE[e.code] || e.code === "ShiftLeft" || e.code === "ShiftRight") { walk.keys.add(e.code); e.preventDefault(); } };
+      const onKeyUp = e => walk.keys.delete(e.code);
+      const cv = renderer.domElement;
+      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      const onMove = e => {
+        if (!walk.on || !walk.drag) return;
+        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        walk.drag = [e.clientX, e.clientY];
+      };
+      const onUp = () => { walk.drag = null; };
+      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
+      const stepWalk = dt => {
+        let fw = 0, sd = 0;
+        walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
+        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
+        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const r = Math.hypot(nx, nz), lim = built.R * 1.25;
+        if (r > lim) { nx *= lim / r; nz *= lim / r; }
+        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
+      };
+      if (built.walkStart) {
+        const w0 = built.walkStart;
+        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        setWalk(true);
+      } else setWalk(false);
 
       // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
       const pmrem = new T.PMREMGenerator(renderer);
@@ -682,8 +746,9 @@
       size();
       const clock = new T.Clock();
       let raf;
+      let lastT = 0;
       const loop = () => {
-        const t = clock.getElapsedTime();
+        const t = clock.getElapsedTime(), dt = Math.min(0.05, t - lastT); lastT = t;
         if (INTRO && !controls.enabled) {
           const k = Math.min(1, t / INTRO), e = 1 - Math.pow(1 - k, 3);
           orbitAt(endR * (2.3 - 1.3 * e), endAz + 1.1 * (1 - e), endEl + (Math.min(1.25, endEl + 0.5) - endEl) * (1 - e)); cam.lookAt(f);
@@ -702,7 +767,7 @@
         });
         built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 260) c.position.x = -260; });
         built.waterTex.offset.set(t * 0.012, t * 0.007);
-        controls.update();
+        if (walk.on) stepWalk(dt); else controls.update();
         composer.render();
         placeTags(); raf = requestAnimationFrame(loop);
       };
@@ -713,6 +778,7 @@
       ctx = {
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
+          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp);
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
