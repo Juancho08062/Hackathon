@@ -636,7 +636,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   function towerParts(T, h) {
     const V = (x, y, z) => new T.Vector3(x, y, z);
     const b = 0.75, tp = 0.22, yw = h * 0.78, w = y => b + (tp - b) * y / yw;
-    const steel = [], accent = [];
+    const steel = [], accent = [], ins = [];
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       steel.push(beam(T, V(sx * b, 0, sz * b), V(sx * tp, yw, sz * tp), 0.11));
       steel.push(beam(T, V(sx * tp, yw, sz * tp), V(sx * tp * 0.5, h, sz * tp * 0.5), 0.08));
@@ -656,13 +656,16 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       for (const s of [-1, 1]) {
         for (const z of [-0.12, 0.12]) steel.push(beam(T, V(0, y, z), V(s * half, y, z * 0.3), 0.07));
         steel.push(beam(T, V(s * half, y, 0), V(s * ww, y + 0.55, 0), 0.05));
-        accent.push(cylAt(T, 0.07, 0.07, 0.45, 6, s * half, y - 0.24, 0));
+        for (let k = 0; k < 7; k++) ins.push(cylAt(T, 0.1, 0.1, 0.035, 8, s * half, y - 0.06 - k * 0.062, 0));
+        ins.push(cylAt(T, 0.02, 0.02, 0.46, 4, s * half, y - 0.23, 0));
+        accent.push(boxAt(T, 0.34, 0.04, 0.06, s * half, y - 0.47, 0));
         attach.push([s * half, y - 0.48]);
       }
     }
     accent.push(boxAt(T, 0.22, 0.18, 0.22, 0, h + 0.05, 0));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) steel.push(boxAt(T, 0.36, 0.12, 0.36, sx * b, 0.06, sz * b));
     attach.push([0, h + 0.1]);
-    return { steel: merge(T, steel), accent: merge(T, accent), attach };
+    return { steel: merge(T, steel), accent: merge(T, accent), ins: merge(T, ins), attach };
   }
 
   function substationGroup(T, s, color) {
@@ -680,7 +683,14 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       for (let i = 0; i < 5; i++) tank.push(boxAt(T, 0.04, s * 0.11, s * 0.1, x - s * 0.1 - 0.02 - i * 0.02, 0.16 + s * 0.065, -s * 0.18));
       for (let i = -1; i <= 1; i++) bush.push(cylAt(T, 0.06, 0.09, s * 0.08, 6, x + i * s * 0.045, 0.16 + s * 0.18, -s * 0.18));
     }
+    for (const x of [-s * 0.2, s * 0.2]) {
+      const c = cylAt(T, s * 0.025, s * 0.025, s * 0.12, 10, 0, 0, 0); c.rotateZ(Math.PI / 2); c.translate(x, 0.16 + s * 0.2, -s * 0.24); tank.push(c);
+      tank.push(boxAt(T, 0.04, s * 0.05, 0.04, x - s * 0.04, 0.16 + s * 0.16, -s * 0.24), boxAt(T, 0.04, s * 0.05, 0.04, x + s * 0.04, 0.16 + s * 0.16, -s * 0.24));
+    }
     g.add(mesh(T, merge(T, tank), phong(T, 0x6d7f8e)));
+    const curb = [];
+    for (const x of [-s * 0.2, s * 0.2]) curb.push(boxAt(T, s * 0.22, 0.06, 0.05, x, 0.19, -s * 0.28), boxAt(T, s * 0.22, 0.06, 0.05, x, 0.19, -s * 0.08), boxAt(T, 0.05, 0.06, s * 0.2, x - s * 0.11, 0.19, -s * 0.18), boxAt(T, 0.05, 0.06, s * 0.2, x + s * 0.11, 0.19, -s * 0.18));
+    g.add(mesh(T, merge(T, curb), phong(T, PAL.concrete)));
     g.add(mesh(T, merge(T, bush), phong(T, PAL.porcelain, { shininess: 40 })));
     // lattice gantries and bus
     const gan = [], V = (x, y, z) => new T.Vector3(x, y, z), gh = s * 0.42, gz = s * 0.14;
@@ -693,10 +703,23 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const bus = [];
     for (const dz of [-0.28, 0, 0.28]) bus.push(boxAt(T, s * 0.78, 0.05, 0.05, 0, gh * 0.78, gz + dz));
     g.add(mesh(T, merge(T, bus), new T.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.25, flatShading: true })));
+    // disconnect switches on porcelain post insulators under the bus, and lightning masts at the corners
+    const post = [], blade = [], mast = [];
+    for (let i = 0; i < 5; i++) for (const dz of [-0.28, 0, 0.28]) {
+      const x = -s * 0.3 + i * s * 0.15;
+      post.push(cylAt(T, 0.035, 0.05, s * 0.12, 6, x, 0.16 + s * 0.06, gz + dz), cylAt(T, 0.035, 0.05, s * 0.12, 6, x + 0.3, 0.16 + s * 0.06, gz + dz));
+      blade.push(boxAt(T, 0.34, 0.025, 0.025, x + 0.15, 0.2 + s * 0.12, gz + dz));
+    }
+    for (const [x, z] of [[-s * 0.46, -s * 0.36], [s * 0.46, s * 0.36]]) mast.push(cylAt(T, 0.03, 0.09, s * 0.75, 6, x, s * 0.375, z));
+    g.add(mesh(T, merge(T, post), phong(T, PAL.porcelain, { shininess: 40 })));
+    g.add(mesh(T, merge(T, blade), steel));
+    g.add(mesh(T, merge(T, mast), dark));
     // breakers
     const brk = [];
     for (let i = 0; i < 6; i++) brk.push(cylAt(T, 0.09, 0.09, s * 0.12, 8, -s * 0.3 + i * s * 0.12, 0.16 + s * 0.06, s * 0.3));
+    for (let i = 0; i < 6; i++) brk.push(boxAt(T, 0.16, s * 0.05, 0.14, -s * 0.3 + i * s * 0.12, 0.16 + s * 0.025, s * 0.3 - 0.16));
     g.add(mesh(T, merge(T, brk), dark));
+    const gate = mesh(T, new T.BoxGeometry(0.8, 0.5, 0.03), phong(T, 0xd9a441)); gate.position.set(s * 0.1, 0.36, hd); g.add(gate);
     // control house
     const house = mesh(T, new T.BoxGeometry(s * 0.2, s * 0.12, s * 0.14), phong(T, PAL.concrete)); house.position.set(-s * 0.36, 0.16 + s * 0.06, -s * 0.3); g.add(house);
     const roof = mesh(T, new T.BoxGeometry(s * 0.22, 0.08, s * 0.16), phong(T, color)); roof.position.set(-s * 0.36, 0.2 + s * 0.12, -s * 0.3); g.add(roof);
@@ -741,10 +764,33 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const reels = [];
     for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
     g.add(mesh(T, merge(T, reels), phong(T, 0x8a6440)));
-    const trucks = [], cabs = [];
-    for (let i = 0; i < 3; i++) { const x = -w * 0.3 + i * 1.7; trucks.push(boxAt(T, 1.0, 0.25, 0.55, x - 0.2, 0.4, d * 0.24)); cabs.push(boxAt(T, 0.45, 0.45, 0.55, x + 0.5, 0.5, d * 0.24)); }
+    const trucks = [], cabs = [], tires = [], glass = [];
+    for (let i = 0; i < 3; i++) {
+      const x = -w * 0.34 + i * 1.6, z = d * 0.26;
+      trucks.push(boxAt(T, 0.95, 0.12, 0.55, x - 0.2, 0.3, z), boxAt(T, 0.95, 0.18, 0.04, x - 0.2, 0.44, z - 0.26), boxAt(T, 0.95, 0.18, 0.04, x - 0.2, 0.44, z + 0.26));
+      cabs.push(boxAt(T, 0.42, 0.42, 0.55, x + 0.5, 0.47, z));
+      glass.push(boxAt(T, 0.02, 0.16, 0.45, x + 0.72, 0.58, z));
+      wheels(T, tires, x + 0.1, z, 1.25, 0.56);
+    }
+    // bucket truck with a raised boom
+    const bx = -w * 0.3, bz = -d * 0.02;
+    trucks.push(boxAt(T, 1.2, 0.2, 0.55, bx, 0.33, bz), boxAt(T, 0.25, 0.2, 0.25, bx - 0.3, 0.52, bz));
+    cabs.push(boxAt(T, 0.42, 0.42, 0.55, bx + 0.78, 0.47, bz)); glass.push(boxAt(T, 0.02, 0.16, 0.45, bx + 1.0, 0.58, bz));
+    wheels(T, tires, bx + 0.2, bz, 1.5, 0.56);
+    const boom = [beam(T, V(bx - 0.3, 0.6, bz), V(bx + 0.4, 1.9, bz), 0.1), beam(T, V(bx + 0.4, 1.9, bz), V(bx + 1.1, 2.3, bz), 0.08), boxAt(T, 0.3, 0.3, 0.3, bx + 1.2, 2.3, bz)];
     g.add(mesh(T, merge(T, trucks), phong(T, 0x39434b)));
     g.add(mesh(T, merge(T, cabs), phong(T, 0xe6e0d0)));
+    g.add(mesh(T, merge(T, tires), phong(T, 0x1d2226)));
+    g.add(mesh(T, merge(T, glass), phong(T, 0x7fa9c4, { shininess: 90 })));
+    g.add(mesh(T, merge(T, boom), phong(T, 0xe6e0d0)));
+    // site office trailer, portable toilets, cones
+    const off = mesh(T, new T.BoxGeometry(1.8, 0.6, 0.7), phong(T, 0xf0ede4)); off.position.set(-w * 0.32, 0.42, -d * 0.4 + 0.1); g.add(off);
+    const offWin = mesh(T, merge(T, [boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 - 0.5, 0.5, -d * 0.4 + 0.46), boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 + 0.4, 0.5, -d * 0.4 + 0.46)]), phong(T, 0x7fa9c4)); g.add(offWin);
+    g.add(mesh(T, merge(T, [boxAt(T, 0.25, 0.5, 0.25, w * 0.44, 0.37, -d * 0.4), boxAt(T, 0.25, 0.5, 0.25, w * 0.44 - 0.32, 0.37, -d * 0.4)]), phong(T, 0x3d7fb8)));
+    const cones = [];
+    for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
+    g.add(mesh(T, merge(T, cones), phong(T, 0xf07a22)));
+    const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
     g.add(mesh(T, merge(T, steel), phong(T, 0x7b8a96)));
@@ -758,6 +804,23 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     g.add(mesh(T, merge(T, cr), phong(T, PAL.crane)));
     return g;
   }
+
+  // Small construction crew: hard hats, hi-vis vests. Scaled up so people read next to exaggerated towers.
+  function crewGroup(T, n, seed, spread) {
+    const r = rng(seed), legs = [], vest = [], head = [], hat = [];
+    for (let i = 0; i < n; i++) {
+      const x = (r() - 0.5) * spread, z = (r() - 0.5) * spread;
+      legs.push(boxAt(T, 0.07, 0.2, 0.06, x - 0.045, 0.1, z), boxAt(T, 0.07, 0.2, 0.06, x + 0.045, 0.1, z));
+      vest.push(boxAt(T, 0.19, 0.2, 0.11, x, 0.3, z), boxAt(T, 0.05, 0.17, 0.05, x - 0.12, 0.3, z), boxAt(T, 0.05, 0.17, 0.05, x + 0.12, 0.3, z));
+      const hd = new T.SphereGeometry(0.06, 6, 4); hd.translate(x, 0.46, z); head.push(hd);
+      const ht = new T.SphereGeometry(0.068, 6, 3, 0, Math.PI * 2, 0, Math.PI / 2); ht.translate(x, 0.48, z); hat.push(ht, cylAt(T, 0.085, 0.085, 0.01, 8, x, 0.48, z));
+    }
+    const g = new T.Group();
+    g.add(mesh(T, merge(T, legs), phong(T, 0x2c3a52)), mesh(T, merge(T, vest), phong(T, 0xf2c230, { emissive: 0x6b5200, emissiveIntensity: 0.3 })),
+      mesh(T, merge(T, head), phong(T, 0xc99a74)), mesh(T, merge(T, hat), phong(T, 0xffffff, { shininess: 50 })));
+    return g;
+  }
+  const wheels = (T, list, x, z, len, wid) => { for (const dx of [-len / 2 + 0.15, len / 2 - 0.15]) for (const dz of [-wid / 2, wid / 2]) { const w = cylAt(T, 0.13, 0.13, 0.08, 10, 0, 0, 0); w.rotateX(Math.PI / 2); w.translate(x + dx, 0.13, z + dz); list.push(w); } };
 
   // Soft round sprite texture for steam.
   function softTexture(T) {
@@ -821,7 +884,12 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
-    const ground = new T.Mesh(gGeo, phong(T, 0xffffff, { vertexColors: true, shininess: 2 })); ground.receiveShadow = true; scene.add(ground);
+    // speckled grass texture, multiplied over the vertex colors
+    const gc = document.createElement("canvas"); gc.width = gc.height = 128;
+    const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 2600; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * 128), Math.floor(gr() * 128), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(34, 34);
+    const ground = new T.Mesh(gGeo, phong(T, 0xffffff, { vertexColors: true, shininess: 2, map: groundTex })); ground.receiveShadow = true; scene.add(ground);
 
     // basalt columns around the cliff
     const colGeo = new T.CylinderGeometry(1, 1, 1, 6); colGeo.translate(0, 0.5, 0);
@@ -867,20 +935,25 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
         const steelI = new T.InstancedMesh(parts.steel, phong(T, PAL.steel, { shininess: 30 }), pts.length);
         const accI = new T.InstancedMesh(parts.accent, phong(T, colorHex, { emissive: colorHex, emissiveIntensity: 0.2 }), pts.length);
+        const insI = new T.InstancedMesh(parts.ins, phong(T, PAL.porcelain, { shininess: 40 }), pts.length);
+        // bundled conductors: 1 wire per phase at 115 kV, 2 at 230 kV, 4 at 500 kV
+        const offs = p.kv >= 500 ? [[-0.13, 0.11], [0.13, 0.11], [-0.13, -0.11], [0.13, -0.11]] : p.kv >= 230 ? [[-0.13, 0], [0.13, 0]] : [[0, 0]];
         const heads = [];
         pts.forEach((v, i) => {
           const d = pts[Math.min(pts.length - 1, i + 1)].clone().sub(pts[Math.max(0, i - 1)]); d.y = 0; d.normalize();
           const rot = Math.atan2(d.x, d.z), side = new T.Vector3(Math.cos(rot), 0, -Math.sin(rot));
           mtx.compose(v, q.setFromAxisAngle(sv.set(0, 1, 0), rot), sv.clone().set(TS, TS, TS));
-          steelI.setMatrixAt(i, mtx); accI.setMatrixAt(i, mtx);
-          heads.push(parts.attach.map(([ax, ay]) => v.clone().add(side.clone().multiplyScalar(ax * TS)).add(new T.Vector3(0, ay * TS, 0))));
+          steelI.setMatrixAt(i, mtx); accI.setMatrixAt(i, mtx); insI.setMatrixAt(i, mtx);
+          const at = (ax, ay) => v.clone().add(side.clone().multiplyScalar(ax * TS)).add(new T.Vector3(0, ay * TS, 0)), last = parts.attach.length - 1;
+          heads.push(parts.attach.flatMap(([ax, ay], k) => k === last ? [at(ax, ay)] : offs.map(([ox, oy]) => at(ax + ox, ay + oy))));
           obstacles.push([v.x, v.z, 1.6 * TS]);
         });
-        steelI.castShadow = accI.castShadow = true; scene.add(steelI, accI);
+        steelI.castShadow = accI.castShadow = insI.castShadow = true; scene.add(steelI, accI, insI);
         // sagging conductors between towers
-        const cond = [], shield = [];
+        const cond = [], shield = [], balls = [], SH = heads[0].length - 1;
         for (let i = 1; i < heads.length; i++) heads[i].forEach((b, k) => {
-          const a = heads[i - 1][k], sagD = Math.min(1.4, a.distanceTo(b) * (k === 4 ? 0.04 : 0.08)), out = k === 4 ? shield : cond;
+          const a = heads[i - 1][k], sagD = Math.min(1.4, a.distanceTo(b) * (k === SH ? 0.04 : 0.08)), out = k === SH ? shield : cond;
+          if (k === SH && i % 2 === 1) for (const t of [0.35, 0.65]) { const m = a.clone().lerp(b, t); m.y -= sagD * 4 * t * (1 - t); balls.push(m); }
           for (let j = 0; j < 10; j++) {
             const t0 = j / 10, t1 = (j + 1) / 10;
             for (const t of [t0, t1]) { const v = a.clone().lerp(b, t); v.y -= sagD * 4 * t * (1 - t); out.push(v.x, v.y, v.z); }
@@ -889,6 +962,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         const lineGeo = arr => { const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(arr, 3)); return g; };
         scene.add(new T.LineSegments(lineGeo(cond), new T.LineBasicMaterial({ color: colorHex })));
         scene.add(new T.LineSegments(lineGeo(shield), new T.LineBasicMaterial({ color: 0x55636f })));
+        // orange aviation marker balls on the shield wire
+        const ballI = new T.InstancedMesh(new T.SphereGeometry(0.16 * TS, 8, 6), phong(T, 0xf07a22, { emissive: 0x7a3000, emissiveIntensity: 0.3 }), Math.max(1, balls.length));
+        balls.forEach((m, i) => { mtx.makeTranslation(m.x, m.y, m.z); ballI.setMatrixAt(i, mtx); }); ballI.count = balls.length; scene.add(ballI);
         return { anchor: pts[Math.floor(pts.length / 2)], top: kvH };
       }
       const v = toV(p.coords[0]);
@@ -967,6 +1043,32 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     pinesF.count = pinesT.count = np; pinesF.castShadow = pinesT.castShadow = true;
     scene.add(pinesF, pinesT);
 
+    // more vegetation and ground clutter: broadleaf trees, bushes, rocks, grass tufts
+    const scatter = (geo, mat, n, pad, kMin, kMax, base, jitter, shade, twin) => {
+      const im = new T.InstancedMesh(geo, mat, n), im2 = twin && new T.InstancedMesh(twin[0], twin[1], n); let c = 0;
+      for (let i = 0; i < n * 4 && c < n; i++) {
+        const x = (rnd() - 0.5) * RG * 2, z = (rnd() - 0.5) * RG * 2;
+        if (Math.hypot(x, z) > edge(Math.atan2(z, x)) - 2 || !clear(x, z, pad)) continue;
+        const k = kMin + rnd() * (kMax - kMin);
+        mtx.compose(pv.set(x, heightAt(x, z) - 0.05, z), q.setFromAxisAngle(sv.set(0, 1, 0), rnd() * 6), sv.clone().set(k, k * (0.8 + rnd() * 0.4), k));
+        im.setMatrixAt(c, mtx); if (im2) im2.setMatrixAt(c, mtx); im.setColorAt(c, tmp.setHex(base).offsetHSL((rnd() - 0.5) * jitter, 0, (rnd() - 0.5) * shade)); c++;
+      }
+      im.count = c; im.castShadow = true; im.receiveShadow = true; scene.add(im);
+      if (im2) { im2.count = c; im2.castShadow = true; scene.add(im2); }
+      return im;
+    };
+    const canopy = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.75, 0); g.translate(0, 1.5, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.55, 0); g.translate(0.35, 1.95, 0.1); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.5, 0); g.translate(-0.3, 1.85, -0.2); return g; })()]);
+    scatter(canopy, phong(T, 0xffffff), 110, 1.8, 0.8, 1.4, 0x5b8a47, 0.06, 0.12, [merge(T, [cylAt(T, 0.06, 0.1, 1.3, 5, 0, 0.65, 0)]), phong(T, PAL.trunk)]);
+    const bush = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.35, 0); g.translate(0, 0.25, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.25, 0); g.translate(0.3, 0.18, 0.1); return g; })()]);
+    scatter(bush, phong(T, 0xffffff), 260, 0.6, 0.7, 1.5, 0x4f7a45, 0.05, 0.14);
+    const rock = new T.DodecahedronGeometry(0.35, 0); rock.translate(0, 0.12, 0);
+    scatter(rock, phong(T, 0xffffff), 90, 0.5, 0.5, 1.8, 0x7d8790, 0.02, 0.12);
+    const tuft = merge(T, [cylAt(T, 0, 0.05, 0.3, 3, 0, 0.15, 0), cylAt(T, 0, 0.04, 0.24, 3, 0.07, 0.12, 0.03), cylAt(T, 0, 0.04, 0.22, 3, -0.06, 0.11, -0.04)]);
+    const tufts = scatter(tuft, phong(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
+
+    // work crews at the closest points
+    [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
+
     // steam sprites over stacks and cooling towers
     const tex = softTexture(T), puffs = [];
     steam.forEach(st => { for (let i = 0; i < (st.big ? 14 : 8); i++) { const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, color: 0xffffff })); sp.userData = { at: st.at, t: i / (st.big ? 14 : 8), big: st.big, s: st.s }; scene.add(sp); puffs.push(sp); } });
@@ -975,7 +1077,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const focus = va.clone().lerp(vb, 0.5);
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
-    return { scene, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex };
+    return { scene, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex };
   }
 
   // ---------- modal and render loop ----------
@@ -1056,7 +1158,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       ctx = { stop: () => {
         cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
         built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
-        built.tex.dispose(); renderer.dispose();
+        built.tex.dispose(); built.groundTex.dispose(); renderer.dispose();
       } };
     }).catch(err => { msg.hidden = false; msg.textContent = root.THREE ? "The 3D view couldn't be drawn: " + err.message : "The 3D view needs an internet connection to load three.js. " + err.message; });
   }
