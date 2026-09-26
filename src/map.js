@@ -5,11 +5,14 @@
 (function (root) {
   const DEM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
   const RASTERS = {
-    light: { label: "Light", tiles: ["a", "b", "c"].map(s => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png`), attr: "© OpenStreetMap contributors © CARTO", max: 19 },
     satellite: { label: "Satellite", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], attr: "Imagery © Esri, Maxar, Earthstar Geographics", max: 19 },
     topo: { label: "Topo", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"], attr: "© Esri, HERE, Garmin, USGS", max: 19 },
   };
-  const BASEMAPS = Object.assign({ plain: { label: "Plain" } }, RASTERS);
+  // Relief is drawn here from the elevation tiles: colour by height (hypsometric tint) under a hillshade.
+  const BASEMAPS = Object.assign({ plain: { label: "Plain" }, relief: { label: "Relief" } }, RASTERS);
+  // Elevation colours for the Southeast (m): coastal plain greens, the Fall Line and Piedmont tans, mountains browns.
+  const RELIEF = ["interpolate", ["linear"], ["elevation"], -10, "#C9DEE8", 0, "#D8E8D2", 30, "#CFE2C0", 80, "#DDE3B7", 150, "#E6DDAF", 250, "#DDC89E", 400, "#CDB08A", 700, "#B8977A", 1100, "#A58E80", 1800, "#E8E4E0"];
+  const SKY = { "sky-color": "#9CC3E0", "horizon-color": "#DDE8EE", "fog-color": "#E6EDF1", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.25, "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 5, 0.8, 12, 0.2] };
   // Typical structure heights by voltage (m), drawn 2.5× taller than life, on a slim base, so they read from a
   // few kilometres up; the spacing (about 450 m) is to scale.
   const TOWER_M = kv => (kv >= 500 ? 55 : kv >= 230 ? 40 : kv >= 115 ? 28 : 18) * 2.5;
@@ -51,7 +54,8 @@
         { id: "states-fill", type: "fill", source: "states", paint: { "fill-color": "#F4F4F1" } },
         { id: "counties", type: "line", source: "counties", paint: { "line-color": "#E2E4E0", "line-width": 0.6 } },
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
-        { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#5B6770" } },
+        { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
+        { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
         { id: "yardring-fill", type: "fill", source: "yardring", paint: { "fill-color": "#8A5A1E", "fill-opacity": 0.025 } },
         { id: "yardring", type: "line", source: "yardring", paint: { "line-color": "#8A5A1E", "line-width": 1.2, "line-dasharray": [3, 2] } },
@@ -99,7 +103,7 @@
   function placeLabels() {
     placeMarkers.forEach(m => m.remove());
     placeMarkers = [];
-    if (basemap !== "plain") return;
+    if (basemap !== "plain" && basemap !== "relief") return;
     for (const [n, lat, lon] of PLACES) {
       const d = document.createElement("div"); d.className = "ml-place"; d.textContent = n;
       placeMarkers.push(new root.maplibregl.Marker({ element: d, anchor: "left", offset: [4, 0] }).setLngLat([lon, lat]).addTo(map));
@@ -110,8 +114,11 @@
     if (!map || !BASEMAPS[name]) return;
     basemap = name; tileErrors = 0;
     for (const k of Object.keys(RASTERS)) map.setLayoutProperty("r-" + k, "visibility", k === name ? "visible" : "none");
-    const raster = name !== "plain";
-    for (const id of ["states-fill", "counties"]) map.setLayoutProperty(id, "visibility", raster ? "none" : "visible");
+    const raster = !!RASTERS[name];
+    map.setLayoutProperty("states-fill", "visibility", name === "plain" ? "visible" : "none");
+    map.setLayoutProperty("counties", "visibility", raster ? "none" : "visible");
+    map.setLayoutProperty("relief", "visibility", name === "relief" ? "visible" : "none");
+    shade();
     map.setPaintProperty("states-line", "line-color", name === "satellite" ? "rgba(255,255,255,.7)" : colors.stateLine || "#AEB6BC");
     map.setPaintProperty("seam", "line-opacity", raster ? 0.55 : 0.9);
     placeLabels();
@@ -120,13 +127,22 @@
   function set3D(on) {
     if (!map) return;
     is3d = on;
-    try { map.setTerrain(on ? { source: "dem", exaggeration: 1.6 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
-    map.setLayoutProperty("hillshade", "visibility", on && basemap === "plain" ? "visible" : "none");
+    // The Southeast is low (sea level to a few hundred metres), so relief is exaggerated 3× to be seen.
+    try { map.setTerrain(on ? { source: "dem", exaggeration: 3 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
+    try { map.setSky(on ? SKY : null); } catch (err) { /* sky is decoration only */ }
+    shade();
     map.setLayoutProperty("towers", "visibility", on ? "visible" : "none");
     // tilt only once a fly-to in progress has landed, so the tilt doesn't cut it short
     const tilt = () => map.easeTo(on ? { pitch: 62, bearing: map.getBearing() || -18, duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
     if (map.isMoving()) map.once("moveend", tilt); else tilt();
     if (lastData) towers(lastData.projects);
+  }
+
+  // Hillshade: always on the Relief map and in 3D; lighter over imagery so it doesn't muddy the photo.
+  function shade() {
+    const on = basemap === "relief" || is3d;
+    map.setLayoutProperty("hillshade", "visibility", on ? "visible" : "none");
+    map.setPaintProperty("hillshade", "hillshade-exaggeration", RASTERS[basemap] ? 0.3 : 0.55);
   }
 
   // Theme colours for the basemap layers (light or dark).
