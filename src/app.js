@@ -307,6 +307,7 @@ function renderTimeline() {
 function renderTabs() {
   document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === state.tab));
   $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
+  $("#askFab").hidden = state.tab === "ask";
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -825,9 +826,11 @@ function renderAsk(P) {
     <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
       : `<div class="msg hint"><p class="ask-hero">${SPARK}Ask about the plans</p><p>Projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
+    <p class="ask-hint" id="askHint" aria-hidden="true"></p>
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="e.g. Which three date moves would save the most?" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
+  cycleHint();
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); state.askKey = false; renderAsk(P); $("#askQ").focus(); } };
   if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; renderAsk(P); };
@@ -886,6 +889,25 @@ async function sendQuestion(q) {
 // ---------- coordination brief ----------
 // narrative, when given, is the assistant's one-paragraph framing. It is the only generated prose in a brief:
 // every figure, date, table and next step below is computed from the plans.
+// One example question at a time, changing every few seconds while the field is untouched. It is the only motion in
+// the app that also teaches something: it shows the grammar the input accepts instead of describing it. It stops the
+// moment the user engages with the field, and under reduced motion it shows a single example and never changes it.
+let hintTimer = null, hintAt = 0;
+function cycleHint() {
+  clearInterval(hintTimer); hintTimer = null;
+  const el = $("#askHint"), q = $("#askQ");
+  if (!el) return;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const paint = () => { el.innerHTML = `Try: <b>${esc(SUGGEST[hintAt % SUGGEST.length])}</b>`; };
+  paint();
+  if (reduced) return;
+  hintTimer = setInterval(() => {
+    if (!$("#askHint") || CHAT.busy || (q && (q.value.trim() || document.activeElement === q))) return;
+    hintAt++; paint();
+  }, 3800);
+  if (q) q.addEventListener("focus", () => { clearInterval(hintTimer); hintTimer = null; el.textContent = ""; }, { once: true });
+}
+
 function openBrief(x0, narrative) {
   const y = whatIf(x0, state.wi.who, state.wi.shift), better = state.wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
   const x = better ? y : x0, moved = better ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
@@ -1102,6 +1124,7 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v;
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
+$("#askFab").onclick = () => { state.tab = "ask"; store.set("askSeen", true); renderTabs(); renderPanel(); const q = $("#askQ"); if (q) q.focus(); };
 document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (b.dataset.tab === "ask") store.set("askSeen", true); if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
