@@ -9,11 +9,14 @@
   const dur = ms => REDUCED ? 0 : ms;
   const DEM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
   const RASTERS = {
-    light: { label: "Light", tiles: ["a", "b", "c"].map(s => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png`), attr: "© OpenStreetMap contributors © CARTO", max: 19 },
     satellite: { label: "Satellite", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], attr: "Imagery © Esri, Maxar, Earthstar Geographics", max: 19 },
     topo: { label: "Topo", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"], attr: "© Esri, HERE, Garmin, USGS", max: 19 },
   };
-  const BASEMAPS = Object.assign({ plain: { label: "Plain" } }, RASTERS);
+  // Relief is drawn here from the elevation tiles: colour by height (hypsometric tint) under a hillshade.
+  const BASEMAPS = Object.assign({ plain: { label: "Plain" }, relief: { label: "Relief" } }, RASTERS);
+  // Elevation colours for the Southeast (m): coastal plain greens, the Fall Line and Piedmont tans, mountains browns.
+  const RELIEF = ["interpolate", ["linear"], ["elevation"], -10, "#C9DEE8", 0, "#D8E8D2", 30, "#CFE2C0", 80, "#DDE3B7", 150, "#E6DDAF", 250, "#DDC89E", 400, "#CDB08A", 700, "#B8977A", 1100, "#A58E80", 1800, "#E8E4E0"];
+  const SKY = { "sky-color": "#9CC3E0", "horizon-color": "#DDE8EE", "fog-color": "#E6EDF1", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.25, "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 5, 0.8, 12, 0.2] };
   // Typical structure heights by voltage (m), drawn 2.5× taller than life, on a slim base, so they read from a
   // few kilometres up; the spacing (about 450 m) is to scale.
   const TOWER_M = kv => (kv >= 500 ? 55 : kv >= 230 ? 40 : kv >= 115 ? 28 : 18) * 2.5;
@@ -52,6 +55,8 @@
       shade: { type: "raster-dem", tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: "terrarium" },
     };
     for (const [k, r] of Object.entries(RASTERS)) sources["r-" + k] = { type: "raster", tiles: r.tiles, tileSize: 256, maxzoom: r.max, attribution: r.attr };
+    // today's grid from OpenStreetMap (data/grid.json, loaded on demand; missing when the page is opened as a file)
+    sources.grid = { type: "geojson", data: "data/grid.json", attribution: "Grid © OpenStreetMap contributors" };
     for (const k of ["measure", "seam", "existing", "yardring", "spokes", "links", "projects", "points", "towers", "rings", "yards", "sparks"]) sources[k] = { type: "geojson", data: fc([]) };
     const vis = v => ({ visibility: v ? "visible" : "none" });
     return {
@@ -62,7 +67,13 @@
         { id: "states-fill", type: "fill", source: "states", paint: { "fill-color": "#F4F4F1" } },
         { id: "counties", type: "line", source: "counties", paint: { "line-color": "#E2E4E0", "line-width": 0.6 } },
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
-        { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#5B6770" } },
+        { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
+        { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
+        // existing lines by voltage, kept quiet under the plans: grey 115, violet 161, magenta 230, teal 500 kV
+        { id: "grid", type: "line", source: "grid", layout: { "line-join": "round" }, paint: {
+          "line-color": ["step", ["get", "kv"], "#8E9AA6", 161, "#8E7CB8", 230, "#A05BA8", 500, "#0097A7"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["step", ["get", "kv"], 0.5, 230, 0.8, 500, 1.2], 12, ["step", ["get", "kv"], 1.2, 230, 1.8, 500, 2.6]],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 11, 0.6] } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
         { id: "yardring-fill", type: "fill", source: "yardring", paint: { "fill-color": "#8A5A1E", "fill-opacity": 0.025 } },
         { id: "yardring", type: "line", source: "yardring", paint: { "line-color": "#8A5A1E", "line-width": 1.2, "line-dasharray": [3, 2] } },
@@ -100,8 +111,8 @@
       btn("Measure a distance: click points on the map, Esc to finish", '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 12.5l2 2M10 9.5l1.5 1.5M13 6.5l2 2" stroke="currentColor" stroke-width="2"/></svg>', () => setMeasure(!measuring)));
     tools.lastChild.id = "mRuler";
     // (the first control added sits lowest in the corner)
-    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-right");
-    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "imperial" }), "bottom-right");
+    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 90, unit: "metric" }), "bottom-right");
+    map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 90, unit: "imperial" }), "bottom-right");
     map.addControl(new root.maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
     map.addControl({ onAdd: () => tools, onRemove: () => tools.remove() }, "bottom-right");
     mRead = document.createElement("div"); mRead.className = "mread"; mRead.hidden = true; el.appendChild(mRead);
@@ -110,17 +121,17 @@
     const zoomed = () => el.classList.toggle("gaps-all", map.getZoom() >= 9);
     map.on("zoom", zoomed); zoomed();
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
-    const hit = ["links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
+    const hit = ["grid", "links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
     map.on("click", e => {
       if (measuring) { mpts.push([e.lngLat.lat, e.lngLat.lng]); return drawMeasure(); }
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      if (cbs.click) cbs.click(f ? { layer: f.layer.id, id: f.properties.id } : null);
+      if (cbs.click) cbs.click(f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null);
     });
     map.on("mousemove", e => {
       if (measuring) return;
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      map.getCanvas().style.cursor = f ? "pointer" : "";
-      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id } : null, e.originalEvent);
+      map.getCanvas().style.cursor = f && f.layer.id !== "grid" ? "pointer" : "";
+      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id, kv: f.properties.kv, op: f.properties.op } : null, e.originalEvent);
     });
     map.on("mouseout", () => cbs.hover && cbs.hover(null));
     // "style.load" fires once the layers exist; "load" would also wait for every basemap tile to arrive.
@@ -152,7 +163,7 @@
   function placeLabels() {
     placeMarkers.forEach(m => m.remove());
     placeMarkers = [];
-    if (basemap !== "plain") return;
+    if (basemap !== "plain" && basemap !== "relief") return;
     for (const [n, lat, lon] of PLACES) {
       const d = document.createElement("div"); d.className = "ml-place"; d.textContent = n;
       placeMarkers.push(new root.maplibregl.Marker({ element: d, anchor: "left", offset: [4, 0] }).setLngLat([lon, lat]).addTo(map));
@@ -163,8 +174,11 @@
     if (!map || !BASEMAPS[name]) return;
     basemap = name; tileErrors = 0;
     for (const k of Object.keys(RASTERS)) map.setLayoutProperty("r-" + k, "visibility", k === name ? "visible" : "none");
-    const raster = name !== "plain";
-    for (const id of ["states-fill", "counties"]) map.setLayoutProperty(id, "visibility", raster ? "none" : "visible");
+    const raster = !!RASTERS[name];
+    map.setLayoutProperty("states-fill", "visibility", name === "plain" ? "visible" : "none");
+    map.setLayoutProperty("counties", "visibility", raster ? "none" : "visible");
+    map.setLayoutProperty("relief", "visibility", name === "relief" ? "visible" : "none");
+    shade();
     map.setPaintProperty("states-line", "line-color", name === "satellite" ? "rgba(255,255,255,.7)" : colors.stateLine || "#AEB6BC");
     map.setPaintProperty("seam", "line-opacity", raster ? 0.55 : 0.9);
     placeLabels();
@@ -173,13 +187,22 @@
   function set3D(on) {
     if (!map) return;
     is3d = on;
-    try { map.setTerrain(on ? { source: "dem", exaggeration: 1.6 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
-    map.setLayoutProperty("hillshade", "visibility", on && basemap === "plain" ? "visible" : "none");
+    // The Southeast is low (sea level to a few hundred metres), so relief is exaggerated 3× to be seen.
+    try { map.setTerrain(on ? { source: "dem", exaggeration: 3 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
+    try { map.setSky(on ? SKY : null); } catch (err) { /* sky is decoration only */ }
+    shade();
     map.setLayoutProperty("towers", "visibility", on ? "visible" : "none");
     // tilt only once a fly-to in progress has landed, so the tilt doesn't cut it short
     const tilt = () => map.easeTo(on ? { pitch: 62, bearing: map.getBearing() || -18, duration: dur(900) } : { pitch: 0, bearing: 0, duration: dur(700) });
     if (map.isMoving()) map.once("moveend", tilt); else tilt();
     if (lastData) towers(lastData.projects);
+  }
+
+  // Hillshade: always on the Relief map and in 3D; lighter over imagery so it doesn't muddy the photo.
+  function shade() {
+    const on = basemap === "relief" || is3d;
+    map.setLayoutProperty("hillshade", "visibility", on ? "visible" : "none");
+    map.setPaintProperty("hillshade", "hillshade-exaggeration", RASTERS[basemap] ? 0.3 : 0.55);
   }
 
   // Theme colours for the basemap layers (light or dark).
@@ -194,9 +217,14 @@
     document.documentElement.style.setProperty("--ml-place", c.place);
   }
 
+  let towerKey = null;
   function towers(projects) {
     const src = map.getSource("towers");
     if (!src) return;
+    // thousands of extrusions: rebuilt only when what is drawn changes, not on every hover
+    const key = is3d ? projects.filter(p => p.opacity >= 0.3).map(p => p.id + p.color + (p.kv || "")).join("|") : "";
+    if (key === towerKey) return;
+    towerKey = key;
     if (!is3d) return src.setData(fc([]));
     const out = [];
     for (const p of projects) {
@@ -259,5 +287,20 @@
     map.fitBounds([[w - pad, s - pad], [e + pad, n + pad]], { padding: opts.padding ?? 40, duration: dur(opts.duration ?? 900), maxZoom: opts.maxZoom ?? 12.5, pitch: is3d ? 62 : 0, bearing: is3d ? map.getBearing() : 0 });
   }
 
-  root.SeamMap = { BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
+  // The project under a screen point (client pixels), for the drop-in figure: the nearest line or substation within
+  // `radius` pixels, and the map coordinates of that point.
+  function pick(clientX, clientY, radius = 22) {
+    if (!map) return null;
+    const r = map.getCanvas().getBoundingClientRect(), x = clientX - r.left, y = clientY - r.top;
+    if (x < 0 || y < 0 || x > r.width || y > r.height) return null;
+    const box = [[x - radius, y - radius], [x + radius, y + radius]];
+    const f = map.queryRenderedFeatures(box, { layers: ["proj", "proj-dash", "points"].filter(l => map.getLayer(l)) })
+      .filter(g => g.properties.opacity == null || g.properties.opacity > 0.25)[0];
+    const ll = map.unproject([x, y]);
+    return { id: f ? f.properties.id : null, at: [ll.lat, ll.lng] };
+  }
+
+  const setGrid = on => map && map.getLayer("grid") && map.setLayoutProperty("grid", "visibility", on ? "visible" : "none");
+
+  root.SeamMap = { setGrid, pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
 })(this);

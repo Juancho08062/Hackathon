@@ -116,6 +116,10 @@
       const input = {};
       const months = s.match(/\b(3|6|12)\s*(months|month|meses|mes)\b/);
       if (months) input.max_shift_months = +months[1];
+      // "which three date moves": how many to list, not a tool input
+      const n = s.match(/\b(\d+|[a-z]+)\s+(?:date\s+)?(?:moves|shifts|changes|movimientos|cambios|fechas)\b/);
+      const count = n && (+n[1] || WORD_NUM[n[1]]);
+      if (count) input.show = count;
       return plan("optimize_schedule", input, "schedule moves");
     }
 
@@ -205,6 +209,7 @@
       closed: n => `${n} shared ${n === 1 ? "window" : "windows"} closed:`,
       noDrift: "No shared window opened or closed between the two plans.",
       movesHead: (b, a) => `Moving a few dates raises expected savings from ${b} to ${a}:`,
+      movesShown: (n, all) => `The ${n} that add the most, of ${all} moves:`,
       noMoves: "No date move is worth the threshold, so the schedule is left as planned.",
       checksHead: "Data checks:",
       shareable: "What could be shared:",
@@ -238,6 +243,7 @@
       closed: n => `${n} ${n === 1 ? "ventana compartida que cerró" : "ventanas compartidas que cerraron"}:`,
       noDrift: "Ninguna ventana compartida abrió ni cerró entre los dos planes.",
       movesHead: (b, a) => `Mover algunas fechas sube el ahorro esperado de ${b} a ${a}:`,
+      movesShown: (n, all) => `Los ${n} que más suman, de ${all} movimientos:`,
       noMoves: "Ningún movimiento de fecha supera el umbral, así que el cronograma queda como está.",
       checksHead: "Chequeos del dato:",
       shareable: "Qué se podría compartir:",
@@ -304,7 +310,7 @@
 
   function renderChanges(r, L) {
     const out = [L.moved];
-    Object.entries(r.how_dates_moved || {}).forEach(([u, v]) => out.push(`  ${u}: ${v.later} later, ${v.earlier} earlier, ${v.unchanged} unchanged (median ${v.median} months, ${v.projects_with_history} with history)`));
+    Object.entries(r.how_dates_moved || {}).forEach(([u, v]) => out.push(`  ${u}: ${v.later} later, ${v.earlier} earlier, ${v.unchanged} unchanged (median ${v.median_months} months, ${v.projects_with_history} with history)`));
     const opened = r.windows_opened || [], closed = r.windows_closed || [];
     if (!opened.length && !closed.length) out.push(L.noDrift);
     if (opened.length) { out.push(L.opened(opened.length)); opened.forEach(x => out.push(`  ${x.key} — ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
@@ -312,10 +318,12 @@
     return out.join("\n");
   }
 
-  function renderMoves(r, L) {
-    const moves = r.moves || [];
+  function renderMoves(r, L, lang, input) {
+    let moves = r.moves || [];
     if (!moves.length) return L.noMoves;
     const out = [L.movesHead(money(r.expected_savings_before_usd), money(r.after_usd))];
+    const show = input && input.show;
+    if (show && show < moves.length) { out.push(L.movesShown(show, moves.length)); moves = moves.slice().sort((a, b) => b.adds_usd - a.adds_usd).slice(0, show); }
     moves.forEach(m => out.push(`  ${m.id} ${m.project} (${m.utility}): ${m.months > 0 ? "+" : ""}${m.months} months, ${m.in_service_from} → ${m.in_service_to}, +${money(m.adds_usd)}${m.strongest_effect ? ` — ${m.strongest_effect}` : ""}`));
     return out.join("\n");
   }
@@ -359,9 +367,9 @@
   };
 
   // Deterministic prose for a tool result: the same input always renders the same text.
-  function render(tool, result, lang) {
+  function render(tool, result, lang, input) {
     const L = T[lang === "es" ? "es" : "en"], fn = RENDER[tool];
-    return fn ? fn(result, L, lang === "es" ? "es" : "en") : JSON.stringify(result);
+    return fn ? fn(result, L, lang === "es" ? "es" : "en", input) : JSON.stringify(result);
   }
   const note = (lang, reason) => T[lang === "es" ? "es" : "en"].offline(reason);
   const capabilities = lang => T[lang === "es" ? "es" : "en"].can;

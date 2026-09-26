@@ -21,12 +21,19 @@
     </div>
     <span class="asof" id="asof"></span>
     <span class="grow"></span>
-    <button type="button" class="btn" id="openAssume">Unit costs</button>
-    <button type="button" class="btn" id="openImport" aria-expanded="false" aria-controls="import">Import plans</button>
-    <button type="button" class="btn" id="copy">Export CSV</button>
+    <button type="button" class="btn" id="filtersBtn" aria-expanded="false" aria-controls="controls"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 8v6l-4-2v-4z"/></svg>Filters <span class="ct" id="filtCt"></span></button>
+    <div class="morewrap">
+      <button type="button" class="btn" id="moreBtn" aria-expanded="false" aria-controls="moreMenu">More ▾</button>
+      <div class="menu" id="moreMenu" hidden role="menu">
+        <button type="button" role="menuitem" id="share" title="Copy a link to exactly this view">Share this view</button>
+        <button type="button" role="menuitem" id="copy">Export CSV</button>
+        <button type="button" role="menuitem" data-go="openImport">Import plans</button>
+        <button type="button" role="menuitem" data-go="openAssume">Unit costs</button>
+      </div>
+    </div>
   </header>
 
-  <div class="filterbar" id="controls">
+  <div class="filterbar" id="controls" hidden>
     <label class="fl">Overlap within <select id="dist" aria-label="Geographic threshold">
       <option value="8">8 km</option><option value="16">16 km</option><option value="25">25 km</option><option value="40" selected>40 km (25 mi)</option><option value="60">60 km</option><option value="100">100 km</option></select></label>
     <label class="fl">Window buffer <select id="buf" aria-label="Build-window buffer">
@@ -43,17 +50,35 @@
   </div>
 
   <main class="work">
+    <nav class="rail" role="tablist" aria-label="Views">
+      <button type="button" role="tab" id="tab-overlaps" aria-selected="true" data-tab="overlaps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Overlaps<span class="n" id="n-overlaps"></span></button>
+      <button type="button" role="tab" id="tab-changes" aria-selected="false" data-tab="changes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg>Changes<span class="n" id="n-changes"></span></button>
+      <button type="button" role="tab" id="tab-optimize" aria-selected="false" data-tab="optimize"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9"/></svg>Plan<span class="n" id="n-optimize"></span></button>
+      <button type="button" id="railTl" aria-pressed="false" title="Show the build-windows chart under the map"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Windows</button>
+      <button type="button" role="tab" id="tab-checks" aria-selected="false" data-tab="checks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Checks<span class="n" id="n-checks"></span><span class="badge" id="b-checks" hidden></span></button>
+      <button type="button" role="tab" id="tab-ask" aria-selected="false" data-tab="ask" class="ask-tab"><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>Ask</button>
+      <span class="grow"></span>
+      <button type="button" id="openImport" aria-expanded="false" aria-controls="import"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Import</button>
+      <button type="button" id="openAssume"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v10c0 1.7 3 3 7 3s7-1.3 7-3V7"/></svg>Costs</button>
+    </nav>
+    <aside class="side" aria-label="Results">
+      <div class="panel" id="panel" role="tabpanel" aria-label="Selected view" tabindex="-1"></div>
+    </aside>
     <section class="left" aria-label="Map and build windows">
       <div class="mapwrap">
         <div id="map" role="region" aria-label="Map of planned projects"></div>
         <div class="maptools">
           <div class="seg" role="group" aria-label="Map extent"><button type="button" id="v-focus" aria-pressed="true">Overlaps</button><button type="button" id="v-all" aria-pressed="false">All projects</button></div>
           <div class="seg" role="group" aria-label="Basemap" id="basemaps"></div>
+          <button type="button" class="btn tog" id="bgrid" aria-pressed="true" title="Today's transmission lines from OpenStreetMap">Grid</button>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
         <button type="button" class="askfab" id="askFab" aria-label="Ask the assistant about these plans">
           <svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>
           <span>Ask</span></button>
+        <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
+          <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
+        </button>
         <div class="legend" id="legend"></div>
         <p class="tilenote" id="tileNote" hidden></p>
       </div>
@@ -70,16 +95,6 @@
       </div>
     </section>
 
-    <aside class="side" aria-label="Results">
-      <nav class="tabs" role="group" aria-label="Views">
-        <button type="button" id="tab-overlaps" aria-pressed="true" data-tab="overlaps">Overlaps <span class="n" id="n-overlaps"></span></button>
-        <button type="button" id="tab-changes" aria-pressed="false" data-tab="changes">Changes <span class="n" id="n-changes"></span></button>
-        <button type="button" id="tab-optimize" aria-pressed="false" data-tab="optimize">Optimize <span class="n" id="n-optimize"></span></button>
-        <button type="button" id="tab-checks" aria-pressed="false" data-tab="checks">Checks <span class="n" id="n-checks"></span></button>
-        <button type="button" id="tab-ask" aria-pressed="false" data-tab="ask" class="ask-tab"><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>Ask</button>
-      </nav>
-      <div class="panel" id="panel" aria-label="Selected view" tabindex="-1"></div>
-    </aside>
   </main>
 </div>
 
@@ -132,7 +147,8 @@
   <div class="m3d-box">
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
-      <label class="m3d-q">Quality <select id="m3dQ" aria-label="3D image quality"><option value="standard">Standard</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
+      <label class="m3d-q">Quality <select id="m3dQ" aria-label="3D image quality"><option value="detailed">Detailed</option><option value="realistic">Ultra-realistic</option></select></label>
+      <button type="button" class="btn" id="m3dWalk" aria-pressed="false" title="Walk around at ground level">Walk</button>
       <button type="button" class="btn" id="m3dLabels" aria-pressed="true">Labels on</button>
       <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>

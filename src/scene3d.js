@@ -11,16 +11,18 @@
     fence: 0x46525c, ridge: 0x4f6b55, water: 0x24505c, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let ctx = null, last = null;
-  // Standard is the lightest; High (the default) adds ambient occlusion and SMAA; Ultra renders at the full screen
-  // resolution with a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass detail.
+  let ctx = null, last = null, walkCtl = null;
+  // Two looks. Detailed (the default) is the stylized scene with full models, ambient occlusion and SMAA.
+  // Ultra-realistic adds texture maps, galvanized steel and bare aluminum wires, loblolly pines, denser ground
+  // cover, finer terrain and a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass
+  // detail. Old saved settings map onto the new pair.
   const QUALITY = {
-    standard: { dpr: 1.25, shadow: 2048, seg: 130, tex: 256, ssao: 0, smaa: false },
-    high: { dpr: 2, shadow: 4096, seg: 200, tex: 512, ssao: 16, smaa: true },
-    ultra: { dpr: 3, shadow: 4096, seg: 280, tex: 1024, ssao: 32, smaa: true },
+    detailed: { dpr: 2, shadow: 4096, seg: 200, tex: 512, ssao: 16, smaa: true, real: false },
+    realistic: { dpr: 2, shadow: 4096, seg: 260, tex: 1024, ssao: 24, smaa: true, real: true },
   };
+  const qualityKey = q => QUALITY[q] ? q : q === "ultra" ? "realistic" : "detailed";
   const ensureThree = q => root.Libs.need("THREE", "OrbitControls", "ThreeExtras")
-    .then(() => q.ssao || q.smaa ? root.Libs.need("ThreeQuality").then(() => q, () => QUALITY.standard) : q);
+    .then(() => q.ssao || q.smaa ? root.Libs.need("ThreeQuality").then(() => q, () => Object.assign({}, q, { ssao: 0, smaa: false })) : q);
 
   // ---------- helpers ----------
   // PBR material helper. `rough` and `metal` set roughness and metalness; `shininess` of 40 or more means a glossy surface.
@@ -56,6 +58,194 @@
   const boxAt = (T, w, h, d, x, y, z) => { const g = new T.BoxGeometry(w, h, d); g.translate(x, y, z); return g; };
   const cylAt = (T, r1, r2, h, seg, x, y, z) => { const g = new T.CylinderGeometry(r1, r2, h, seg); g.translate(x, y, z); return g; };
   function mesh(T, geo, mat, shadow = true) { const m = new T.Mesh(geo, mat); m.castShadow = shadow; m.receiveShadow = true; return m; }
+
+  // ---------- materials ----------
+  // One set of materials per scene. Ultra-realistic adds tiling texture maps (corrugated siding, concrete, gravel)
+  // and drops the colored glow on utility trim, so steel looks galvanized and wires look like aluminum.
+  function canvasTex(T, N, draw, rep = 1) {
+    const c = document.createElement("canvas"); c.width = c.height = N;
+    draw(c.getContext("2d"), N, rng(N + 5));
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rep, rep); t.encoding = T.sRGBEncoding;
+    return t;
+  }
+  function kit(T, real, aniso) {
+    const texs = [];
+    const tex = (N, draw, rep) => { const t = canvasTex(T, N, draw, rep); t.anisotropy = aniso || 4; texs.push(t); return t; };
+    const speckle = (x, N, r, base, spread, n, sz) => {
+      x.fillStyle = `rgb(${base},${base},${base})`; x.fillRect(0, 0, N, N);
+      for (let i = 0; i < n; i++) { const v = base + Math.round((r() - 0.5) * spread); x.fillStyle = `rgb(${v},${v},${v - 4})`; x.fillRect(r() * N, r() * N, 1 + r() * sz, 1 + r() * sz); }
+    };
+    // vertical ribs of corrugated metal siding, one tile per scene unit
+    const siding = real && tex(64, (x, N) => { for (let i = 0; i < N; i++) { const v = 206 + Math.round(34 * Math.sin(i / N * Math.PI * 2 * 6)); x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i, 0, 1, N); } });
+    const concrete = real && tex(128, (x, N, r) => { speckle(x, N, r, 214, 40, 2600, 2); x.strokeStyle = "rgba(90,90,90,.35)"; x.strokeRect(0.5, 0.5, N - 1, N - 1); });
+    const gravel = real && tex(128, (x, N, r) => speckle(x, N, r, 190, 110, 5200, 3), 1);
+    const grime = real && tex(128, (x, N, r) => { speckle(x, N, r, 236, 26, 900, 3); for (let i = 0; i < 40; i++) { x.fillStyle = "rgba(120,110,95,.06)"; x.fillRect(r() * N, 0, 1 + r() * 3, N); } });
+    const m = (color, o = {}) => pbr(T, color, o);
+    const K = {
+      real, texs,
+      steel: m(PAL.steel, STEEL), galv: m(real ? 0xa9b1b6 : PAL.steel, real ? { metal: 0.75, rough: 0.5, map: grime } : STEEL),
+      dark: m(0x2b3137, { rough: 0.7 }), darkSteel: m(PAL.steelDark, STEEL),
+      concrete: m(PAL.concrete, real ? { map: concrete, rough: 0.92 } : {}), gravel: m(PAL.gravel, real ? { map: gravel, bumpMap: gravel, bumpScale: 0.02, rough: 1 } : {}),
+      siding: m(0xdcdfdc, real ? { map: siding, bumpMap: siding, bumpScale: 0.015, metal: 0.35, rough: 0.55 } : {}),
+      sidingDark: m(0x6d7a84, real ? { map: siding, bumpMap: siding, bumpScale: 0.015, metal: 0.35, rough: 0.55 } : {}),
+      hrsg: m(0x9aa4aa, real ? { map: siding, metal: 0.3, rough: 0.6 } : {}), roof: m(0x8e979c, { rough: 0.7 }),
+      stack: m(real ? 0xb4b8b8 : 0xc3cbd0, real ? { metal: 0.55, rough: 0.45, map: grime } : STEEL),
+      ctower: m(0x9fb0b8, real ? { map: siding, rough: 0.8 } : {}), white: m(0xeceeec, real ? { map: grime, rough: 0.6 } : {}),
+      pipe: m(0xd6d9d6, { rough: 0.5, metal: 0.3 }), gas: m(0xe0b83a, { rough: 0.5 }),
+      trans: m(0x7e8b93, real ? { map: grime, rough: 0.55, metal: 0.25 } : {}), porcelain: m(real ? 0x8a5d45 : PAL.porcelain, { shininess: 40 }),
+      alum: m(0xc9ced2, { metal: 0.8, rough: 0.3 }), asphalt: m(0x3a3d40, { rough: 0.95 }),
+      glass: m(real ? 0x223038 : 0x6f93ad, { rough: 0.08, metal: 0.4 }), tire: m(0x1a1c1f, { rough: 0.92 }), rim: m(0xb9bfc4, { metal: 0.85, rough: 0.3 }),
+      paint: m(0xf1f1ec, { rough: 0.35, metal: 0.1 }), yellow: m(0xe7ae1c, { rough: 0.45, metal: 0.1 }), orange: m(0xee7a22, { rough: 0.5 }),
+      lamp: m(0xfff4d8, { emissive: 0xfff1cc, emissiveIntensity: 0.5, rough: 0.2 }), red: m(0xb3261e, { emissive: 0x5a0d08, emissiveIntensity: 0.4 }),
+      amber: m(0xf29a1f, { emissive: 0x7a4200, emissiveIntensity: 0.5 }), wood: m(0x8a6440, { rough: 0.9 }), fence: m(PAL.fence, { metal: 0.5, rough: 0.5 }),
+      trimOf: c => real ? m(c, { rough: 0.5 }) : m(c, { emissive: c, emissiveIntensity: 0.2 }),
+    };
+    return K;
+  }
+  // Box-projected texture coordinates in scene units, so siding ribs and concrete panels keep their size on any face.
+  function boxUV(T, geo, k = 1) {
+    const p = geo.attributes.position, n = geo.attributes.normal, uv = new Float32Array(p.count * 2);
+    for (let i = 0; i < p.count; i++) {
+      const ax = Math.abs(n.getX(i)), ay = Math.abs(n.getY(i)), az = Math.abs(n.getZ(i));
+      const [u, v] = ay >= ax && ay >= az ? [p.getX(i), p.getZ(i)] : ax >= az ? [p.getZ(i), p.getY(i)] : [p.getX(i), p.getY(i)];
+      uv[i * 2] = u * k; uv[i * 2 + 1] = v * k;
+    }
+    geo.setAttribute("uv", new T.BufferAttribute(uv, 2));
+    return geo;
+  }
+  // Parts are collected per material in a bag, then each material becomes one merged mesh.
+  const put = (B, key, ...geos) => (B[key] || (B[key] = [])).push(...geos);
+  function flush(T, B, K, g, uvk = 1) {
+    Object.entries(B).forEach(([k, list]) => { if (list.length) g.add(mesh(T, boxUV(T, merge(T, list), uvk), K[k])); });
+    return g;
+  }
+  const cylX = (T, r1, r2, len, seg, x, y, z) => { const g = new T.CylinderGeometry(r1, r2, len, seg); g.rotateZ(Math.PI / 2); g.translate(x, y, z); return g; };
+  const cylZ = (T, r1, r2, len, seg, x, y, z) => { const g = new T.CylinderGeometry(r1, r2, len, seg); g.rotateX(Math.PI / 2); g.translate(x, y, z); return g; };
+  // A porcelain or polymer insulator: a core with n weather sheds, standing on y0.
+  function insulator(T, B, x, y0, z, h, r, n = 7, key = "porcelain") {
+    put(B, key, cylAt(T, r * 0.45, r * 0.5, h, 8, x, y0 + h / 2, z));
+    for (let i = 0; i < n; i++) put(B, key, cylAt(T, r, r, h * 0.035, 10, x, y0 + h * (0.12 + 0.8 * i / Math.max(1, n - 1)), z));
+    put(B, "alum", cylAt(T, r * 0.55, r * 0.55, h * 0.06, 8, x, y0 + h, z));
+  }
+  // Power transformer of footprint a: tank, radiator banks, conservator, bushings with sheds, on a concrete plinth.
+  function transformer(T, B, x, y0, z, a, rot = 0) {
+    const parts = {}, P = (k, g) => put(parts, k, g);
+    P("concrete", boxAt(T, a * 1.3, 0.08, a * 0.95, 0, 0.04, 0));
+    P("trans", boxAt(T, a, a * 0.78, a * 0.58, 0, 0.08 + a * 0.39, 0));
+    P("trans", boxAt(T, a * 1.02, a * 0.04, a * 0.6, 0, 0.08 + a * 0.8, 0));
+    for (const s of [-1, 1]) for (let k = 0; k < 7; k++) P("trans", boxAt(T, a * 0.025, a * 0.62, a * 0.24, -a * 0.39 + k * a * 0.13, 0.08 + a * 0.4, s * (a * 0.29 + a * 0.13)));
+    for (const s of [-1, 1]) P("trans", boxAt(T, a * 0.86, a * 0.03, a * 0.03, 0, 0.08 + a * 0.68, s * a * 0.53), boxAt(T, a * 0.86, a * 0.03, a * 0.03, 0, 0.08 + a * 0.14, s * a * 0.53));
+    const top = 0.08 + a * 0.82;
+    P("trans", cylX(T, a * 0.1, a * 0.1, a * 0.62, 14, -a * 0.05, top + a * 0.34, -a * 0.2));
+    for (const dx of [-0.25, 0.15]) P("darkSteel", boxAt(T, a * 0.03, a * 0.26, a * 0.03, dx * a, top + a * 0.13, -a * 0.2));
+    [-0.3, 0, 0.3].forEach(dx => insulatorTo(parts, dx * a, top, a * 0.12, a * 0.5, a * 0.07, 9));
+    [-0.25, 0, 0.25].forEach(dx => insulatorTo(parts, dx * a, top, -a * 0.05, a * 0.24, a * 0.05, 5));
+    P("dark", boxAt(T, a * 0.14, a * 0.22, a * 0.08, a * 0.42, 0.08 + a * 0.25, a * 0.34));
+    function insulatorTo(bag, ix, iy, iz, h, r, n) { insulator(T, bag, ix, iy, iz, h, r, n); }
+    const mtx = new T.Matrix4().makeRotationY(rot).setPosition(x, y0, z);
+    Object.entries(parts).forEach(([k, list]) => list.forEach(g => put(B, k, g.applyMatrix4(mtx))));
+  }
+  // Square lattice column (4 legs with zigzag bracing) and a lattice girder between two columns.
+  function latticeColumn(T, list, x, z, h, w, y0 = 0) {
+    const V = (a, b, c) => new T.Vector3(a, b, c), n = Math.max(3, Math.round(h / w / 1.2)), t = w * 0.09;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) list.push(beam(T, V(x + sx * w / 2, y0, z + sz * w / 2), V(x + sx * w / 2, y0 + h, z + sz * w / 2), t));
+    for (let i = 0; i < n; i++) {
+      const a = y0 + h * i / n, b = y0 + h * (i + 1) / n, s = i % 2 ? 1 : -1;
+      for (const sz of [-1, 1]) list.push(beam(T, V(x - s * w / 2, a, z + sz * w / 2), V(x + s * w / 2, b, z + sz * w / 2), t * 0.55));
+      for (const sx of [-1, 1]) list.push(beam(T, V(x + sx * w / 2, a, z - s * w / 2), V(x + sx * w / 2, b, z + s * w / 2), t * 0.55));
+    }
+  }
+  function latticeGirder(T, list, x0, x1, y, z, d) {
+    const V = (a, b, c) => new T.Vector3(a, b, c), n = Math.max(4, Math.round((x1 - x0) / d)), t = d * 0.1;
+    for (const dy of [0, d]) for (const dz of [-d / 2, d / 2]) list.push(beam(T, V(x0, y + dy, z + dz), V(x1, y + dy, z + dz), t));
+    for (let i = 0; i < n; i++) {
+      const a = x0 + (x1 - x0) * i / n, b = x0 + (x1 - x0) * (i + 1) / n;
+      for (const dz of [-d / 2, d / 2]) list.push(beam(T, V(a, y + (i % 2 ? d : 0), z + dz), V(b, y + (i % 2 ? 0 : d), z + dz), t * 0.6));
+      list.push(beam(T, V(b, y, z - d / 2), V(b, y + d, z + d / 2), t * 0.5));
+    }
+  }
+
+  // ---------- vehicles ----------
+  // Real proportions in meters (x forward, y up, origin at ground under the middle), then placed with a matrix.
+  // Kinds: pickup, flatbed (with a cable reel), bucket truck, all-terrain crane, excavator.
+  function vehicle(T, B, kind, x, y, z, rot, k) {
+    const P = {}, box = (key, w, h, d, px, py, pz) => put(P, key, boxAt(T, w, h, d, px, py, pz));
+    const wheel = (px, pz, r, w) => { put(P, "tire", cylZ(T, r, r, w, 18, px, r, pz)); put(P, "rim", cylZ(T, r * 0.58, r * 0.58, w + 0.02, 12, px, r, pz)); };
+    const cabAt = (cx, w, h, d, y0, color) => {
+      box(color, w, h, d, cx, y0 + h / 2, 0);
+      box("glass", 0.05, h * 0.46, d * 0.9, cx + w / 2 + 0.01, y0 + h * 0.7, 0);          // windshield
+      box("glass", w * 0.8, h * 0.4, d + 0.02, cx + w * 0.05, y0 + h * 0.7, 0);           // side windows
+      for (const s of [-1, 1]) box("dark", 0.1, 0.16, 0.22, cx + w / 2 - 0.1, y0 + h * 0.65, s * (d / 2 + 0.14));
+    };
+    const front = (fx, y0, wid) => {
+      box("dark", 0.2, 0.26, wid, fx + 0.1, y0, 0);
+      box("dark", 0.04, 0.36, wid * 0.6, fx + 0.01, y0 + 0.33, 0);
+      for (const s of [-1, 1]) box("lamp", 0.04, 0.13, 0.26, fx + 0.02, y0 + 0.36, s * wid * 0.38);
+    };
+    const rear = (bx, y0, wid) => { box("dark", 0.18, 0.2, wid, bx - 0.09, y0, 0); for (const s of [-1, 1]) box("red", 0.04, 0.26, 0.12, bx - 0.02, y0 + 0.35, s * wid * 0.44); };
+    if (kind === "pickup") {
+      box("dark", 5.4, 0.25, 1.6, 0, 0.55, 0);
+      box("paint", 5.8, 0.55, 2.0, 0, 0.86, 0);
+      box("paint", 1.5, 0.22, 1.96, 2.1, 1.24, 0);
+      cabAt(0.35, 2.2, 0.78, 1.9, 1.13, "paint");
+      box("glass", 0.04, 0.38, 1.6, -0.76, 1.55, 0);
+      for (const s of [-1, 1]) box("paint", 2.6, 0.42, 0.08, -1.6, 1.34, s * 0.96);
+      box("paint", 0.08, 0.42, 1.96, -2.86, 1.34, 0);
+      box("dark", 0.5, 0.36, 1.9, -0.6, 1.3, 0);
+      box("amber", 0.26, 0.08, 1.2, 0.5, 1.95, 0);
+      for (const px of [-1.75, 1.75]) box("dark", 1.08, 0.12, 2.06, px, 1.06, 0);
+      front(2.85, 0.72, 1.98); rear(-2.9, 0.72, 1.98);
+      for (const px of [-1.75, 1.75]) for (const s of [-1, 1]) wheel(px, s * 0.86, 0.4, 0.28);
+    } else if (kind === "flatbed" || kind === "bucket") {
+      box("dark", 8.2, 0.3, 0.95, -0.2, 0.78, 0);
+      cabAt(2.45, 2.2, 1.45, 2.3, 1.02, "paint");
+      box("paint", 1.35, 0.85, 2.1, 4.2, 1.5, 0);
+      box("dark", 0.05, 0.5, 1.5, 4.89, 1.5, 0);
+      box("amber", 0.3, 0.1, 1.5, 2.45, 2.53, 0);
+      front(4.88, 0.85, 2.3); rear(-4.3, 0.95, 2.4);
+      for (const s of [-1, 1]) { wheel(4.0, s * 1.02, 0.5, 0.32); for (const px of [-1.9, -3.1]) { wheel(px, s * 0.86, 0.5, 0.3); wheel(px, s * 1.18, 0.5, 0.3); } }
+      if (kind === "flatbed") {
+        box("wood", 5.9, 0.16, 2.45, -1.35, 1.28, 0);
+        box("darkSteel", 0.1, 1.0, 2.3, 1.3, 1.86, 0);
+        put(P, "wood", cylZ(T, 1.05, 1.05, 0.12, 20, -1.2, 2.43, -0.55), cylZ(T, 1.05, 1.05, 0.12, 20, -1.2, 2.43, 0.55), cylZ(T, 0.62, 0.62, 1.0, 16, -1.2, 2.43, 0));
+        put(P, "dark", cylZ(T, 0.9, 0.9, 1.0, 20, -1.2, 2.43, 0));
+        box("orange", 0.06, 0.8, 0.06, -2.4, 1.8, 1.2);
+      } else {
+        box("paint", 4.8, 1.3, 2.45, -1.6, 1.62, 0);
+        for (let i = 0; i < 4; i++) for (const s of [-1, 1]) box("dark", 0.03, 1.05, 0.02, -3.6 + i * 1.2, 1.62, s * 1.235);
+        box("darkSteel", 0.9, 0.5, 0.9, -3.2, 2.52, 0);
+        const V = (a, b, c) => new T.Vector3(a, b, c);
+        put(P, "paint", beam(T, V(-3.2, 2.7, 0), V(-1.4, 7.4, 0), 0.34), beam(T, V(-1.4, 7.4, 0), V(1.0, 9.2, 0), 0.26));
+        box("yellow", 0.85, 1.05, 0.85, 1.35, 8.8, 0);
+        for (const s of [-1, 1]) for (const px of [-3.9, 0.6]) box("dark", 0.2, 0.25, 1.1, px, 0.7, s * 1.5), box("dark", 0.45, 0.06, 0.45, px, 0.05, s * 2.0);
+      }
+    } else if (kind === "crane") {
+      box("yellow", 11.4, 1.25, 2.6, 0, 1.55, 0);
+      box("dark", 11.0, 0.3, 2.0, 0, 0.8, 0);
+      cabAt(5.1, 1.5, 1.3, 1.1, 1.6, "yellow"); // carrier cab sits to one side
+      for (const px of [-4.2, -2.7, 2.6, 4.1]) for (const s of [-1, 1]) wheel(px, s * 1.08, 0.62, 0.5);
+      box("yellow", 4.6, 1.5, 2.4, -1.5, 3.0, 0);
+      box("dark", 1.3, 1.5, 2.7, -4.4, 3.0, 0);
+      box("yellow", 1.8, 1.6, 0.9, 0.5, 3.0, 1.35); box("glass", 1.2, 0.8, 0.92, 0.9, 3.3, 1.35);
+      for (const s of [-1, 1]) for (const px of [-3.6, 3.6]) box("dark", 0.3, 0.3, 2.0, px, 0.9, s * 2.2), box("darkSteel", 0.7, 0.1, 0.7, px, 0.05, s * 3.1);
+      const V = (a, b, c) => new T.Vector3(a, b, c), a0 = V(-2.4, 3.9, 0), dir = V(Math.cos(1.0), Math.sin(1.0), 0);
+      [[0, 9, 1.05], [8, 8, 0.82], [15, 7, 0.62]].forEach(([s0, len, t]) => put(P, "yellow", beam(T, a0.clone().addScaledVector(dir, s0), a0.clone().addScaledVector(dir, s0 + len), t)));
+      const tip = a0.clone().addScaledVector(dir, 22);
+      put(P, "dark", cylAt(T, 0.03, 0.03, tip.y - 4.2, 4, tip.x + 0.3, 4.2 + (tip.y - 4.2) / 2, 0));
+      box("orange", 0.5, 0.7, 0.4, tip.x + 0.3, 3.9, 0);
+    } else if (kind === "excavator") {
+      for (const s of [-1, 1]) box("dark", 4.4, 0.85, 0.7, 0, 0.45, s * 1.25);
+      box("darkSteel", 1.2, 0.5, 1.8, 0, 1.05, 0);
+      box("yellow", 3.2, 1.1, 2.5, -0.5, 1.8, 0);
+      box("dark", 0.9, 1.0, 2.5, -1.9, 1.8, 0);
+      box("yellow", 1.1, 1.5, 0.95, 0.95, 2.6, 0.75); box("glass", 1.12, 0.9, 0.97, 1.0, 2.85, 0.75);
+      const V = (a, b, c) => new T.Vector3(a, b, c);
+      put(P, "yellow", beam(T, V(1.0, 2.0, -0.35), V(3.4, 4.0, -0.35), 0.5), beam(T, V(3.4, 4.0, -0.35), V(4.6, 1.3, -0.35), 0.38));
+      box("darkSteel", 0.9, 0.8, 1.1, 4.7, 0.9, -0.35);
+    }
+    const mtx = new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), rot), new T.Vector3(k, k, k));
+    Object.entries(P).forEach(([key, list]) => list.forEach(g => put(B, key, g.applyMatrix4(mtx))));
+  }
 
   // ---------- structures ----------
   // Lattice transmission tower. Arms run along local x; the line runs along local z.
@@ -94,140 +284,192 @@
     return { steel: merge(T, steel), accent: merge(T, accent), ins: merge(T, ins), attach };
   }
 
-  function substationGroup(T, s, color) {
-    const g = new T.Group(), steel = pbr(T, PAL.steel, STEEL), dark = pbr(T, PAL.steelDark, STEEL);
-    const pad = mesh(T, new T.BoxGeometry(s, 0.16, s * 0.8), pbr(T, PAL.gravel), false); pad.position.y = 0.08; g.add(pad);
-    // fence
-    const f = [], hw = s * 0.52, hd = s * 0.42;
-    for (let i = 0; i <= 12; i++) { const t = -1 + i / 6; if (Math.abs(t) <= 1) { f.push(boxAt(T, 0.05, 0.6, 0.05, t * hw, 0.4, hd), boxAt(T, 0.05, 0.6, 0.05, t * hw, 0.4, -hd), boxAt(T, 0.05, 0.6, 0.05, hw, 0.4, t * hd), boxAt(T, 0.05, 0.6, 0.05, -hw, 0.4, t * hd)); } }
-    for (const y of [0.35, 0.68]) f.push(boxAt(T, hw * 2, 0.03, 0.03, 0, y, hd), boxAt(T, hw * 2, 0.03, 0.03, 0, y, -hd), boxAt(T, 0.03, 0.03, hd * 2, hw, y, 0), boxAt(T, 0.03, 0.03, hd * 2, -hw, y, 0));
-    g.add(mesh(T, merge(T, f), pbr(T, PAL.fence)));
-    // transformers with radiator fins and porcelain bushings
-    const tank = [], bush = [];
-    for (const x of [-s * 0.2, s * 0.2]) {
-      tank.push(boxAt(T, s * 0.16, s * 0.14, s * 0.12, x, 0.16 + s * 0.07, -s * 0.18));
-      for (let i = 0; i < 5; i++) tank.push(boxAt(T, 0.04, s * 0.11, s * 0.1, x - s * 0.1 - 0.02 - i * 0.02, 0.16 + s * 0.065, -s * 0.18));
-      for (let i = -1; i <= 1; i++) bush.push(cylAt(T, 0.06, 0.09, s * 0.08, 6, x + i * s * 0.045, 0.16 + s * 0.18, -s * 0.18));
+  // One meter in scene units for people and vehicles (a worker is about 0.54 units tall).
+  const U = 0.3;
+
+  // Substation: galvanized lattice gantries and girders, power transformers with radiators and conservators,
+  // dead-tank breakers, disconnect switches on insulator stacks, tubular aluminum bus, lightning masts,
+  // a control house, all inside a chain-link fence on a gravel pad.
+  function substationGroup(T, s, color, K0, withFence = true) {
+    const K = Object.assign({}, K0, { trim: K0.trimOf(color) }), g = new T.Group(), B = {}, P = 0.16;
+    const box = (k, w, h, d, x, y, z) => put(B, k, boxAt(T, w, h, d, x, P + y + h / 2, z));
+    const pad = mesh(T, boxUV(T, new T.BoxGeometry(s, 3, s * 0.8)), K.gravel, false); pad.position.y = 0.16 - 1.5; g.add(pad);
+    const hw = s * 0.52, hd = s * 0.42;
+    if (withFence) {
+      const posts = [], n = Math.round(hw * 2 / 0.9);
+      for (let i = 0; i <= n; i++) { const t = -hw + i * hw * 2 / n; posts.push(cylAt(T, 0.025, 0.025, 0.72, 5, t, 0.36, hd), cylAt(T, 0.025, 0.025, 0.72, 5, t, 0.36, -hd)); }
+      for (let i = 0; i <= Math.round(hd * 2 / 0.9); i++) { const t = -hd + i * hd * 2 / Math.round(hd * 2 / 0.9); posts.push(cylAt(T, 0.025, 0.025, 0.72, 5, hw, 0.36, t), cylAt(T, 0.025, 0.025, 0.72, 5, -hw, 0.36, t)); }
+      for (const y of [0.1, 0.4, 0.7]) posts.push(boxAt(T, hw * 2, 0.02, 0.02, 0, y, hd), boxAt(T, hw * 2, 0.02, 0.02, 0, y, -hd), boxAt(T, 0.02, 0.02, hd * 2, hw, y, 0), boxAt(T, 0.02, 0.02, hd * 2, -hw, y, 0));
+      put(B, "fence", ...posts);
+      // chain-link mesh as a see-through panel
+      const netMat = new T.MeshStandardMaterial({ color: 0x77828a, metalness: 0.6, roughness: 0.5, transparent: true, opacity: 0.28, side: T.DoubleSide, depthWrite: false });
+      const net = new T.Mesh(merge(T, [boxAt(T, hw * 2, 0.62, 0.005, 0, 0.4, hd), boxAt(T, hw * 2, 0.62, 0.005, 0, 0.4, -hd), boxAt(T, 0.005, 0.62, hd * 2, hw, 0.4, 0), boxAt(T, 0.005, 0.62, hd * 2, -hw, 0.4, 0)]), netMat);
+      g.add(net);
+      put(B, "yellow", boxAt(T, 0.9, 0.5, 0.03, s * 0.1, 0.4, hd + 0.02));
     }
-    for (const x of [-s * 0.2, s * 0.2]) {
-      const c = cylAt(T, s * 0.025, s * 0.025, s * 0.12, 10, 0, 0, 0); c.rotateZ(Math.PI / 2); c.translate(x, 0.16 + s * 0.2, -s * 0.24); tank.push(c);
-      tank.push(boxAt(T, 0.04, s * 0.05, 0.04, x - s * 0.04, 0.16 + s * 0.16, -s * 0.24), boxAt(T, 0.04, s * 0.05, 0.04, x + s * 0.04, 0.16 + s * 0.16, -s * 0.24));
+    // two power transformers with a firewall between them
+    const a = s * 0.14;
+    for (const x of [-s * 0.21, s * 0.21]) transformer(T, B, x, P, -s * 0.2, a);
+    box("concrete", s * 0.025, a * 1.25, a * 1.1, 0, 0, -s * 0.2);
+    // oil containment curbs
+    for (const x of [-s * 0.21, s * 0.21]) box("concrete", a * 1.6, 0.05, a * 1.25, x, -0.02, -s * 0.2);
+    // lattice gantries carrying the high side bus, two bays wide
+    const gh = s * 0.42, gz = s * 0.14, cw = s * 0.045, lat = [];
+    for (const x of [-s * 0.4, 0, s * 0.4]) latticeColumn(T, lat, x, gz, gh, cw, P);
+    latticeGirder(T, lat, -s * 0.4, s * 0.4, P + gh - cw, gz, cw);
+    for (const [x, z] of [[-s * 0.47, -s * 0.37], [s * 0.47, s * 0.37]]) latticeColumn(T, lat, x, z, s * 0.62, cw * 0.7, P);
+    put(B, "galv", ...lat);
+    // strain insulator strings hanging from the girder and the three phase conductors leaving the yard
+    for (const dz of [-0.26, 0, 0.26]) for (const x of [-s * 0.2, s * 0.2]) {
+      insulator(T, B, x, P + gh - cw - s * 0.09, gz + dz * s * 0.08, s * 0.09, s * 0.011, 8);
     }
-    g.add(mesh(T, merge(T, tank), pbr(T, 0x6d7f8e)));
-    const curb = [];
-    for (const x of [-s * 0.2, s * 0.2]) curb.push(boxAt(T, s * 0.22, 0.06, 0.05, x, 0.19, -s * 0.28), boxAt(T, s * 0.22, 0.06, 0.05, x, 0.19, -s * 0.08), boxAt(T, 0.05, 0.06, s * 0.2, x - s * 0.11, 0.19, -s * 0.18), boxAt(T, 0.05, 0.06, s * 0.2, x + s * 0.11, 0.19, -s * 0.18));
-    g.add(mesh(T, merge(T, curb), pbr(T, PAL.concrete)));
-    g.add(mesh(T, merge(T, bush), pbr(T, PAL.porcelain, { shininess: 40 })));
-    // lattice gantries and bus
-    const gan = [], V = (x, y, z) => new T.Vector3(x, y, z), gh = s * 0.42, gz = s * 0.14;
-    for (const x of [-s * 0.38, 0, s * 0.38]) for (const z of [gz - 0.2, gz + 0.2]) {
-      gan.push(beam(T, V(x - 0.12, 0, z), V(x - 0.06, gh, z), 0.05), beam(T, V(x + 0.12, 0, z), V(x + 0.06, gh, z), 0.05));
-      for (let k = 0; k < 4; k++) gan.push(beam(T, V(x - 0.11, k * gh / 4, z), V(x + 0.1, (k + 1) * gh / 4, z), 0.03));
+    // tubular aluminum bus on post insulators, dead-tank breakers and disconnect switches in each bay
+    for (const dz of [-1, 0, 1]) {
+      const z = gz + dz * s * 0.065, by = P + s * 0.2;
+      put(B, "alum", cylX(T, s * 0.008, s * 0.008, s * 0.8, 8, 0, by, z));
+      for (const x of [-s * 0.34, -s * 0.12, s * 0.12, s * 0.34]) {
+        box("galv", s * 0.02, s * 0.1, s * 0.02, x, 0, z);
+        insulator(T, B, x, P + s * 0.1, z, s * 0.09, s * 0.018, 6);
+      }
+      for (const x of [-s * 0.23, s * 0.23]) {
+        box("galv", s * 0.08, s * 0.05, s * 0.03, x, 0, z);
+        put(B, "trans", cylX(T, s * 0.022, s * 0.022, s * 0.08, 12, x, P + s * 0.075, z));
+        for (const dx of [-0.025, 0.025]) insulator(T, B, x + dx * s, P + s * 0.09, z, s * 0.07, s * 0.013, 6);
+        box("darkSteel", s * 0.03, s * 0.04, s * 0.025, x + s * 0.05, 0, z);
+      }
+      // switch blades between post pairs
+      for (const x of [-s * 0.34, s * 0.12]) put(B, "alum", boxAt(T, s * 0.22, s * 0.006, s * 0.006, x + s * 0.11, P + s * 0.195, z));
     }
-    for (const z of [gz - 0.2, gz + 0.2]) gan.push(beam(T, V(-s * 0.4, gh, z), V(s * 0.4, gh, z), 0.07));
-    g.add(mesh(T, merge(T, gan), steel));
-    const bus = [];
-    for (const dz of [-0.28, 0, 0.28]) bus.push(boxAt(T, s * 0.78, 0.05, 0.05, 0, gh * 0.78, gz + dz));
-    g.add(mesh(T, merge(T, bus), pbr(T, color, { emissive: color, emissiveIntensity: 0.25 })));
-    // disconnect switches on porcelain post insulators under the bus, and lightning masts at the corners
-    const post = [], blade = [], mast = [];
-    for (let i = 0; i < 5; i++) for (const dz of [-0.28, 0, 0.28]) {
-      const x = -s * 0.3 + i * s * 0.15;
-      post.push(cylAt(T, 0.035, 0.05, s * 0.12, 6, x, 0.16 + s * 0.06, gz + dz), cylAt(T, 0.035, 0.05, s * 0.12, 6, x + 0.3, 0.16 + s * 0.06, gz + dz));
-      blade.push(boxAt(T, 0.34, 0.025, 0.025, x + 0.15, 0.2 + s * 0.12, gz + dz));
+    // low side: breakers in a row with cable trench
+    for (let i = 0; i < 6; i++) {
+      const x = -s * 0.3 + i * s * 0.12, z = s * 0.34;
+      box("galv", s * 0.05, s * 0.04, s * 0.04, x, 0, z);
+      put(B, "trans", cylAt(T, s * 0.02, s * 0.02, s * 0.06, 12, x, P + s * 0.07, z));
+      insulator(T, B, x, P + s * 0.1, z, s * 0.05, s * 0.01, 5);
     }
-    for (const [x, z] of [[-s * 0.46, -s * 0.36], [s * 0.46, s * 0.36]]) mast.push(cylAt(T, 0.03, 0.09, s * 0.75, 6, x, s * 0.375, z));
-    g.add(mesh(T, merge(T, post), pbr(T, PAL.porcelain, { shininess: 40 })));
-    g.add(mesh(T, merge(T, blade), steel));
-    g.add(mesh(T, merge(T, mast), dark));
-    // breakers
-    const brk = [];
-    for (let i = 0; i < 6; i++) brk.push(cylAt(T, 0.09, 0.09, s * 0.12, 8, -s * 0.3 + i * s * 0.12, 0.16 + s * 0.06, s * 0.3));
-    for (let i = 0; i < 6; i++) brk.push(boxAt(T, 0.16, s * 0.05, 0.14, -s * 0.3 + i * s * 0.12, 0.16 + s * 0.025, s * 0.3 - 0.16));
-    g.add(mesh(T, merge(T, brk), dark));
-    const gate = mesh(T, new T.BoxGeometry(0.8, 0.5, 0.03), pbr(T, 0xd9a441)); gate.position.set(s * 0.1, 0.36, hd); g.add(gate);
-    // control house
-    const house = mesh(T, new T.BoxGeometry(s * 0.2, s * 0.12, s * 0.14), pbr(T, PAL.concrete)); house.position.set(-s * 0.36, 0.16 + s * 0.06, -s * 0.3); g.add(house);
-    const roof = mesh(T, new T.BoxGeometry(s * 0.22, 0.08, s * 0.16), pbr(T, color)); roof.position.set(-s * 0.36, 0.2 + s * 0.12, -s * 0.3); g.add(roof);
-    return g;
+    box("concrete", s * 0.8, 0.03, s * 0.04, 0, 0, s * 0.27);
+    // control house with a door, windows and an air conditioner
+    const hx = -s * 0.38, hz = -s * 0.32, w = s * 0.2, h = s * 0.1, d = s * 0.12;
+    box("siding", w, h, d, hx, 0, hz); box("trim", w * 1.06, s * 0.012, d * 1.1, hx, h, hz);
+    box("dark", s * 0.025, s * 0.06, 0.02, hx + w * 0.3, 0, hz + d / 2 + 0.005);
+    box("glass", w * 0.2, s * 0.025, 0.02, hx - w * 0.2, h * 0.5, hz + d / 2 + 0.005);
+    box("white", s * 0.03, s * 0.03, s * 0.03, hx - w / 2 - s * 0.02, 0, hz);
+    return flush(T, B, K, g);
   }
 
-  function plantGroup(T, s, color) {
-    const g = new T.Group(), steel = pbr(T, PAL.steel, STEEL), dark = pbr(T, PAL.steelDark, STEEL);
-    const pad = mesh(T, new T.BoxGeometry(s * 1.2, 0.16, s * 0.9), pbr(T, PAL.concrete), false); pad.position.y = 0.08; g.add(pad);
-    const hall = mesh(T, new T.BoxGeometry(s * 0.5, s * 0.22, s * 0.3), dark); hall.position.set(-s * 0.2, s * 0.11 + 0.16, s * 0.08); g.add(hall);
-    const stripe = mesh(T, new T.BoxGeometry(s * 0.51, s * 0.035, s * 0.31), pbr(T, color, { emissive: color, emissiveIntensity: 0.15 })); stripe.position.set(-s * 0.2, s * 0.19 + 0.16, s * 0.08); g.add(stripe);
-    const hr = [], stacks = [];
-    for (const x of [s * 0.12, s * 0.3]) {
-      hr.push(boxAt(T, s * 0.12, s * 0.28, s * 0.24, x, s * 0.14 + 0.16, s * 0.02));
-      hr.push(cylAt(T, s * 0.03, s * 0.036, s * 0.62, 10, x, s * 0.31 + 0.16, -s * 0.16));
-      stacks.push([x, s * 0.62 + 0.16, -s * 0.16]);
+  // Combined-cycle power plant (Plant McIntosh style): two gas turbine trains, each with an inlet filter house,
+  // turbine enclosure, heat recovery steam generator (HRSG) and a tall exhaust stack; a steam turbine hall;
+  // a row of mechanical-draft cooling tower cells; water and fuel tanks, a pipe rack and its own switchyard.
+  function plantGroup(T, s, color, K0) {
+    const K = Object.assign({}, K0, { trim: K0.trimOf(color) }), g = new T.Group(), B = {}, P = 0.16, stacks = [];
+    const box = (k, w, h, d, x, y, z) => put(B, k, boxAt(T, w * s, h * s, d * s, x * s, P + (y + h / 2) * s, z * s));
+    const cyl = (k, r1, r2, h, seg, x, y, z) => put(B, k, cylAt(T, r1 * s, r2 * s, h * s, seg, x * s, P + (y + h / 2) * s, z * s));
+    const pad = mesh(T, boxUV(T, new T.BoxGeometry(s * 1.3, 3, s * 1.0)), K.concrete, false); pad.position.y = 0.16 - 1.5; g.add(pad);
+    // plant roads
+    box("asphalt", 1.3, 0.002, 0.05, 0, 0, 0.08);
+    for (const zc of [-0.4, -0.14]) {
+      // inlet filter house on legs, with louvered hoods
+      box("sidingDark", 0.08, 0.12, 0.12, -0.53, 0.09, zc);
+      for (let k = 0; k < 4; k++) box("dark", 0.082, 0.006, 0.122, -0.53, 0.1 + k * 0.028, zc);
+      for (const dx of [-0.035, 0.035]) for (const dz of [-0.055, 0.055]) box("galv", 0.006, 0.09, 0.006, -0.53 + dx, 0, zc + dz);
+      box("siding", 0.05, 0.05, 0.05, -0.47, 0.06, zc);
+      // gas turbine enclosure and generator
+      box("siding", 0.16, 0.06, 0.07, -0.37, 0, zc);
+      for (let k = 0; k < 3; k++) box("dark", 0.02, 0.012, 0.02, -0.42 + k * 0.05, 0.06, zc);
+      box("trans", 0.07, 0.05, 0.06, -0.37, 0, zc + 0.075);
+      // transition duct widening into the HRSG
+      box("hrsg", 0.05, 0.13, 0.075, -0.265, 0.02, zc);
+      // HRSG: cased box with exposed columns, girts, a steam drum on top and a stair tower
+      box("hrsg", 0.27, 0.22, 0.09, -0.105, 0, zc);
+      for (let k = 0; k <= 6; k++) box("galv", 0.006, 0.225, 0.094, -0.24 + k * 0.045, 0, zc);
+      for (const y of [0.07, 0.145]) box("galv", 0.274, 0.004, 0.094, -0.105, y, zc);
+      box("galv", 0.28, 0.006, 0.1, -0.105, 0.22, zc);
+      put(B, "white", cylX(T, 0.013 * s, 0.013 * s, 0.12 * s, 12, -0.1 * s, P + 0.24 * s, zc * s));
+      const lat = [];
+      latticeColumn(T, lat, 0.045 * s, (zc - 0.07) * s, 0.23 * s, 0.035 * s, P);
+      put(B, "galv", ...lat);
+      // breeching duct and exhaust stack with a platform and a dark band at the top
+      box("hrsg", 0.05, 0.035, 0.05, 0.04, 0.17, zc);
+      cyl("stack", 0.024, 0.027, 0.52, 24, 0.085, 0, zc);
+      cyl("galv", 0.036, 0.036, 0.004, 24, 0.085, 0.44, zc);
+      cyl("dark", 0.0245, 0.0245, 0.02, 24, 0.085, 0.5, zc);
+      stacks.push([0.085 * s, P + 0.52 * s, zc * s, 0]);
+      // generator step-up transformer
+      transformer(T, B, -0.37 * s, P, (zc + 0.13) * s, 0.045 * s, Math.PI / 2);
     }
-    g.add(mesh(T, merge(T, hr), steel));
-    const bands = [];
-    for (const x of [s * 0.12, s * 0.3]) bands.push(cylAt(T, s * 0.039, s * 0.039, s * 0.05, 10, x, s * 0.54 + 0.16, -s * 0.16));
-    g.add(mesh(T, merge(T, bands), pbr(T, color)));
-    // hyperbolic cooling tower
-    const prof = [];
-    for (let i = 0; i <= 10; i++) { const t = i / 10; prof.push(new T.Vector2(s * (0.1 + 0.07 * Math.pow(2 * t - 1.2, 2)), t * s * 0.46)); }
-    const ct = mesh(T, new T.LatheGeometry(prof, 18), pbr(T, 0xd3d9dc, { side: T.DoubleSide })); ct.position.set(-s * 0.32, 0.16, -s * 0.24); g.add(ct);
-    stacks.push([-s * 0.32, s * 0.46 + 0.16, -s * 0.24, 1]);
-    // pipe rack along the front, like the reference art
-    const pipes = [];
-    for (const [y, r] of [[s * 0.08, s * 0.03], [s * 0.14, s * 0.022], [s * 0.19, s * 0.018]]) { const p = cylAt(T, r, r, s * 1.05, 8, 0, 0, 0); p.rotateZ(Math.PI / 2); p.translate(0, y + 0.16, s * 0.34); pipes.push(p); }
-    for (let i = 0; i < 6; i++) pipes.push(boxAt(T, 0.06, s * 0.22, 0.06, -s * 0.5 + i * s * 0.2, s * 0.11 + 0.16, s * 0.34));
-    g.add(mesh(T, merge(T, pipes), steel));
-    const tanks = [];
-    for (const x of [s * 0.44, s * 0.52]) tanks.push(cylAt(T, s * 0.05, s * 0.05, s * 0.12, 12, x, s * 0.06 + 0.16, s * 0.16));
-    g.add(mesh(T, merge(T, tanks), pbr(T, 0xdde2e4)));
+    // steam turbine hall with a band of windows, a roll-up door and the owner's colored trim
+    box("siding", 0.3, 0.16, 0.2, 0.32, 0, -0.25); box("roof", 0.31, 0.01, 0.21, 0.32, 0.16, -0.25);
+    box("glass", 0.302, 0.022, 0.202, 0.32, 0.11, -0.25); box("trim", 0.303, 0.01, 0.203, 0.32, 0.145, -0.25);
+    box("dark", 0.05, 0.07, 0.203, 0.24, 0, -0.25);
+    for (let k = 0; k < 3; k++) box("sidingDark", 0.03, 0.02, 0.03, 0.24 + k * 0.08, 0.17, -0.25);
+    // mechanical-draft cooling tower: a row of cells on a basin, each with a fan stack venting a plume
+    box("concrete", 0.4, 0.02, 0.12, 0.3, 0, 0.2);
+    box("ctower", 0.38, 0.08, 0.1, 0.3, 0.02, 0.2);
+    for (let k = 0; k < 3; k++) box("dark", 0.382, 0.008, 0.102, 0.3, 0.03 + k * 0.018, 0.2);
+    for (let k = 0; k < 6; k++) {
+      const x = 0.3 - 0.157 + k * 0.063;
+      cyl("ctower", 0.024, 0.021, 0.035, 18, x, 0.1, 0.2);
+      box("galv", 0.003, 0.082, 0.102, x + 0.031, 0.02, 0.2);
+      stacks.push([x * s, P + 0.135 * s, 0.2 * s, 1]);
+    }
+    // water and fuel tanks
+    cyl("white", 0.05, 0.05, 0.1, 28, 0.0, 0, 0.25); cyl("white", 0.04, 0.04, 0.09, 28, 0.02, 0, 0.4);
+    cyl("white", 0.065, 0.065, 0.07, 28, 0.56, 0, 0.4);
+    // pipe rack along the power block
+    for (let k = 0; k < 11; k++) box("galv", 0.005, 0.07, 0.035, -0.48 + k * 0.09, 0, -0.05);
+    [[0.07, 0.007, "pipe"], [0.07, 0.005, "gas"], [0.058, 0.006, "pipe"]].forEach(([y, r, key], i) => put(B, key, cylX(T, r * s, r * s, 0.95 * s, 10, -0.03 * s, P + y * s, (-0.05 - 0.01 + i * 0.01) * s)));
+    // admin building
+    box("concrete", 0.14, 0.05, 0.08, 0.38, 0, 0.36); box("glass", 0.142, 0.018, 0.082, 0.38, 0.02, 0.36); box("trim", 0.143, 0.006, 0.083, 0.38, 0.05, 0.36);
+    flush(T, B, K, g);
+    // the plant's own switchyard, fed from the step-up transformers
+    const sy = substationGroup(T, s * 0.42, color, K0);
+    sy.position.set(-s * 0.3, 0.01, s * 0.3); g.add(sy);
     g.userData.stacks = stacks;
     return g;
   }
 
-  function yardGroup(T, w, d) {
-    const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
-    const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
-    const reels = [];
-    for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
-    g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
-    const trucks = [], cabs = [], tires = [], glass = [];
-    for (let i = 0; i < 3; i++) {
-      const x = -w * 0.34 + i * 1.6, z = d * 0.26;
-      trucks.push(boxAt(T, 0.95, 0.12, 0.55, x - 0.2, 0.3, z), boxAt(T, 0.95, 0.18, 0.04, x - 0.2, 0.44, z - 0.26), boxAt(T, 0.95, 0.18, 0.04, x - 0.2, 0.44, z + 0.26));
-      cabs.push(boxAt(T, 0.42, 0.42, 0.55, x + 0.5, 0.47, z));
-      glass.push(boxAt(T, 0.02, 0.16, 0.45, x + 0.72, 0.58, z));
-      wheels(T, tires, x + 0.1, z, 1.25, 0.56);
+  // Shared laydown yard: gravel pad inside a fence, cable reels, stacked steel poles, an office trailer,
+  // and real-proportion equipment: pickups, a flatbed carrying a reel, a bucket truck, an all-terrain crane
+  // and an excavator.
+  function yardGroup(T, w, d, K) {
+    const g = new T.Group(), B = {};
+    const pad = mesh(T, boxUV(T, new T.BoxGeometry(w, 3, d)), K.gravel, false); pad.position.y = 0.12 - 1.5; g.add(pad);
+    const Y = 0.12;
+    // fence with an open gate on the front
+    const f = [], hw = w / 2, hd = d / 2;
+    for (let i = 0; i <= 20; i++) { const t = -hw + i * w / 20; f.push(cylAt(T, 0.02, 0.02, 0.6, 5, t, Y + 0.3, -hd)); if (Math.abs(t - hw * 0.5) > 0.7) f.push(cylAt(T, 0.02, 0.02, 0.6, 5, t, Y + 0.3, hd)); }
+    for (let i = 0; i <= 12; i++) { const t = -hd + i * d / 12; f.push(cylAt(T, 0.02, 0.02, 0.6, 5, hw, Y + 0.3, t), cylAt(T, 0.02, 0.02, 0.6, 5, -hw, Y + 0.3, t)); }
+    f.push(boxAt(T, w, 0.02, 0.02, 0, Y + 0.58, -hd), boxAt(T, 0.02, 0.02, d, hw, Y + 0.58, 0), boxAt(T, 0.02, 0.02, d, -hw, Y + 0.58, 0));
+    f.push(boxAt(T, hw * 1.5 - 0.7, 0.02, 0.02, -hw + (hw * 1.5 - 0.7) / 2, Y + 0.58, hd), boxAt(T, hw * 0.5 - 0.7, 0.02, 0.02, hw - (hw * 0.5 - 0.7) / 2, Y + 0.58, hd));
+    put(B, "fence", ...f);
+    // cable reels (2 m drums) in a row
+    for (let i = 0; i < 5; i++) {
+      const x = -hw + 1.0 + i * 0.85, z = -hd + 0.7;
+      put(B, "wood", cylZ(T, 0.33, 0.33, 0.04, 18, x, Y + 0.33, z - 0.18), cylZ(T, 0.33, 0.33, 0.04, 18, x, Y + 0.33, z + 0.18));
+      put(B, "dark", cylZ(T, 0.26, 0.26, 0.32, 16, x, Y + 0.33, z));
     }
-    // bucket truck with a raised boom
-    const bx = -w * 0.3, bz = -d * 0.02;
-    trucks.push(boxAt(T, 1.2, 0.2, 0.55, bx, 0.33, bz), boxAt(T, 0.25, 0.2, 0.25, bx - 0.3, 0.52, bz));
-    cabs.push(boxAt(T, 0.42, 0.42, 0.55, bx + 0.78, 0.47, bz)); glass.push(boxAt(T, 0.02, 0.16, 0.45, bx + 1.0, 0.58, bz));
-    wheels(T, tires, bx + 0.2, bz, 1.5, 0.56);
-    const boom = [beam(T, V(bx - 0.3, 0.6, bz), V(bx + 0.4, 1.9, bz), 0.1), beam(T, V(bx + 0.4, 1.9, bz), V(bx + 1.1, 2.3, bz), 0.08), boxAt(T, 0.3, 0.3, 0.3, bx + 1.2, 2.3, bz)];
-    g.add(mesh(T, merge(T, trucks), pbr(T, 0x39434b)));
-    g.add(mesh(T, merge(T, cabs), pbr(T, 0xe6e0d0)));
-    g.add(mesh(T, merge(T, tires), pbr(T, 0x1d2226)));
-    g.add(mesh(T, merge(T, glass), pbr(T, 0x7fa9c4, { shininess: 90 })));
-    g.add(mesh(T, merge(T, boom), pbr(T, 0xe6e0d0)));
-    // site office trailer, portable toilets, cones
-    const off = mesh(T, new T.BoxGeometry(1.8, 0.6, 0.7), pbr(T, 0xf0ede4)); off.position.set(-w * 0.32, 0.42, -d * 0.4 + 0.1); g.add(off);
-    const offWin = mesh(T, merge(T, [boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 - 0.5, 0.5, -d * 0.4 + 0.46), boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 + 0.4, 0.5, -d * 0.4 + 0.46)]), pbr(T, 0x7fa9c4)); g.add(offWin);
-    g.add(mesh(T, merge(T, [boxAt(T, 0.25, 0.5, 0.25, w * 0.44, 0.37, -d * 0.4), boxAt(T, 0.25, 0.5, 0.25, w * 0.44 - 0.32, 0.37, -d * 0.4)]), pbr(T, 0x3d7fb8)));
-    const cones = [];
-    for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
-    g.add(mesh(T, merge(T, cones), pbr(T, 0xf07a22)));
-    const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
-    const steel = [];
-    for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
-    g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
-    // crawler crane with a lattice boom
-    const cr = [], cx = w * 0.34, cz = d * 0.1;
-    cr.push(boxAt(T, 1.1, 0.3, 0.9, cx, 0.3, cz), boxAt(T, 0.8, 0.55, 0.7, cx, 0.72, cz));
-    const b0 = V(cx - 0.2, 1.0, cz), b1 = V(cx - 2.6, 4.2, cz);
-    for (const dz of [-0.14, 0.14]) for (const dy of [-0.1, 0.1]) cr.push(beam(T, b0.clone().add(V(0, dy, dz)), b1.clone().add(V(0, dy, dz)), 0.05));
-    for (let i = 0; i < 8; i++) { const a = b0.clone().lerp(b1, i / 8), c = b0.clone().lerp(b1, (i + 1) / 8); cr.push(beam(T, a.clone().add(V(0, 0, -0.14)), c.clone().add(V(0, 0, 0.14)), 0.03)); }
-    cr.push(beam(T, b1, V(b1.x, 2.0, cz), 0.02));
-    g.add(mesh(T, merge(T, cr), pbr(T, PAL.crane)));
+    // steel poles stacked on dunnage
+    for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) put(B, "galv", cylX(T, 0.08, 0.11, 3.2, 12, hw - 2.0, Y + 0.14 + k * 0.17, -hd + 0.6 + (i + k * 0.5) * 0.19));
+    for (const dx of [-1.2, 0, 1.2]) put(B, "wood", boxAt(T, 0.08, 0.06, 0.9, hw - 2.0 + dx, Y + 0.03, -hd + 0.85));
+    // office trailer with steps, windows and an AC unit
+    put(B, "white", boxAt(T, 2.4, 0.72, 0.9, -hw + 1.6, Y + 0.5, hd - 0.75));
+    put(B, "glass", boxAt(T, 0.4, 0.18, 0.02, -hw + 1.2, Y + 0.6, hd - 0.29), boxAt(T, 0.4, 0.18, 0.02, -hw + 2.0, Y + 0.6, hd - 0.29));
+    put(B, "dark", boxAt(T, 0.26, 0.45, 0.02, -hw + 1.6, Y + 0.45, hd - 0.29), boxAt(T, 0.3, 0.1, 0.25, -hw + 1.6, Y + 0.12, hd - 0.15));
+    put(B, "white", boxAt(T, 0.24, 0.2, 0.2, -hw + 0.55, Y + 0.95, hd - 0.75));
+    // portable toilets
+    put(B, "orange", boxAt(T, 0.3, 0.7, 0.3, hw - 0.4, Y + 0.35, hd - 0.4), boxAt(T, 0.3, 0.7, 0.3, hw - 0.75, Y + 0.35, hd - 0.4));
+    // cones along the gate
+    for (let i = 0; i < 6; i++) put(B, "orange", cylAt(T, 0.015, 0.07, 0.22, 10, hw * 0.5 - 0.6 + i * 0.24, Y + 0.11, hd + 0.3));
+    // equipment, in meters times U
+    vehicle(T, B, "pickup", -hw + 0.8, Y, 0.2, Math.PI / 2, U);
+    vehicle(T, B, "pickup", -hw + 1.6, Y, 0.2, Math.PI / 2, U);
+    vehicle(T, B, "pickup", -hw + 2.4, Y, 0.25, Math.PI / 2 + 0.05, U);
+    vehicle(T, B, "flatbed", -0.3, Y, 0.55, 0, U);
+    vehicle(T, B, "bucket", 0.1, Y, -0.55, Math.PI, U);
+    vehicle(T, B, "crane", hw - 2.0, Y, 1.3, Math.PI, U);
+    vehicle(T, B, "excavator", hw - 1.2, Y, -0.95, Math.PI, U);
+    flush(T, B, K, g);
+    const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-1.9, Y, -1.35); g.add(crew);
     return g;
   }
 
@@ -246,7 +488,6 @@
       mesh(T, merge(T, head), pbr(T, 0xc99a74)), mesh(T, merge(T, hat), pbr(T, 0xffffff, { shininess: 50 })));
     return g;
   }
-  const wheels = (T, list, x, z, len, wid) => { for (const dx of [-len / 2 + 0.15, len / 2 - 0.15]) for (const dz of [-wid / 2, wid / 2]) { const w = cylAt(T, 0.13, 0.13, 0.08, 10, 0, 0, 0); w.rotateX(Math.PI / 2); w.translate(x + dx, 0.13, z + dz); list.push(w); } };
 
   // Tiling normal map for ripples on ponds: a few summed sine waves, converted to normals.
   function waterNormals(T) {
@@ -263,7 +504,7 @@
   }
   // Colors in this file are written as sRGB hex. The renderer works in linear light, so convert every
   // material, light, vertex and instance color once after the scene is built.
-  function linearize(T, scene) {
+  function linearize(T, scene, envI) {
     const seen = new Set(), c = new T.Color();
     const conv = arr => { for (let i = 0; i < arr.length; i += 3) { c.fromArray(arr, i).convertSRGBToLinear().toArray(arr, i); } };
     scene.traverse(o => {
@@ -274,7 +515,7 @@
       [].concat(o.material || []).forEach(m => {
         if (seen.has(m) || m.isShaderMaterial) return; seen.add(m);
         if (m.color) m.color.convertSRGBToLinear();
-        if (m.isMeshStandardMaterial && m.envMapIntensity === 1) m.envMapIntensity = 0.35; // sky light fills shadows without washing out color
+        if (m.isMeshStandardMaterial && m.envMapIntensity === 1) m.envMapIntensity = envI; // sky light fills shadows without washing out color
         if (m.emissive) m.emissive.convertSRGBToLinear();
       });
     });
@@ -333,7 +574,7 @@
         return (m[o] * (1 - fx) + m[o + 1] * fx) * (1 - fy) + (m[o + W] * (1 - fx) + m[o + W + 1] * fx) * fy;
       };
       return { at, source: "AWS Terrain Tiles (SRTM, USGS)" };
-    }).catch(() => null);
+    }).catch(() => { demCache.delete(key); return null; }); // try again next time instead of caching the failure
     demCache.set(key, p);
     return p;
   }
@@ -342,6 +583,7 @@
     const T = root.THREE, rnd = rng(7);
     const F = frame(pair), { c0, KX, KY, S, R, RG, H } = F, LOW = -14;
     const TS = Math.max(1, Math.min(2.2, pair.km / 8));        // exaggerate structures when the pair is far apart
+    const K = kit(T, Q.real, Q.aniso), REAL = Q.real;
 
     // Ground height. With real elevation: meters above the block's low ground, stretched so the relief reads (the
     // Savannah River lowlands are flat), and the factor is shown in the footer. Without it: a gentle made-up roll.
@@ -363,10 +605,12 @@
     }
     // distance from the center to the block's square edge, in direction a
     const edge = a => H / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)));
+    // highest ground within r of a point, so a pad sits on top of any slope under it
+    const topOf = (x, z, r) => { let m = -Infinity; for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) m = Math.max(m, heightAt(x + i * r / 3, z + j * r / 3)); return m; };
     const toV = ([lat, lon]) => { const x = (lon - c0[1]) * KX * S, z = -(lat - c0[0]) * KY * S; return new T.Vector3(x, heightAt(x, z), z); };
 
     const scene = new T.Scene();
-    scene.fog = new T.FogExp2(PAL.fog, 0.0036);
+    scene.fog = new T.FogExp2(PAL.fog, REAL ? 0.0028 : 0.0036);
     const sunDir = new T.Vector3(0.55, 0.52, 0.35).normalize();
 
     // physical (Preetham) sky; a copy of it also becomes the environment light
@@ -464,12 +708,14 @@
           const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
-        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3);
+        // no tower on the plateau's edge, and none inside a substation or plant placed before this line
+        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3 && obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 0.8 * TS));
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
-        const steelI = new T.InstancedMesh(parts.steel, pbr(T, PAL.steel, Object.assign({ shininess: 30 }, STEEL)), pts.length);
-        const accI = new T.InstancedMesh(parts.accent, pbr(T, colorHex, { emissive: colorHex, emissiveIntensity: 0.2 }), pts.length);
+        const steelMat = REAL ? pbr(T, 0xa9b1b6, { metal: 0.75, rough: 0.5 }) : pbr(T, PAL.steel, Object.assign({ shininess: 30 }, STEEL));
+        const steelI = new T.InstancedMesh(parts.steel, steelMat, pts.length);
+        const accI = new T.InstancedMesh(parts.accent, REAL ? steelMat : pbr(T, colorHex, { emissive: colorHex, emissiveIntensity: 0.2 }), pts.length);
         const insI = new T.InstancedMesh(parts.ins, pbr(T, PAL.porcelain, { shininess: 40 }), pts.length);
         // bundled conductors: 1 wire per phase at 115 kV, 2 at 230 kV, 4 at 500 kV
         const offs = p.kv >= 500 ? [[-0.13, 0.11], [0.13, 0.11], [-0.13, -0.11], [0.13, -0.11]] : p.kv >= 230 ? [[-0.13, 0], [0.13, 0]] : [[0, 0]];
@@ -495,7 +741,7 @@
           }
         });
         const lineGeo = arr => { const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(arr, 3)); return g; };
-        scene.add(new T.LineSegments(lineGeo(cond), new T.LineBasicMaterial({ color: colorHex })));
+        scene.add(new T.LineSegments(lineGeo(cond), new T.LineBasicMaterial({ color: REAL ? 0x8f989e : colorHex }))); // real conductors are bare aluminum
         scene.add(new T.LineSegments(lineGeo(shield), new T.LineBasicMaterial({ color: 0x55636f })));
         // orange aviation marker balls on the shield wire
         const ballI = new T.InstancedMesh(new T.SphereGeometry(0.16 * TS, 8, 6), pbr(T, 0xf07a22, { emissive: 0x7a3000, emissiveIntensity: 0.3 }), Math.max(1, balls.length));
@@ -503,14 +749,17 @@
         return { anchor: pts[Math.floor(pts.length / 2)], top: kvH };
       }
       const v = toV(p.coords[0]);
-      const gen = p.type === "generation", s = (gen ? 8 : p.kv >= 500 ? 7 : 5.5) * TS;
-      const node = gen ? plantGroup(T, s, colorHex) : substationGroup(T, s, colorHex);
-      node.position.copy(v); node.rotation.y = 0.35; scene.add(node);
+      const gen = p.type === "generation", s = (gen ? 10 : p.kv >= 500 ? 7 : 5.5) * TS;
+      const node = gen ? plantGroup(T, s, colorHex, K) : substationGroup(T, s, colorHex, K);
+      node.position.copy(v); node.position.y = topOf(v.x, v.z, s * 0.62); node.rotation.y = 0.35; node.userData.kind = gen ? "plant" : "sub"; scene.add(node);
       obstacles.push([v.x, v.z, s * 0.8]);
-      if (node.userData.stacks) node.userData.stacks.forEach(st => { const w = new T.Vector3(st[0], st[1], st[2]).applyAxisAngle(sv.set(0, 1, 0), 0.35).add(v); steam.push({ at: w, big: !!st[3], s }); });
+      if (node.userData.stacks) node.userData.stacks.forEach(st => { const w = new T.Vector3(st[0], st[1], st[2]).applyAxisAngle(sv.set(0, 1, 0), 0.35).add(node.position); steam.push({ at: w, big: !!st[3], s }); });
       return { anchor: v, top: gen ? s * 0.65 : s * 0.45 };
     };
-    const A = place(pair.p, opts.colorA), B = place(pair.q, opts.colorB);
+    // substations and plants first, so the other project's towers can keep off their pads
+    const isL = p => (p.parts || [p.coords]).some(c => c.length > 1);
+    let A, B;
+    if (isL(pair.p) && !isL(pair.q)) { B = place(pair.q, opts.colorB); A = place(pair.p, opts.colorA); } else { A = place(pair.p, opts.colorA); B = place(pair.q, opts.colorB); }
 
     // ---------- the closest-point link and what the tier lets them share ----------
     const va = toV(pair.ca), vb = toV(pair.cb), tierHex = new T.Color(opts.tierColor).getHex();
@@ -543,10 +792,32 @@
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
-      const yd = yardGroup(T, 7, 4.6), o = perp.clone().multiplyScalar(6);
-      yd.scale.setScalar(TS); yd.position.set(mid.x + o.x, heightAt(mid.x + o.x, mid.z + o.z), mid.z + o.z); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
-      obstacles.push([yd.position.x, yd.position.z, 5 * TS]);
+      // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
+      const yd = yardGroup(T, 9, 6, K), yr = 5.6 * TS;
+      let spot = null;
+      for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
+        const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
+        const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
+        if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
+      }
+      if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
+      yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 5 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
+    }
+    // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
+    // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    let walkStart = null;
+    if (opts.walkAt) {
+      const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
+      if (away.lengthSq() < 1e-6) away.copy(perp);
+      away.normalize();
+      const clearOf = v => obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 3 * TS);
+      walkStart = at.clone().add(away.clone().multiplyScalar(4 * TS));
+      for (let k = 0; k < 30 && !clearOf(walkStart); k++) walkStart.add(away.clone().multiplyScalar(1.5));
+      const look = f0.clone().sub(walkStart); look.y = 0;
+      const steps = Math.min(8, Math.ceil(look.length() / 4));
+      for (let k = 0; k <= steps; k++) { const v = walkStart.clone().lerp(f0, k / Math.max(1, steps) * 0.6); obstacles.push([v.x, v.z, k ? 2.5 : 4]); }
     }
     const clear = (x, z, pad) => (!dem || heightAt(x, z) > 0.12) && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
@@ -566,9 +837,14 @@
     }
 
     // instanced pines
-    const fol = merge(T, [cylAt(T, 0, 0.55, 1.2, 9, 0, 1.0, 0), cylAt(T, 0, 0.42, 1.0, 9, 0, 1.6, 0), cylAt(T, 0, 0.28, 0.7, 9, 0, 2.1, 0)]);
-    const trk = merge(T, [cylAt(T, 0.07, 0.1, 0.6, 5, 0, 0.3, 0)]);
-    const NP = 300, pinesF = new T.InstancedMesh(fol, pbr(T, 0xffffff), NP), pinesT = new T.InstancedMesh(trk, pbr(T, PAL.trunk), NP);
+    // Ultra-realistic draws loblolly pines as they grow in Georgia and South Carolina: a tall bare trunk with a
+    // rounded crown of needle clumps at the top. Detailed keeps the stacked-cone pine.
+    const blob = (r, x, y, z) => { const g = new T.IcosahedronGeometry(r, 1); g.translate(x, y, z); return g; };
+    const fol = REAL ? merge(T, [blob(0.5, 0, 2.55, 0), blob(0.42, 0.38, 2.35, 0.1), blob(0.4, -0.34, 2.4, -0.15), blob(0.36, 0.05, 2.9, 0.25), blob(0.34, -0.1, 2.2, 0.38), blob(0.3, 0.2, 2.95, -0.3)])
+      : merge(T, [cylAt(T, 0, 0.55, 1.2, 9, 0, 1.0, 0), cylAt(T, 0, 0.42, 1.0, 9, 0, 1.6, 0), cylAt(T, 0, 0.28, 0.7, 9, 0, 2.1, 0)]);
+    const trk = REAL ? merge(T, [cylAt(T, 0.05, 0.1, 2.6, 7, 0, 1.3, 0), beam(T, new T.Vector3(0, 1.9, 0), new T.Vector3(0.4, 2.3, 0.1), 0.035), beam(T, new T.Vector3(0, 2.1, 0), new T.Vector3(-0.35, 2.4, -0.15), 0.03)])
+      : merge(T, [cylAt(T, 0.07, 0.1, 0.6, 5, 0, 0.3, 0)]);
+    const NP = REAL ? 420 : 300, pinesF = new T.InstancedMesh(fol, pbr(T, 0xffffff), NP), pinesT = new T.InstancedMesh(trk, pbr(T, PAL.trunk), NP);
     let np = 0;
     for (let i = 0; i < NP * 3 && np < NP; i++) {
       // clump trees: pick a grove center then scatter around it
@@ -578,7 +854,7 @@
       const k = 0.7 + rnd() * 0.9;
       mtx.compose(pv.set(x, heightAt(x, z) - 0.05, z), q.setFromAxisAngle(sv.set(0, 1, 0), rnd() * 6), sv.clone().set(k, k * (0.9 + rnd() * 0.4), k));
       pinesF.setMatrixAt(np, mtx); pinesT.setMatrixAt(np, mtx);
-      pinesF.setColorAt(np, tmp.setHex(PAL.pine).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08)); np++;
+      pinesF.setColorAt(np, tmp.setHex(REAL ? 0x33502f : PAL.pine).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08)); np++;
     }
     pinesF.count = pinesT.count = np; pinesF.castShadow = pinesT.castShadow = true;
     scene.add(pinesF, pinesT);
@@ -600,14 +876,24 @@
     const canopy = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.75, 1); g.translate(0, 1.5, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.55, 1); g.translate(0.35, 1.95, 0.1); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.5, 1); g.translate(-0.3, 1.85, -0.2); return g; })()]);
     scatter(canopy, pbr(T, 0xffffff), 110, 1.8, 0.8, 1.4, 0x5b8a47, 0.06, 0.12, [merge(T, [cylAt(T, 0.06, 0.1, 1.3, 5, 0, 0.65, 0)]), pbr(T, PAL.trunk)]);
     const bush = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.35, 1); g.translate(0, 0.25, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.25, 1); g.translate(0.3, 0.18, 0.1); return g; })()]);
-    scatter(bush, pbr(T, 0xffffff), 260, 0.6, 0.7, 1.5, 0x4f7a45, 0.05, 0.14);
+    scatter(bush, pbr(T, 0xffffff), REAL ? 420 : 260, 0.6, 0.7, 1.5, 0x4f7a45, 0.05, 0.14);
     const rock = new T.DodecahedronGeometry(0.35, 0); rock.translate(0, 0.12, 0);
     scatter(rock, pbr(T, 0xffffff), 90, 0.5, 0.5, 1.8, 0x7d8790, 0.02, 0.12);
     const tuft = merge(T, [cylAt(T, 0, 0.05, 0.3, 3, 0, 0.15, 0), cylAt(T, 0, 0.04, 0.24, 3, 0.07, 0.12, 0.03), cylAt(T, 0, 0.04, 0.22, 3, -0.06, 0.11, -0.04)]);
-    const tufts = scatter(tuft, pbr(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
+    const tufts = scatter(tuft, pbr(T, 0xffffff), REAL ? 2400 : 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
 
     // work crews at the closest points
-    [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
+    [va, vb].forEach((v, i) => {
+      const cr = crewGroup(T, 4, 21 + i, 1.4), sg = i ? -1 : 1;
+      let off = 1.4;
+      while (off < 14 && !obstacles.every(([ox, oz, r]) => Math.hypot(v.x + perp.x * off * sg - ox, v.z + perp.z * off * sg - oz) > r)) off += 1;
+      const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
+      cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
+      // their pickup, parked beside them facing along the line
+      const px = x + perp.x * sg * 1.6 * TS, pz = z + perp.z * sg * 1.6 * TS, VB = {};
+      vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS));
+      const tr = flush(T, VB, K, new T.Group()); tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
+    });
 
     // steam sprites over stacks and cooling towers
     const puffs = [];
@@ -617,13 +903,15 @@
     const focus = va.clone().lerp(vb, 0.5);
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
-    linearize(T, scene);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
+    linearize(T, scene, REAL ? 0.55 : 0.35);
+    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
 
   // ---------- modal and render loop ----------
+  let openSeq = 0;
   function open(pair, opts) {
     last = { pair, opts };
+    const token = ++openSeq; // a later open (another pair, or a quality change) wins over this one if it loads first
     const modal = document.getElementById("m3d");
     modal.hidden = false;
     document.getElementById("m3dTitle").textContent = opts.title;
@@ -631,8 +919,8 @@
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
     msg.textContent = "Loading 3D…"; msg.hidden = false;
     document.getElementById("m3dClose").focus();
-    Promise.all([ensureThree(QUALITY[opts.quality] || QUALITY.high), loadDEM(pair)]).then(([q, dem]) => {
-      if (modal.hidden) return;
+    Promise.all([ensureThree(QUALITY[qualityKey(opts.quality)]), loadDEM(pair)]).then(([q, dem]) => {
+      if (modal.hidden || token !== openSeq) return;
       close(true);
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q, dem);
@@ -649,7 +937,7 @@
       const v = new T.Vector3();
       // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
       // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
-      let stageW = 1, stageH = 1;
+      let stageW = 1, stageH = 1, headB = 0;
       const placeTags = () => {
         const shown = [];
         tags.forEach(t => {
@@ -670,6 +958,15 @@
             }
           }
         });
+        // nothing may sit under the title bar: labels pushed up into it drop back below, stacking downward
+        const clash = (t, o) => Math.abs(t.X - o.X) < (t.w + o.w) / 2 + 4 && t.Y > o.Y - o.h - 3 && t.Y - t.h < o.Y + 3;
+        if (shown.some(t => t.Y - t.h < headB)) {
+          shown.sort((a, b) => a.Y - b.Y);
+          shown.forEach((t, i) => {
+            if (t.Y - t.h < headB) t.Y = headB + t.h;
+            for (let moved = true; moved;) { moved = false; for (const o of shown.slice(0, i)) if (clash(t, o)) { t.Y = o.Y + t.h + 3; moved = true; } }
+          });
+        }
         tags.forEach(t => {
           const tf = t.hide ? t.tf : `translate(${t.X.toFixed(1)}px, ${t.Y.toFixed(1)}px) translate(-50%, -100%)`;
           if (t.hide !== t.off) { t.off = t.hide; t.el.style.display = t.hide ? "none" : ""; }
@@ -683,7 +980,7 @@
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced ? 0 : 2.6;
+      const INTRO = reduced || opts.walkAt ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
       if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
       cam.lookAt(f);
@@ -693,6 +990,59 @@
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+      // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
+      // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
+      // terrain and inside the plateau.
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
+      const setWalk = on => {
+        const was = walk.on;
+        walk.on = on; walk.keys.clear(); controls.enabled = !on && !(INTRO && !was); controls.autoRotate = false;
+        if (on) {
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
+          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+        } else if (was) { // leaving walk: orbit around the spot ahead; opening straight into orbit keeps the overview target
+          const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
+          controls.target.copy(ahead); cam.position.y += 8;
+        }
+        if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
+        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
+          : orbitNote;
+      };
+      const typing = e => /input|select|textarea/i.test(e.target.tagName);
+      const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
+      const onKeyDown = e => { if (!walk.on || typing(e)) return; if (MOVE[e.code] || e.code === "ShiftLeft" || e.code === "ShiftRight") { walk.keys.add(e.code); e.preventDefault(); } };
+      const onKeyUp = e => walk.keys.delete(e.code);
+      const onBlur = () => walk.keys.clear(); // a key released while the window is in the background never sends keyup
+      const cv = renderer.domElement;
+      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      const onMove = e => {
+        if (!walk.on || !walk.drag) return;
+        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        walk.drag = [e.clientX, e.clientY];
+      };
+      const onUp = () => { walk.drag = null; };
+      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp); addEventListener("blur", onBlur);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
+      walkCtl = { on: () => walk.on, off: () => setWalk(false) };
+      const stepWalk = dt => {
+        let fw = 0, sd = 0;
+        walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
+        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
+        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const r = Math.hypot(nx, nz), lim = built.R * 1.25;
+        if (r > lim) { nx *= lim / r; nz *= lim / r; }
+        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
+      };
+      if (built.walkStart) {
+        const w0 = built.walkStart;
+        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        setWalk(true);
+      } else setWalk(false);
 
       // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
       const pmrem = new T.PMREMGenerator(renderer);
@@ -716,8 +1066,8 @@
         ssao.overrideVisibility = function () { hide(); skip.forEach(o => { o.visible = false; }); };
         composer.addPass(ssao);
       } else composer.addPass(new T.RenderPass(built.scene, cam));
-      composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
-      const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
+      composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95));
+      const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = Q.real ? 0.78 : 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
       // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.
       const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
@@ -726,6 +1076,8 @@
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
         stageW = w; stageH = h;
+        const head = document.querySelector("#m3d .m3d-head"), sub = document.getElementById("m3dSub");
+        headB = head ? Math.max(0, (sub || head).getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 8) : 0;
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
@@ -736,8 +1088,9 @@
       size();
       const clock = new T.Clock();
       let raf;
+      let lastT = 0;
       const loop = () => {
-        const t = clock.getElapsedTime();
+        const t = clock.getElapsedTime(), dt = Math.min(0.05, t - lastT); lastT = t;
         if (INTRO && !controls.enabled) {
           const k = Math.min(1, t / INTRO), e = 1 - Math.pow(1 - k, 3);
           orbitAt(endR * (2.3 - 1.3 * e), endAz + 1.1 * (1 - e), endEl + (Math.min(1.25, endEl + 0.5) - endEl) * (1 - e)); cam.lookAt(f);
@@ -756,7 +1109,7 @@
         });
         built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 260) c.position.x = -260; });
         built.waterTex.offset.set(t * 0.012, t * 0.007);
-        controls.update();
+        if (walk.on) stepWalk(dt); else controls.update();
         composer.render();
         placeTags(); raf = requestAnimationFrame(loop);
       };
@@ -767,20 +1120,24 @@
       ctx = {
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
+          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp); removeEventListener("blur", onBlur);
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
-          [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
+          [built.tex, built.groundTex, built.waterTex, built.scene.environment, ...built.K.texs].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
           if (ssao) ssao.dispose(); if (smaa) { smaa.edgesRT.dispose(); smaa.weightsRT.dispose(); smaa.areaTexture.dispose(); smaa.searchTexture.dispose(); }
-          renderer.dispose();
+          renderer.dispose(); renderer.forceContextLoss(); // browsers cap live WebGL contexts; free this one now
         },
       };
     }).catch(err => { msg.hidden = false; msg.textContent = root.THREE ? "The 3D view couldn't be drawn: " + err.message : "The 3D view needs an internet connection to load three.js. " + err.message; });
   }
   function close(keepOpen) {
     if (ctx) { ctx.stop(); ctx = null; }
+    walkCtl = null;
     if (!keepOpen) { document.getElementById("m3d").hidden = true; document.getElementById("m3dStage").innerHTML = ""; }
   }
   // Re-open the current pair at a new quality setting.
   const reopen = quality => { if (last && !document.getElementById("m3d").hidden) open(last.pair, Object.assign({}, last.opts, { quality })); };
-  root.Scene3D = { open, close, reopen, QUALITY };
+  // Escape in the page first stops walking, then closes the view.
+  const isWalking = () => !!(walkCtl && walkCtl.on()), stopWalking = () => walkCtl && walkCtl.off();
+  root.Scene3D = { open, close, reopen, QUALITY, qualityKey, isWalking, stopWalking };
 })(this);
