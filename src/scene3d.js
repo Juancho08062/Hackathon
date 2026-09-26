@@ -2,8 +2,6 @@
 // the closest-point link, and the shared zone the tier allows (corridor, laydown yard or staging yard).
 // three.js loads on first use. Horizontal positions are to scale; heights are exaggerated so towers read.
 (function (root) {
-  const THREE_URL = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
-  const ORBIT_URL = "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js";
   const PAL = {
     skyTop: 0x3f6488, horizon: 0xcfdbe3, fog: 0xbccbd5, sun: 0xfff1d6,
     grass: 0x5f8058, grassDark: 0x3f5c47, grassDry: 0x93a06c, rock: 0x4a5560, lowland: 0x62806f,
@@ -11,9 +9,8 @@
     fence: 0x46525c, snow: 0xf2f6f8, mountain: 0x6c8196, water: 0x3f7d8f, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let loading = null, ctx = null;
-  const load = src => new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Couldn't load " + src)); document.head.appendChild(s); });
-  const ensureThree = () => loading || (loading = (root.THREE ? Promise.resolve() : load(THREE_URL)).then(() => root.THREE.OrbitControls ? null : load(ORBIT_URL)));
+  let ctx = null;
+  const ensureThree = () => root.Libs.need("THREE", "OrbitControls");
 
   // ---------- helpers ----------
   const phong = (T, color, extra) => new T.MeshPhongMaterial(Object.assign({ color, flatShading: true, shininess: 8 }, extra));

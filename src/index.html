@@ -43,14 +43,14 @@
     <div class="import-grid">
       <div>
         <h2>Add a utility's plans</h2>
-        <p class="note">Drop a CSV, TSV, JSON or GeoJSON file. Column names are matched loosely (for example <code>owner</code>, <code>voltage</code>, <code>isd</code> or <code>latitude</code> all work). Lines need two points or a GeoJSON LineString; substations need one point. Year-only dates like <code>2029</code> are fine.</p>
+        <p class="note">Drop the plan the way the utility published it: an <b>Excel</b> project list, a <b>CSV</b>, or GIS files (<b>KML/KMZ</b>, <b>shapefile</b> as a .zip or the .shp, .dbf and .prj together, <b>GeoJSON</b>). Column names are matched loosely, so <code>owner</code>, <code>voltage</code>, <code>isd</code> and <code>latitude</code> all work, and title rows above a spreadsheet's header are skipped. Tables need coordinates for each project; GIS files carry their own. Year-only dates like <code>2029</code> are fine.</p>
         <div class="fields">
           <div><label for="impUtil">Utility name <span class="note">(used when the file has no utility column)</span></label><input id="impUtil" type="text" placeholder="e.g. Santee Cooper" autocomplete="off"></div>
           <div><label for="impSrc">Source link <span class="note">(optional)</span></label><input id="impSrc" type="url" placeholder="https://… plan PDF or data page" autocomplete="off"></div>
         </div>
         <label class="drop" id="drop" for="file">
-          <input id="file" type="file" accept=".csv,.tsv,.txt,.json,.geojson" multiple>
-          <b>Drop files here</b> or click to choose
+          <input id="file" type="file" multiple>
+          <b>Drop files here</b> or click to choose<span class="fmts">XLSX · XLS · CSV · TSV · KML · KMZ · SHP · ZIP · GeoJSON · JSON · GPX</span>
         </label>
         <div id="impReport" class="report" aria-live="polite"></div>
       </div>
@@ -114,7 +114,8 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="vendor/d3.min.js"></script>
+<script>window.d3 || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"><\/script>')</script>
 <script>
 window.SEAMLINE_DATA = { basemap: /*BASEMAP*/null, projects: /*PROJECTS*/[] };
 </script>
@@ -123,6 +124,12 @@ window.SEAMLINE_DATA = { basemap: /*BASEMAP*/null, projects: /*PROJECTS*/[] };
 </script>
 <script>
 /*INGEST*/
+</script>
+<script>
+/*LIBS*/
+</script>
+<script>
+/*FORMATS*/
 </script>
 <script>
 /*SCENE3D*/

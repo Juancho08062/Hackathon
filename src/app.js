@@ -310,11 +310,17 @@ function renderDatasets() {
 }
 
 // ---------- import ----------
-function importText(text, filename) {
-  const report = $("#impReport");
+// Adds one parsed file. input is { text } | { rows } | { geojson } from Formats.read, or { error }.
+function importParsed(input, filename) {
+  const id = "ds-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  // Without a utility column or a typed name, fall back to the file name so the rows still load.
+  const fromName = filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), batch: id };
   try {
-    const id = "ds-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    const res = Ingest.parsePlan(text, filename, { utility: $("#impUtil").value.trim(), source: $("#impSrc").value.trim(), batch: id });
+    if (input.error) throw new Error(input.error);
+    const res = input.rows ? Ingest.parseRows(input.rows, defaults)
+      : input.geojson ? Ingest.parseGeoJSON(input.geojson, defaults)
+      : Ingest.parsePlan(input.text, filename, defaults);
     if (!res.projects.length) throw new Error(res.errors[0] || "no rows found");
     res.projects.forEach(p => p.dataset = id);
     PROJECTS = PROJECTS.concat(res.projects);
@@ -323,14 +329,20 @@ function importText(text, filename) {
     // Compare the new utility against whichever current utility is nearest to its projects.
     state.utilB = utils[0];
     if (state.utilA === state.utilB) state.utilA = utilities().find(u => u !== state.utilB);
-    report.innerHTML = `<p class="ok">Loaded ${res.projects.length} of ${res.total} rows from ${esc(filename)} (${esc(utils.join(", "))}). Now comparing with ${esc(lbl(state.utilA))}.</p>` +
-      (res.errors.length ? `<p class="warn">Skipped ${res.errors.length}: ${res.errors.slice(0, 4).map(esc).join("; ")}${res.errors.length > 4 ? "…" : ""}</p>` : "");
     renderDatasets(); rebuild();
+    return `<p class="ok">Loaded ${res.projects.length} of ${res.total} rows from ${esc(filename)} (${esc(utils.join(", "))}). Now comparing with ${esc(lbl(state.utilA))}.</p>` +
+      (res.errors.length ? `<p class="warn">Skipped ${res.errors.length}: ${res.errors.slice(0, 4).map(esc).join("; ")}${res.errors.length > 4 ? "…" : ""}</p>` : "");
   } catch (err) {
-    report.innerHTML = `<p class="warn">Couldn't load ${esc(filename)}: ${esc(err.message)}. Check it has a project name, a utility, coordinates and an in-service date.</p>`;
+    return `<p class="warn">Couldn't load ${esc(filename)}: ${esc(err.message)}. Check it has a project name, a utility, coordinates and an in-service date.</p>`;
   }
 }
-async function importFiles(files) { for (const f of files) importText(await f.text(), f.name); }
+async function importFiles(files) {
+  const report = $("#impReport");
+  if (!files.length) return;
+  report.innerHTML = `<p class="note">Reading ${files.length === 1 ? esc(files[0].name) : files.length + " files"}…</p>`;
+  const parsed = await Formats.read(files);
+  report.innerHTML = parsed.map(r => importParsed(r, r.name)).join("");
+}
 
 // ---------- wiring ----------
 function select(x) { state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline(); }
@@ -355,8 +367,8 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => {
   state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); drawMap(); refresh();
 };
 $("#basemap").innerHTML = Object.entries(BASEMAPS).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join("");
-$("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) {} drawMap(); refresh(); };
-try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) {}
+$("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) { /* storage blocked: keep the choice for this visit only */ } drawMap(); refresh(); };
+try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) { /* storage blocked: use the default map */ }
 $("#m3dClose").onclick = () => Scene3D.close();
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
 addEventListener("keydown", e => { if (e.key === "Escape" && !$("#m3d").hidden) Scene3D.close(); });
@@ -367,7 +379,8 @@ $("#openImport").onclick = () => { const s = $("#import"); s.hidden = !s.hidden;
 $("#tpl").textContent = Ingest.TEMPLATE;
 $("#copyTpl").onclick = () => navigator.clipboard.writeText(Ingest.TEMPLATE).then(() => $("#impReport").innerHTML = `<p class="ok">Template copied.</p>`, () => { getSelection().selectAllChildren($("#tpl")); });
 $("#pasteHelp").onclick = () => { $("#paste").hidden = $("#loadPaste").hidden = false; $("#paste").focus(); };
-$("#loadPaste").onclick = () => { const t = $("#paste").value.trim(); if (t) importText(t, "pasted rows.csv"); };
+$("#loadPaste").onclick = () => { const t = $("#paste").value.trim(); if (t) $("#impReport").innerHTML = importParsed({ text: t }, "pasted rows.csv"); };
+$("#file").accept = Formats.ACCEPT;
 $("#file").onchange = e => { importFiles([...e.target.files]); e.target.value = ""; };
 const drop = $("#drop");
 ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
