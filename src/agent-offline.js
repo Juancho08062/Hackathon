@@ -31,8 +31,19 @@
   const CHANGES = ["what changed", "changed between", "plan change", "plan changes", "moved between", "last two plans", "que cambio", "qué cambió", "cambios del plan", "cambio entre planes", "entre los dos planes", "ultimos dos planes"];
   const MOVES = ["date move", "date moves", "which moves", "reschedule", "shift dates", "optimize", "optimise", "move dates", "fechas mover", "mover fechas", "que fechas", "reprogramar", "optimizar", "correr fechas"];
   const OVERVIEW = ["how many pairs", "pairs checked", "how many projects", "summary", "overview", "total savings", "cuantos pares", "pares revisados", "cuantos proyectos", "resumen", "ahorro total"];
+  // The bottom of a ranking is only reachable by reversing it, since a limited number of rows comes back.
+  const WORST = ["least", "lowest", "worst", "smallest saving", "fewest", "bottom", "menos ahorro", "el menor", "mas bajo", "peor", "el ultimo del ranking"];
   const LIKELY = ["most likely", "likeliest", "highest chance", "best chance", "probability", "mas probable", "mas probables", "mayor probabilidad", "mas seguro"];
   const SAME_WINDOW = ["same window", "same time", "at the same time", "simultaneous", "misma ventana", "mismo tiempo", "a la vez", "al mismo tiempo", "simultane"];
+  // Questions about an extreme. They need a ranking, not a word match, which is why search_projects can sort.
+  const BIGGEST = ["biggest", "largest", "most expensive", "priciest", "longest", "highest voltage", "highest kv",
+    "mas grande", "el mayor", "mas caro", "mas costoso", "mas largo", "mayor voltaje", "mas alto voltaje"];
+  const SMALLEST = ["smallest", "cheapest", "shortest", "lowest voltage", "mas pequeno", "mas barato", "mas corto", "menor voltaje"];
+  const EARLIEST = ["earliest", "first to be built", "built first", "soonest", "mas pronto", "primero en construirse", "se construye primero", "mas temprano"];
+  const LATEST = ["latest", "last to be built", "furthest out", "mas tarde", "ultimo en construirse", "mas lejano"];
+  const REPORT = ["report", "pdf", "printable", "print it", "document", "write it up", "send it",
+    "informe", "reporte", "imprimible", "imprimir", "documento", "en pdf", "generar el informe"];
+  const COMPARE = ["compare", "versus", " vs ", "difference between", "side by side", "compara", "comparar", "frente a", "diferencia entre", "contra"];
   const EXPLAIN = ["explain", "tell me about", "describe", "detail", "explica", "explicame", "contame", "detalle", "detalles de"];
   // Anchored on a word boundary: a plain substring search for "in the " also fires inside "explain the".
   const NEAR_RE = /\b(?:near|nearby|around|close to|cerca de|alrededor de|en las cercanias de)\s+(.+)$/;
@@ -84,6 +95,21 @@
     const pair = q.toUpperCase().match(PAIR_RE);
     if (pair) return plan("get_overlap", { key: `${pair[1]}|${pair[2]}` }, "pair key");
 
+    // "Compare A and B" is a question about the relationship between two projects, not about either one.
+    const named = ids(q);
+    if (named.length >= 2 && any(s, COMPARE)) return plan("compare_projects", { project_ids: named.slice(0, 5) }, ["compare", "two ids"]);
+
+    // A request for a document, before the topic checks: "a report of the longest projects" is a report first.
+    if (any(s, REPORT) && !ids(q).length) {
+      const input = {};
+      if (/longest|length|mas largo|longitud/.test(s)) input.sort = "length_km";
+      else if (/voltage|voltaje|kv/.test(s)) input.sort = "kv";
+      else if (/date|in service|fecha|servicio/.test(s)) input.sort = "in_service";
+      const util = s.match(/\b(desc|dominion|gpc|georgia)\b/);
+      if (util) input.utility = /desc|dominion/.test(util[1]) ? "DESC" : "GPC";
+      return plan("open_report", input, ["report"]);
+    }
+
     if (any(s, CHECKS)) return plan("get_data_checks", {}, "data quality");
     if (any(s, CHANGES)) return plan("get_plan_changes", {}, "plan changes");
     if (any(s, MOVES)) {
@@ -95,6 +121,22 @@
       const count = n && (+n[1] || WORD_NUM[n[1]]);
       if (count) input.show = count;
       return plan("optimize_schedule", input, "schedule moves");
+    }
+
+    // "Which is the biggest project" is a ranking. Which measure depends on the word used: cost only covers the utility
+    // that publishes costs, so "longest" and "highest voltage" map to measures that cover both.
+    const extreme = any(s, BIGGEST) || any(s, SMALLEST) || any(s, EARLIEST) || any(s, LATEST);
+    if (extreme && !any(s, OVERLAP_WORDS)) {
+      const sort = /longest|mas largo|mas corto|shortest/.test(s) ? "length_km"
+        : /voltage|voltaje|kv/.test(s) ? "kv"
+        : /earliest|latest|soonest|built first|first to be built|last to be built|furthest out|pronto|tarde|primero|ultimo|temprano|lejano/.test(s) ? "in_service"
+        : "cost";
+      const asc = !!(any(s, SMALLEST) || any(s, EARLIEST));
+      const input = { sort, limit: limitOf(s) || 3 };
+      if (asc) input.order = "asc";
+      const util = s.match(/\b(desc|dominion|gpc|georgia)\b/);
+      if (util) input.utility = /desc|dominion/.test(util[1]) ? "DESC" : "GPC";
+      return plan("search_projects", input, [extreme, `sort ${sort}`]);
     }
 
     const id = ids(q);
@@ -118,6 +160,7 @@
     const limit = limitOf(s);
     if (limit) { input.limit = limit; why.push(`limit ${limit}`); }
     if (any(s, LIKELY)) { input.sort = "chance"; why.push("most likely"); }
+    if (any(s, WORST)) { input.order = "asc"; input.sort = input.sort || "expected"; why.push("bottom of the ranking"); }
     else if (km != null || /closest|nearest|mas cercano|mas cercanos/.test(s)) { input.sort = "distance"; why.push("closest"); }
     if (any(s, SAME_WINDOW)) { input.same_window_on_paper = true; why.push("same window"); }
     const util = s.match(/\b(desc|dominion|gpc|georgia)\b/);
@@ -148,6 +191,8 @@
       expected: "expected savings",
       ifHold: "if dates hold",
       ref: "in the challenge's reference table",
+      flagged: "flagged as pair",
+      reportOpened: by => `Opened the printable project report, ranked by ${by}. Use **Print or save as PDF** in the document to keep it.`,
       noProject: "No project matches that.",
       projects: n => `${n} matching ${n === 1 ? "project" : "projects"}:`,
       inService: "in service",
@@ -180,6 +225,8 @@
       expected: "ahorro esperado",
       ifHold: "si las fechas se mantienen",
       ref: "está en la tabla de referencia del reto",
+      flagged: "marcado como par",
+      reportOpened: by => `Abrí el informe imprimible de proyectos, ordenado por ${by}. Usá **Print or save as PDF** en el documento para guardarlo.`,
       noProject: "Ningún proyecto coincide con eso.",
       projects: n => `${n} ${n === 1 ? "proyecto coincide" : "proyectos coinciden"}:`,
       inService: "entra en servicio",
@@ -214,27 +261,27 @@
   function renderPairs(r, L, lang) {
     const rows = r.rows || [];
     if (!rows.length) return L.none;
-    const out = [L.pairs(r.matching_pairs != null ? Math.min(r.matching_pairs, rows.length) : rows.length)];
+    const out = [`**${L.pairs(r.matching_pairs != null ? Math.min(r.matching_pairs, rows.length) : rows.length)}**`, ""];
     rows.forEach((x, i) => {
-      out.push(`${i + 1}. ${x.key} — ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` (${L.ref})` : ""}`);
-      out.push(`   ${x.project_a}`);
-      out.push(`   ${x.project_b}`);
-      out.push(`   ${x.windows_on_paper}; ${L.chance} ${pct(x.chance_of_shared_window)}; ${L.expected} ${money(x.expected_savings_usd)} (${money(x.savings_if_dates_hold_usd)} ${L.ifHold})`);
+      out.push(`- **${i + 1}. ${x.key}** — ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` · *${L.ref}*` : ""}`);
+      out.push(`  - ${x.project_a}`);
+      out.push(`  - ${x.project_b}`);
+      out.push(`  - ${x.windows_on_paper} · ${L.chance} **${pct(x.chance_of_shared_window)}** · ${L.expected} **${money(x.expected_savings_usd)}** (${money(x.savings_if_dates_hold_usd)} ${L.ifHold})`);
     });
     return out.join("\n");
   }
 
   function renderProjectLine(p, L) {
-    return `${p.id} — ${p.name} (${p.utility}, ${p.kv} kV ${p.type}), ${L.inService} ${p.in_service}, ${p.cost_usd ? `${L.cost} ${money(p.cost_usd)}` : L.costRedacted}, ${L.confidence} ${p.location_confidence}`;
+    return `**${p.id}** ${p.name} — ${p.utility}, ${p.kv} kV ${p.type}, ${L.inService} ${p.in_service}, ${p.cost_usd ? `${L.cost} ${money(p.cost_usd)}` : L.costRedacted}, ${L.confidence} ${p.location_confidence}`;
   }
 
   function renderProject(p, L, lang) {
-    const out = [renderProjectLine(p, L)];
-    if (p.description) out.push(p.description);
-    out.push(`${p.construction} · ${p.source}`);
+    const out = [renderProjectLine(p, L), ""];
+    if (p.description) out.push(p.description, "");
+    out.push(`\`${p.construction}\` · ${p.source}`);
     if (p.overlaps) {
-      out.push(L.overlapsWith(p.overlaps));
-      (p.top_overlaps || []).slice(0, 5).forEach(x => out.push(`  ${x.key} — ${x.distance_km} km, ${tier(x.tier, lang)}, ${L.expected} ${money(x.expected_savings_usd)}`));
+      out.push("", `**${L.overlapsWith(p.overlaps)}**`);
+      (p.top_overlaps || []).slice(0, 5).forEach(x => out.push(`- **${x.key}** — ${x.distance_km} km, ${tier(x.tier, lang)}, ${L.expected} ${money(x.expected_savings_usd)}`));
     }
     return out.join("\n");
   }
@@ -245,8 +292,9 @@
     out.push(renderProjectLine(x.project_b, L));
     out.push(`${L.window}: ${x.windows_on_paper}; ${L.chance} ${pct(x.chance_of_shared_window)}; ${L.expected} ${money(x.expected_savings_usd)}`);
     if ((x.shareable_items || []).length) {
-      out.push(L.shareable);
-      x.shareable_items.forEach(it => out.push(`  ${it.item}: ${money(it.saving_usd)} — ${it.math}`));
+      out.push("", `#### ${L.shareable}`, "", `| ${L.line || "Item"} | ${L.amount || "Saving"} |`, "| --- | --- |");
+      x.shareable_items.forEach(it => out.push(`| ${it.item} | **${money(it.saving_usd)}** |`));
+      out.push("", ...x.shareable_items.map(it => `- *${it.item}* — ${it.math}`));
     }
     if (x.shared_yard) out.push(`${L.yard} ${x.shared_yard.near} (${x.shared_yard.km_to_sites.join(", ")} km)`);
     return out.join("\n");
@@ -286,11 +334,32 @@
     return out.join("\n");
   }
 
+  function renderCompare(r, L, lang) {
+    const out = [];
+    (r.projects || []).forEach(p => out.push(`- ${renderProjectLine(p, L)}`));
+    out.push("");
+    (r.between || []).forEach(b => {
+      out.push(`**${b.projects}** — ${b.distance_km} km, ${tier(b.tier, lang)} · ${b.windows}`);
+      out.push(b.flagged_pair
+        ? `  - ${L.flagged} \`${b.flagged_pair}\` · ${L.expected} **${money(b.expected_savings_usd)}**`
+        : `  - ${b.why_not_flagged}`);
+    });
+    return out.join("\n");
+  }
+
   const RENDER = {
+    open_report: (r, L) => L.reportOpened(r.ranked_by),
+    compare_projects: renderCompare,
     list_overlaps: renderPairs,
     get_overlap: renderOverlap,
     get_project: renderProject,
-    search_projects: (r, L) => (r.projects || []).length ? [L.projects(r.matches)].concat(r.projects.map(p => `  ${renderProjectLine(p, L)}`)).join("\n") : L.noProject,
+    search_projects: (r, L) => {
+      if (!(r.projects || []).length) return L.noProject;
+      const out = [`**${L.projects(r.matches)}**`, ""];
+      r.projects.forEach(p => out.push(`- ${renderProjectLine(p, L)}`));
+      if (r.note) out.push("", `*${r.note}*`);
+      return out.join("\n");
+    },
     get_overview: renderOverview,
     get_plan_changes: renderChanges,
     optimize_schedule: renderMoves,

@@ -127,6 +127,39 @@ at("an API failure propagates so the caller can fall back", async () => {
   await assert.rejects(() => run(fakeClient(boom)), /connection refused/);
 });
 
+// ---------- key verification ----------
+// verify() is what "Use key" calls before accepting a key. It asks the Models endpoint, which spends no tokens, and has
+// to separate three outcomes: the key works, the key is refused, and the key could not be judged at all.
+at("a key that can reach the model is accepted", async () => {
+  const client = { models: { retrieve: async id => ({ id, display_name: "Claude Opus 5" }) } };
+  const r = await SeamAgent.verify("sk-test", client);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.model, "Claude Opus 5");
+});
+
+at("the model asked about is the one the assistant uses", async () => {
+  let asked = null;
+  const client = { models: { retrieve: async id => { asked = id; return { id }; } } };
+  await SeamAgent.verify("sk-test", client);
+  assert.strictEqual(asked, SeamAgent.MODEL);
+});
+
+at("a failure that cannot be attributed to the key is reported as transient", async () => {
+  // Without the SDK loaded there are no typed errors to match, so anything unrecognised must not be called a bad key:
+  // saying "your key is invalid" when the network is down sends the user to rotate a key that was fine.
+  const client = { models: { retrieve: async () => { throw new Error("network down"); } } };
+  const r = await SeamAgent.verify("sk-test", client);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.transient, true);
+  assert.match(r.reason, /network down/);
+});
+
+at("a client that cannot be built is transient too", async () => {
+  const r = await SeamAgent.verify("");   // no injected client and no SDK: the import fails
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.transient, true);
+});
+
 t("error messages are readable without the SDK loaded", () => {
   assert.match(SeamAgent.explain(new TypeError("failed to fetch module")), /internet connection/);
   assert.strictEqual(SeamAgent.explain(new Error("plain")), "plain");

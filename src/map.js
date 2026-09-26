@@ -3,6 +3,10 @@
 // Terrarium elevation tiles) and raises a tower every few hundred metres along each planned line.
 // The app hands it plain lists (projects, links, rings, yards) already styled; this file only turns them into layers.
 (function (root) {
+  // Honour prefers-reduced-motion for the camera too: the CSS rule only covers transitions, and a 900 ms pitching,
+  // panning map fires on every row click. scene3d.js already checks this; the map did not.
+  const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dur = ms => REDUCED ? 0 : ms;
   const DEM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
   const RASTERS = {
     satellite: { label: "Satellite", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], attr: "Imagery © Esri, Maxar, Earthstar Geographics", max: 19 },
@@ -189,7 +193,7 @@
     shade();
     map.setLayoutProperty("towers", "visibility", on ? "visible" : "none");
     // tilt only once a fly-to in progress has landed, so the tilt doesn't cut it short
-    const tilt = () => map.easeTo(on ? { pitch: 62, bearing: map.getBearing() || -18, duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
+    const tilt = () => map.easeTo(on ? { pitch: 62, bearing: map.getBearing() || -18, duration: dur(900) } : { pitch: 0, bearing: 0, duration: dur(700) });
     if (map.isMoving()) map.once("moveend", tilt); else tilt();
     if (lastData) towers(lastData.projects);
   }
@@ -280,7 +284,7 @@
     let s = 90, n = -90, w = 180, e = -180;
     for (const [lat, lon] of pts) { s = Math.min(s, lat); n = Math.max(n, lat); w = Math.min(w, lon); e = Math.max(e, lon); }
     const pad = (opts.padKm || 0) / 111;
-    map.fitBounds([[w - pad, s - pad], [e + pad, n + pad]], { padding: opts.padding ?? 40, duration: opts.duration ?? 900, maxZoom: opts.maxZoom ?? 12.5, pitch: is3d ? 62 : 0, bearing: is3d ? map.getBearing() : 0 });
+    map.fitBounds([[w - pad, s - pad], [e + pad, n + pad]], { padding: opts.padding ?? 40, duration: dur(opts.duration ?? 900), maxZoom: opts.maxZoom ?? 12.5, pitch: is3d ? 62 : 0, bearing: is3d ? map.getBearing() : 0 });
   }
 
   // The project under a screen point (client pixels), for the drop-in figure: the nearest line or substation within
