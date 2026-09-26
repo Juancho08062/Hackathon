@@ -34,6 +34,7 @@ const STATUS = store.get("status", {});
 const STATUSES = ["Open", "Contacted", "Coordinating", "Not pursuing"];
 
 const fmtD = (p, which) => {
+  if (p.undated) return "No date";
   const d = new Date(p[which] + "T00:00:00Z");
   if (which === "in_service" && p.date_precision === "year") return String(d.getUTCFullYear());
   if (which === "in_service" && p.date_precision === "estimated") return "~" + d.getUTCFullYear() + " (est.)";
@@ -50,7 +51,7 @@ const solo = () => state.utilB === NONE;
 const shownUtil = u => u === state.utilA || (!solo() && u === state.utilB);
 const uColor = u => u === state.utilA ? css("--u0") : u === state.utilB ? css("--u1") : css("--ink3");
 const keyOf = x => x.p.id + "|" + x.q.id;
-const isPast = p => p.in_service < TODAY;
+const isPast = p => !p.undated && p.in_service < TODAY;
 const miles = v => Math.round(v).toLocaleString();
 // Shorter names for tight rows: drop sponsor prefixes, the "(USA)" style owner tags, and the work after a colon.
 const short = p => p.name.replace(/^(SAV|GTC|MEAG|CC)\s*[:-]\s*/i, "").replace(/\s*\((USA|SAV|APC|FPL)\)/g, "").split(":")[0].trim();
@@ -1091,7 +1092,7 @@ function importParsed(input, filename) {
     return `<p class="ok">Loaded ${res.projects.length} of ${res.total} rows from ${esc(filename)} (${esc(utils.join(", "))}). Now comparing with ${esc(lbl(state.utilA))}.</p>` +
       (res.errors.length ? `<p class="warn">Skipped ${res.errors.length}: ${res.errors.slice(0, 4).map(esc).join("; ")}${res.errors.length > 4 ? "…" : ""}</p>` : "");
   } catch (err) {
-    return `<p class="warn">Couldn't load ${esc(filename)}: ${esc(err.message)}. Check it has a project name, a utility, coordinates and an in-service date.</p>`;
+    return `<p class="warn">Couldn't load ${esc(filename)}: ${esc(err.message)}. Check it has a project name, a utility and coordinates.</p>`;
   }
 }
 async function importFiles(files) {

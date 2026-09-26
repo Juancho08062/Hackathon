@@ -231,7 +231,8 @@
     for (const p of A) for (const q of B) {
       const [km, ca, cb] = closest(p, q);
       const ov = windowOverlap(p, q);
-      const near = km <= opts.maxKm, sameWindow = -ov <= opts.bufferMonths;
+      // a project imported without dates is compared on geography only: it never counts as sharing a window
+      const near = km <= opts.maxKm, sameWindow = !p.undated && !q.undated && -ov <= opts.bufferMonths;
       if (opts.mode === "both" && !(near && sameWindow)) continue;
       if (opts.mode === "near" && !near) continue;
       if (opts.mode === "time" && !sameWindow) continue;
@@ -291,6 +292,7 @@
   function overlapChance(x, slips, opts = {}) {
     const draws = opts.draws || 2000, buf = opts.bufferMonths || 0;
     if (x.p.likely_built || x.q.likely_built) return { p: 0, why: "built" };
+    if (x.p.undated || x.q.undated) return { p: 0, why: "undated" };
     const pooled = Object.values(slips || {}).flatMap(s => s.months || []);
     const list = u => (slips && slips[u] && slips[u].months && slips[u].months.length ? slips[u].months : pooled.length ? pooled : [0]);
     const la = list(x.p.utility), lb = list(x.q.utility);
@@ -352,7 +354,7 @@
     const byProject = new Map();
     rows.forEach(r => [r.x.p, r.x.q].forEach(p => { if (!byProject.has(p.id)) byProject.set(p.id, { p, rows: [] }); byProject.get(p.id).rows.push(r); }));
     // Power plants are left where they are: their dates follow resource planning, not transmission crews.
-    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && p.type !== "generation" && monthIndex(p.start) > now &&
+    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && !p.undated && p.type !== "generation" && monthIndex(p.start) > now &&
       (!o.utilities || o.utilities.includes(p.utility)));
     const moves = [];
     while (moves.length < o.maxMoves) {

@@ -539,7 +539,7 @@ body.m3d-open .app{visibility:hidden}
         <div class="fields">
           <div><label for="impUtil">Utility name <span class="note">(when the file has no utility column)</span></label><input id="impUtil" type="text" placeholder="e.g. Santee Cooper" autocomplete="off"></div>
           <div><label for="impSrc">Source link <span class="note">(optional)</span></label><input id="impSrc" type="url" placeholder="https://… plan PDF or data page" autocomplete="off"></div>
-          <div><label for="impIsd">Default in-service date <span class="note">(rows without one, like GPX)</span></label><input id="impIsd" type="text" placeholder="e.g. 2029 or 2029-06-30" autocomplete="off"></div>
+          <div><label for="impIsd">Default in-service date <span class="note">(rows without one; left blank they load undated)</span></label><input id="impIsd" type="text" placeholder="e.g. 2029 or 2029-06-30" autocomplete="off"></div>
           <div><label for="impStart">Default construction start <span class="note">(optional)</span></label><input id="impStart" type="text" placeholder="estimated if blank" autocomplete="off"></div>
         </div>
         <label class="chk"><input type="checkbox" id="impExisting"> These are <b>existing</b> lines and substations, like a HIFLD download. Show them as a background layer instead of comparing them.</label>
@@ -831,7 +831,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     for (const p of A) for (const q of B) {
       const [km, ca, cb] = closest(p, q);
       const ov = windowOverlap(p, q);
-      const near = km <= opts.maxKm, sameWindow = -ov <= opts.bufferMonths;
+      // a project imported without dates is compared on geography only: it never counts as sharing a window
+      const near = km <= opts.maxKm, sameWindow = !p.undated && !q.undated && -ov <= opts.bufferMonths;
       if (opts.mode === "both" && !(near && sameWindow)) continue;
       if (opts.mode === "near" && !near) continue;
       if (opts.mode === "time" && !sameWindow) continue;
@@ -891,6 +892,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   function overlapChance(x, slips, opts = {}) {
     const draws = opts.draws || 2000, buf = opts.bufferMonths || 0;
     if (x.p.likely_built || x.q.likely_built) return { p: 0, why: "built" };
+    if (x.p.undated || x.q.undated) return { p: 0, why: "undated" };
     const pooled = Object.values(slips || {}).flatMap(s => s.months || []);
     const list = u => (slips && slips[u] && slips[u].months && slips[u].months.length ? slips[u].months : pooled.length ? pooled : [0]);
     const la = list(x.p.utility), lb = list(x.q.utility);
@@ -952,7 +954,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const byProject = new Map();
     rows.forEach(r => [r.x.p, r.x.q].forEach(p => { if (!byProject.has(p.id)) byProject.set(p.id, { p, rows: [] }); byProject.get(p.id).rows.push(r); }));
     // Power plants are left where they are: their dates follow resource planning, not transmission crews.
-    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && p.type !== "generation" && monthIndex(p.start) > now &&
+    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && !p.undated && p.type !== "generation" && monthIndex(p.start) > now &&
       (!o.utilities || o.utilities.includes(p.utility)));
     const moves = [];
     while (moves.length < o.maxMoves) {
@@ -1005,6 +1007,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     utility: ["utility", "owner", "company", "transmission_owner", "utility_name", "entity", "member"],
     name: ["name", "project", "project_name", "title", "description_short", "project_title", "facility", "facility_name", "proj_name"],
     desc: ["desc", "description", "scope", "details", "notes"],
+    source: ["source", "source_url", "url", "link"],
     kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv", "kv_nominal"],
     type: ["type", "project_type", "category", "work_type", "proj_type"],
     start: ["start", "start_date", "construction_start", "begin", "const_start", "start_year"],
@@ -1118,7 +1121,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     if (rawIsd && !toDate(rawIsd)) return { error: `in-service date "${rawIsd}" isn't a real date` };
     if (rawStart && !toDate(rawStart)) return { error: `start date "${rawStart}" isn't a real date` };
     const isd = toDate(rawIsd) || toDate(defaults.in_service);
-    if (!isd) return { error: "no in-service date (add a column, or set a default in-service date above)" };
+    // Real filings often list no date. Such a row still loads, as an undated project compared on geography only;
+    // it gets today as a placeholder date so date math keeps working, and never counts as sharing a window.
+    const undated = !isd, today = new Date().toISOString().slice(0, 10);
     const kv = num(pick(row, "kv")) || 115;
     const type = toType(pick(row, "type") || name, coords.length > 1);
     const kmv = num(pick(row, "km")), miles = num(pick(row, "miles")) ?? (kmv ? kmv / 1.609 : null);
@@ -1127,9 +1132,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),
         name: String(name).trim(), desc: plainText(pick(row, "desc")), kv, miles, type,
-        in_service: isd.iso, date_precision: isd.precision === "day" ? "day" : "year",
-        start: st ? st.iso : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
-        cost: num(pick(row, "cost")), coords, ...(parts ? { parts } : {}), loc: "med", source: defaults.source || "", page: "", imported: true,
+        in_service: undated ? today : isd.iso, date_precision: undated ? "none" : isd.precision === "day" ? "day" : "year", ...(undated ? { undated: true } : {}),
+        start: st ? st.iso : undated ? today : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
+        cost: num(pick(row, "cost")), coords, ...(parts ? { parts } : {}), loc: "med", source: String(pick(row, "source") || defaults.source || "").trim(), page: "", imported: true,
       },
     };
   }
@@ -3726,6 +3731,7 @@ const STATUS = store.get("status", {});
 const STATUSES = ["Open", "Contacted", "Coordinating", "Not pursuing"];
 
 const fmtD = (p, which) => {
+  if (p.undated) return "No date";
   const d = new Date(p[which] + "T00:00:00Z");
   if (which === "in_service" && p.date_precision === "year") return String(d.getUTCFullYear());
   if (which === "in_service" && p.date_precision === "estimated") return "~" + d.getUTCFullYear() + " (est.)";
@@ -3742,7 +3748,7 @@ const solo = () => state.utilB === NONE;
 const shownUtil = u => u === state.utilA || (!solo() && u === state.utilB);
 const uColor = u => u === state.utilA ? css("--u0") : u === state.utilB ? css("--u1") : css("--ink3");
 const keyOf = x => x.p.id + "|" + x.q.id;
-const isPast = p => p.in_service < TODAY;
+const isPast = p => !p.undated && p.in_service < TODAY;
 const miles = v => Math.round(v).toLocaleString();
 // Shorter names for tight rows: drop sponsor prefixes, the "(USA)" style owner tags, and the work after a colon.
 const short = p => p.name.replace(/^(SAV|GTC|MEAG|CC)\s*[:-]\s*/i, "").replace(/\s*\((USA|SAV|APC|FPL)\)/g, "").split(":")[0].trim();
@@ -4783,7 +4789,7 @@ function importParsed(input, filename) {
     return `<p class="ok">Loaded ${res.projects.length} of ${res.total} rows from ${esc(filename)} (${esc(utils.join(", "))}). Now comparing with ${esc(lbl(state.utilA))}.</p>` +
       (res.errors.length ? `<p class="warn">Skipped ${res.errors.length}: ${res.errors.slice(0, 4).map(esc).join("; ")}${res.errors.length > 4 ? "…" : ""}</p>` : "");
   } catch (err) {
-    return `<p class="warn">Couldn't load ${esc(filename)}: ${esc(err.message)}. Check it has a project name, a utility, coordinates and an in-service date.</p>`;
+    return `<p class="warn">Couldn't load ${esc(filename)}: ${esc(err.message)}. Check it has a project name, a utility and coordinates.</p>`;
   }
 }
 async function importFiles(files) {
