@@ -30,7 +30,7 @@ The Plain map and everything except the imagery, the 3D terrain and the assistan
 
 One screen, laid out like the coordination tools planners already use (Esri Capital Project Coordination, one.network): a map, the ranked overlaps beside it, and the build windows underneath, all linked.
 
-- **Map** (MapLibre GL): Plain (offline), Light, Satellite and Topo basemaps. **3D** tilts the map over real terrain (Terrarium elevation tiles from USGS 3DEP data) and raises a tower every ~450 m along each planned line. Line width is voltage, dashed is an approximate location, faded is a date that has passed, rings mark how close a pair is, dots mark shared staging yards.
+- **Map** (MapLibre GL): Plain (offline), Relief (colour by elevation under a hillshade, drawn from the elevation tiles), Satellite and Topo basemaps. **3D** tilts the map over real terrain (Terrarium elevation tiles from USGS 3DEP data, exaggerated 3× since the Southeast is low), adds hillshading and a sky, and raises a tower every ~450 m along each planned line. Line width is voltage, dashed is an approximate location, faded is a date that has passed, rings mark how close a pair is, dots mark shared staging yards.
 - **Overlaps**: ranked by expected savings (or chance, or distance). Each row shows the distance tier, the chance of a shared window with what the plan says, and the expected savings next to the savings if the dates held. Filters for distance tier, build period (next 12 months, next 3 years), dates already passed and a text search; shared-yard groups sit above the list; Export CSV downloads it.
 - **Pair panel**: both projects side by side (work, window, plan drift, cost, how each end point was located, source page), the chance and why, each item they can share with its saving and math, the best shared yard, a schedule what-if, a coordination status saved on the device, a printable one-page brief, and a three.js 3D illustration of the pair.
 - **Changes**: how far each utility's dates moved between its last two plans, and which shared windows the latest updates opened or closed, and why.
@@ -175,7 +175,7 @@ Seamline is a static site: `index.html` plus the `vendor/` folder. Any static ho
 - **GitHub Pages:** in the repository's Settings, open Pages, set Source to "Deploy from a branch", pick `main` and `/ (root)`, and save. The site appears at `https://<user>.github.io/<repo>/`. On a free GitHub plan the repository has to be public for Pages to work.
 - **Netlify, Vercel, Cloudflare Pages or S3:** publish the repository root.
 
-Light (CARTO), Satellite and Topo (Esri) tiles, the 3D terrain (AWS Terrarium) and the assistant (Anthropic API) need an internet connection. The Plain map, the three.js pair illustration and every importer work offline.
+Satellite and Topo (Esri) tiles, the Relief map and 3D terrain (AWS Terrarium elevation tiles) and the assistant (Anthropic API) need an internet connection. The Plain map, the three.js pair illustration and every importer work offline.
 
 ## Official challenge data
 
