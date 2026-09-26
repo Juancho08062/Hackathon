@@ -416,6 +416,7 @@ body.m3d-open .app{visibility:hidden}
         <div class="maptools">
           <div class="seg" role="group" aria-label="Map extent"><button type="button" id="v-focus" aria-pressed="true">Overlaps</button><button type="button" id="v-all" aria-pressed="false">All projects</button></div>
           <div class="seg" role="group" aria-label="Basemap" id="basemaps"></div>
+          <button type="button" class="btn tog" id="bgrid" aria-pressed="true" title="Today's transmission lines from OpenStreetMap">Grid</button>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
         <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
@@ -2103,6 +2104,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       shade: { type: "raster-dem", tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: "terrarium" },
     };
     for (const [k, r] of Object.entries(RASTERS)) sources["r-" + k] = { type: "raster", tiles: r.tiles, tileSize: 256, maxzoom: r.max, attribution: r.attr };
+    // today's grid from OpenStreetMap (data/grid.json, loaded on demand; missing when the page is opened as a file)
+    sources.grid = { type: "geojson", data: "data/grid.json", attribution: "Grid © OpenStreetMap contributors" };
     for (const k of ["seam", "existing", "yardring", "spokes", "links", "projects", "points", "towers", "rings", "yards", "sparks"]) sources[k] = { type: "geojson", data: fc([]) };
     const vis = v => ({ visibility: v ? "visible" : "none" });
     return {
@@ -2115,6 +2118,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
         { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
         { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
+        // existing lines by voltage, kept quiet under the plans: grey 115, violet 161, magenta 230, teal 500 kV
+        { id: "grid", type: "line", source: "grid", layout: { "line-join": "round" }, paint: {
+          "line-color": ["step", ["get", "kv"], "#8E9AA6", 161, "#8E7CB8", 230, "#A05BA8", 500, "#0097A7"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["step", ["get", "kv"], 0.5, 230, 0.8, 500, 1.2], 12, ["step", ["get", "kv"], 1.2, 230, 1.8, 500, 2.6]],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 11, 0.6] } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
         { id: "yardring-fill", type: "fill", source: "yardring", paint: { "fill-color": "#8A5A1E", "fill-opacity": 0.025 } },
         { id: "yardring", type: "line", source: "yardring", paint: { "line-color": "#8A5A1E", "line-width": 1.2, "line-dasharray": [3, 2] } },
@@ -2143,15 +2151,15 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     map.addControl(new root.maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
     map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-right");
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
-    const hit = ["links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
+    const hit = ["grid", "links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
     map.on("click", e => {
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      if (cbs.click) cbs.click(f ? { layer: f.layer.id, id: f.properties.id } : null);
+      if (cbs.click) cbs.click(f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null);
     });
     map.on("mousemove", e => {
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      map.getCanvas().style.cursor = f ? "pointer" : "";
-      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id } : null, e.originalEvent);
+      map.getCanvas().style.cursor = f && f.layer.id !== "grid" ? "pointer" : "";
+      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id, kv: f.properties.kv, op: f.properties.op } : null, e.originalEvent);
     });
     map.on("mouseout", () => cbs.hover && cbs.hover(null));
     // "style.load" fires once the layers exist; "load" would also wait for every basemap tile to arrive.
@@ -2289,7 +2297,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     return { id: f ? f.properties.id : null, at: [ll.lat, ll.lng] };
   }
 
-  root.SeamMap = { pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
+  const setGrid = on => map && map.getLayer("grid") && map.setLayoutProperty("grid", "visibility", on ? "visible" : "none");
+
+  root.SeamMap = { setGrid, pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
 })(this);
 
 </script>
@@ -2397,6 +2407,7 @@ const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
   tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  grid: true,
   basemap: ["plain", "relief", "satellite", "topo"].includes(store.get("basemap", "plain")) ? store.get("basemap", "plain") : "plain",
 };
 const STATUS = store.get("status", {});
@@ -2559,6 +2570,7 @@ function mapClick(hit) {
 }
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
+  if (hit.layer === "grid") return tip(ev, `<b>Existing ${hit.kv} kV line</b>${hit.op ? "<br>" + esc(hit.op) : ""}<br><span style="opacity:.7">OpenStreetMap</span>`);
   const p = PROJECTS.find(v => v.id === hit.id) || EXIST.find(v => v.id === hit.id);
   if (p) return showTip(ev, p);
   const x = VIEW.find(v => keyOf(v) === hit.id);
@@ -2574,6 +2586,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
@@ -3363,6 +3376,7 @@ function readHash() {
   if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
   if (num("h") != null) state.horizon = num("h");
   if (h.get("past") === "0") state.past = false;
+  if (h.get("grid") === "0") state.grid = false;
   if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
   if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
   const cam = (h.get("cam") || "").split(",").map(Number);
@@ -3401,6 +3415,7 @@ function writeHash() {
     if (state.mode !== "near") h.set("m", state.mode);
     if (state.horizon) h.set("h", state.horizon);
     if (!state.past) h.set("past", "0");
+    if (!state.grid) h.set("grid", "0");
     if (state.tab !== "overlaps") h.set("tab", state.tab);
     const x = state.sel;
     if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
@@ -3464,6 +3479,7 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v;
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#bgrid").onclick = () => { state.grid = !state.grid; $("#bgrid").setAttribute("aria-pressed", state.grid); SeamMap.setGrid(state.grid); legend(); writeHash(); };
 $("#share").onclick = () => {
   clearTimeout(hashTimer); writeHash();
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
@@ -3535,6 +3551,7 @@ SeamMap.init($("#map"), BASE, {
 }).then(() => {
   mapReady = true;
   SeamMap.setBasemap(state.basemap);
+  SeamMap.setGrid(state.grid); $("#bgrid").setAttribute("aria-pressed", state.grid);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
   if (!applyPendingView()) fitAll(0);

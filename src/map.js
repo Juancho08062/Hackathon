@@ -44,6 +44,8 @@
       shade: { type: "raster-dem", tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: "terrarium" },
     };
     for (const [k, r] of Object.entries(RASTERS)) sources["r-" + k] = { type: "raster", tiles: r.tiles, tileSize: 256, maxzoom: r.max, attribution: r.attr };
+    // today's grid from OpenStreetMap (data/grid.json, loaded on demand; missing when the page is opened as a file)
+    sources.grid = { type: "geojson", data: "data/grid.json", attribution: "Grid © OpenStreetMap contributors" };
     for (const k of ["seam", "existing", "yardring", "spokes", "links", "projects", "points", "towers", "rings", "yards", "sparks"]) sources[k] = { type: "geojson", data: fc([]) };
     const vis = v => ({ visibility: v ? "visible" : "none" });
     return {
@@ -56,6 +58,11 @@
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
         { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
         { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
+        // existing lines by voltage, kept quiet under the plans: grey 115, violet 161, magenta 230, teal 500 kV
+        { id: "grid", type: "line", source: "grid", layout: { "line-join": "round" }, paint: {
+          "line-color": ["step", ["get", "kv"], "#8E9AA6", 161, "#8E7CB8", 230, "#A05BA8", 500, "#0097A7"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["step", ["get", "kv"], 0.5, 230, 0.8, 500, 1.2], 12, ["step", ["get", "kv"], 1.2, 230, 1.8, 500, 2.6]],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 11, 0.6] } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
         { id: "yardring-fill", type: "fill", source: "yardring", paint: { "fill-color": "#8A5A1E", "fill-opacity": 0.025 } },
         { id: "yardring", type: "line", source: "yardring", paint: { "line-color": "#8A5A1E", "line-width": 1.2, "line-dasharray": [3, 2] } },
@@ -84,15 +91,15 @@
     map.addControl(new root.maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
     map.addControl(new root.maplibregl.ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-right");
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
-    const hit = ["links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
+    const hit = ["grid", "links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
     map.on("click", e => {
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      if (cbs.click) cbs.click(f ? { layer: f.layer.id, id: f.properties.id } : null);
+      if (cbs.click) cbs.click(f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null);
     });
     map.on("mousemove", e => {
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      map.getCanvas().style.cursor = f ? "pointer" : "";
-      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id } : null, e.originalEvent);
+      map.getCanvas().style.cursor = f && f.layer.id !== "grid" ? "pointer" : "";
+      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id, kv: f.properties.kv, op: f.properties.op } : null, e.originalEvent);
     });
     map.on("mouseout", () => cbs.hover && cbs.hover(null));
     // "style.load" fires once the layers exist; "load" would also wait for every basemap tile to arrive.
@@ -230,5 +237,7 @@
     return { id: f ? f.properties.id : null, at: [ll.lat, ll.lng] };
   }
 
-  root.SeamMap = { pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
+  const setGrid = on => map && map.getLayer("grid") && map.setLayoutProperty("grid", "visibility", on ? "visible" : "none");
+
+  root.SeamMap = { setGrid, pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
 })(this);
