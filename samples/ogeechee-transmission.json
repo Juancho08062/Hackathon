@@ -1,0 +1,70 @@
+[
+ {
+  "owner": "Ogeechee Transmission Cooperative",
+  "project": "Waynesboro - Goshen 230 kV Line",
+  "voltage_kv": 230,
+  "type": "new_line",
+  "start_date": "2028-01-01",
+  "in_service_date": "2030-03-31",
+  "cost_usd": 61000000,
+  "coords": [
+   [
+    33.09,
+    -82.02
+   ],
+   [
+    33.21,
+    -81.99
+   ],
+   [
+    33.3,
+    -82.02
+   ]
+  ]
+ },
+ {
+  "owner": "Ogeechee Transmission Cooperative",
+  "project": "Thomson East 500/230 kV Transformer",
+  "voltage_kv": 500,
+  "type": "substation",
+  "in_service_date": "2029-12-31",
+  "cost_usd": 34000000,
+  "coords": [
+   [
+    33.46,
+    -82.42
+   ]
+  ]
+ },
+ {
+  "owner": "Ogeechee Transmission Cooperative",
+  "project": "Statesboro Loop 115 kV Rebuild",
+  "voltage_kv": 115,
+  "type": "rebuild",
+  "in_service_date": "2028",
+  "coords": [
+   [
+    32.45,
+    -81.78
+   ],
+   [
+    32.4,
+    -81.72
+   ]
+  ]
+ },
+ {
+  "owner": "Ogeechee Transmission Cooperative",
+  "project": "Millen 115 kV Switching Station",
+  "voltage_kv": 115,
+  "type": "substation",
+  "in_service_date": "2027-09",
+  "cost_usd": 9000000,
+  "coords": [
+   [
+    32.8,
+    -81.94
+   ]
+  ]
+ }
+]

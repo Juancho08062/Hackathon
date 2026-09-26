@@ -1,0 +1,124 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "utility": "Coastal Georgia Power Authority",
+    "name": "Effingham - Port Wentworth 230 kV Line",
+    "kv": 230,
+    "type": "new_line",
+    "start": "2027-10-01",
+    "in_service": "2029-05-31",
+    "cost": 48000000
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -81.3,
+      32.33
+     ],
+     [
+      -81.22,
+      32.24
+     ],
+     [
+      -81.16,
+      32.16
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "utility": "Coastal Georgia Power Authority",
+    "name": "Rincon 230/115 kV Substation",
+    "kv": 230,
+    "type": "substation",
+    "in_service": "2029",
+    "cost": 26000000
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -81.24,
+     32.3
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "utility": "Coastal Georgia Power Authority",
+    "name": "Garden City Industrial 115 kV Substation",
+    "kv": 115,
+    "type": "substation",
+    "in_service": "2028-06-30"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -81.16,
+       32.1
+      ],
+      [
+       -81.15,
+       32.1
+      ],
+      [
+       -81.15,
+       32.11
+      ],
+      [
+       -81.16,
+       32.11
+      ],
+      [
+       -81.16,
+       32.1
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "utility": "Coastal Georgia Power Authority",
+    "name": "Tybee 115 kV Rebuild",
+    "kv": 115,
+    "type": "rebuild",
+    "in_service": "2030-12-31"
+   },
+   "geometry": {
+    "type": "MultiLineString",
+    "coordinates": [
+     [
+      [
+       -80.98,
+       32.02
+      ],
+      [
+       -80.9,
+       32.01
+      ]
+     ],
+     [
+      [
+       -80.9,
+       32.01
+      ],
+      [
+       -80.85,
+       32
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

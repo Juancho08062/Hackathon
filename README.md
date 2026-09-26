@@ -61,7 +61,20 @@ Column names are matched loosely. For example, `owner` or `Transmission Owner` w
 | in_service | yes | `2029`, `2029-06`, `6/1/2029` or `Summer 2029` |
 | kv, type, start, cost, description | no | type is `new_line`, `rebuild`, `substation` or `generation`, and is guessed from the name if left out |
 
-The [`samples/`](samples) folder has the same five fictional projects in every format: `sample-plan.xlsx`, `.csv`, `.geojson`, `.kml`, `.kmz` and `sample-plan-shapefile.zip`. Load any of them to see the import work.
+The [`samples/`](samples) folder has one fictional plan per format, each from a different made-up utility, with projects placed near the built-in DESC and Georgia work so overlaps show up:
+
+| file | utility | what it exercises |
+|---|---|---|
+| `lowcountry-power.csv` | Lowcountry Power Cooperative | the template's column names; a line that crosses Jasper–Okatie |
+| `aiken-edgefield-electric.tsv` | Aiken-Edgefield Electric Cooperative | other column names (`Owner`, `ISD`, `To Lat`), `$6.5M` costs, `Summer 2027` dates |
+| `ogeechee-transmission.json` | Ogeechee Transmission Cooperative | a JSON array with a `coords` list per project |
+| `coastal-georgia-power.geojson` | Coastal Georgia Power Authority | LineString, Point, Polygon and MultiLineString |
+| `midlands-rural-electric.xlsx` | Midlands Rural Electric | title rows, two sheets, real date cells, one row with no in-service date (reported as skipped) |
+| `savannah-river-transmission.kml` | Savannah River Transmission Co. | attributes in an ArcGIS-style HTML table in each description |
+| `piedmont-lakes-electric.kmz` | Piedmont Lakes Electric | zipped KML with ExtendedData and a MultiGeometry |
+| `tri-county-grid-shapefile.zip` | Tri-County Grid Cooperative | two layers in UTM zone 17N, reprojected using the `.prj` |
+
+`tests/samples.test.js` loads each one through the same readers the browser uses. After an import, Seamline compares the new utility with whichever loaded utility has the nearest project.
 
 Most published plan lists name substations but give no coordinates, and PDF-only plans need their table copied into Excel first. Adding coordinates is the one manual step.
 
@@ -97,7 +110,7 @@ docs/screenshots/       images used in this README
 Requires Python 3 and Node 18 or newer.
 
 ```
-npm install              # installs the linter only; the app itself has no dependencies to install
+npm install              # installs the linter and test helpers; the app itself has no dependencies to install
 npm run build            # rebuild index.html after changing src/ or data/
 npm run build:data       # also regenerate data/projects.json from scripts/build_projects.py
 npm test                 # engine, importer and sample-file tests

@@ -455,8 +455,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     utility: ["utility", "owner", "company", "transmission_owner", "to", "utility_name", "entity", "member"],
     name: ["name", "project", "project_name", "title", "description_short", "project_title", "facility", "facility_name", "proj_name"],
     desc: ["desc", "description", "scope", "details", "notes"],
-    kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv"],
-    type: ["type", "project_type", "category", "work_type"],
+    kv: ["kv", "voltage", "voltage_kv", "kv_class", "nominal_kv", "volt", "voltage_class", "kv_level", "max_kv", "kv_nominal"],
+    type: ["type", "project_type", "category", "work_type", "proj_type"],
     start: ["start", "start_date", "construction_start", "begin", "const_start", "start_year"],
     in_service: ["in_service", "in_service_date", "isd", "expected_in_service", "completion", "year", "in_service_year", "in_serv", "inservice", "expected_isd", "projected_isd", "isd_year", "planned_isd"],
     cost: ["cost", "cost_usd", "estimated_cost", "est_cost", "budget", "cost_estimate", "project_cost"],
@@ -523,11 +523,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     let m;
     if ((m = s.match(/^(\d{4})$/))) return { iso: `${m[1]}-06-01`, precision: "year" };
     if ((m = s.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/))) return { iso: `${m[1]}-${m[2].padStart(2, "0")}-${(m[3] || "01").padStart(2, "0")}`, precision: m[3] ? "day" : "month" };
-    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return { iso: `${y}-${m[1].padStart(2, "0")}-${String(Math.min(28, +m[2])).padStart(2, "0")}`, precision: "day" }; }
+    if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; const last = new Date(Date.UTC(+y, +m[1], 0)).getUTCDate(); return { iso: `${y}-${m[1].padStart(2, "0")}-${String(Math.min(last, +m[2])).padStart(2, "0")}`, precision: "day" }; }
     if ((m = s.match(/(spring|summer|fall|autumn|winter)\s+(\d{4})/i))) { const mo = { spring: "04", summer: "07", fall: "10", autumn: "10", winter: "01" }[m[1].toLowerCase()]; return { iso: `${m[2]}-${mo}-01`, precision: "season" }; }
     const d = new Date(s); return isNaN(d) ? null : { iso: d.toISOString().slice(0, 10), precision: "day" };
   }
   const num = v => { const n = parseFloat(String(v ?? "").replace(/[$,\s]/g, "").replace(/(\d)k$/i, "$1e3").replace(/(\d)m$/i, "$1e6")); return isFinite(n) ? n : null; };
+  // KML descriptions can be HTML or {"@type": "html", value}; keep readable text only.
+  const plainText = v => { if (v == null) return ""; if (typeof v === "object") v = v.value ?? ""; return String(v).replace(/<(br|\/p|\/tr)[^>]*>/gi, " ").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim(); };
   function minusMonths(iso, m) { const d = new Date(iso + "T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() - m); return d.toISOString().slice(0, 10); }
 
   // row: flat object; coords: optional [[lat, lon], ...] (from GeoJSON). Returns { project } or { error }.
@@ -550,7 +552,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     return {
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),
-        name: String(name).trim(), desc: String(pick(row, "desc") || ""), kv, miles, type,
+        name: String(name).trim(), desc: plainText(pick(row, "desc")), kv, miles, type,
         in_service: isd.iso, date_precision: isd.precision === "day" ? "day" : "year",
         start: st ? st.iso : minusMonths(isd.iso, Engine.estMonths(type, kv, miles)), start_published: !!st,
         cost: num(pick(row, "cost")), coords, loc: "med", source: defaults.source || "", page: "", imported: true,
@@ -658,38 +660,43 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 //   Shapefile (.zip, or .shp + .dbf) -> GeoJSON       -> Ingest.parseGeoJSON (shpjs; reprojects using .prj)
 // Parsing libraries load on first use through Libs.need, so the page stays light until someone imports a file.
 (function (root) {
+  // Libraries register globally in the browser; tests in Node put them on globalThis and provide Libs and DOMParser.
+  const G = typeof window !== "undefined" ? window : globalThis;
+  const Ingest = G.Ingest || require("./ingest.js");
+  const need = (...names) => G.Libs.need(...names);
   const ext = name => (name.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() || "";
   const base = name => name.replace(/\.[^.]+$/, "").toLowerCase();
   const TEXT = ["csv", "tsv", "txt", "json", "geojson"], SHEET = ["xlsx", "xlsm", "xls", "ods"], GPS = ["kml", "gpx"];
   const ACCEPT = [...TEXT, ...SHEET, ...GPS, "kmz", "zip", "shp", "dbf", "prj", "cpg"].map(e => "." + e).join(",");
 
   // Exports from ArcGIS put every attribute in an HTML table inside the KML description. Lift those into properties.
+  const strip = h => h.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
   function liftDescriptionTable(gj) {
     for (const f of gj.features || []) {
       const d = f.properties && f.properties.description;
       const html = typeof d === "string" ? d : d && d.value;
       if (!html || !/<td/i.test(html)) continue;
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      for (const tr of doc.querySelectorAll("tr")) {
-        const cells = [...tr.querySelectorAll("td,th")].map(c => c.textContent.trim());
+      for (const [, row] of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+        const cells = [...row.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m => strip(m[1]));
         if (cells.length === 2 && cells[0] && !(cells[0] in f.properties)) f.properties[cells[0]] = cells[1];
       }
+      delete f.properties.description; // it was only the attribute table
     }
     return gj;
   }
   async function kmlToGeoJSON(text, kind = "kml") {
-    await Libs.need("toGeoJSON");
-    const dom = new DOMParser().parseFromString(text, "text/xml");
-    if (dom.querySelector("parsererror")) throw new Error("the file isn't valid " + kind.toUpperCase());
-    return liftDescriptionTable(root.toGeoJSON[kind](dom));
+    await need("toGeoJSON");
+    const dom = new G.DOMParser().parseFromString(text, "text/xml");
+    if (!dom || !dom.documentElement || dom.getElementsByTagName("parsererror").length) throw new Error("the file isn't valid " + kind.toUpperCase());
+    return liftDescriptionTable(G.toGeoJSON[kind](dom));
   }
 
   function sheetRows(buf) {
-    const wb = root.XLSX.read(buf, { type: "array", cellDates: true });
+    const wb = G.XLSX.read(buf, { type: "array", cellDates: true });
     const rows = [];
     for (const name of wb.SheetNames) {
       // raw: false keeps what the cell shows (formatted dates and numbers), which the importer already understands
-      const table = root.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: "", raw: false, dateNF: "yyyy-mm-dd" });
+      const table = G.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: "", raw: false, dateNF: "yyyy-mm-dd" });
       rows.push(...Ingest.rowsFromTable(table));
     }
     if (!rows.length) throw new Error("no sheet has a header row with a project name column");
@@ -697,11 +704,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
 
   async function fromZip(buf, filename) {
-    await Libs.need("JSZip");
-    const zip = await root.JSZip.loadAsync(buf), names = Object.keys(zip.files).filter(n => !zip.files[n].dir && !/(^|\/)__MACOSX\//.test(n));
+    await need("JSZip");
+    const zip = await G.JSZip.loadAsync(buf), names = Object.keys(zip.files).filter(n => !zip.files[n].dir && !/(^|\/)__MACOSX\//.test(n));
     if (names.some(n => ext(n) === "shp")) {
-      await Libs.need("shp");
-      return { geojson: await root.shp(buf) };
+      await need("shp");
+      return { geojson: await G.shp(buf) };
     }
     const kml = names.find(n => ext(n) === "kml");
     if (kml) return { geojson: await kmlToGeoJSON(await zip.files[kml].async("string")) };
@@ -714,7 +721,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   async function readOne(file) {
     const e = ext(file.name);
     if (TEXT.includes(e) || !e) return { text: await file.text() };
-    if (SHEET.includes(e)) { await Libs.need("XLSX"); return { rows: sheetRows(await file.arrayBuffer()) }; }
+    if (SHEET.includes(e)) { await need("XLSX"); return { rows: sheetRows(await file.arrayBuffer()) }; }
     if (GPS.includes(e)) return { geojson: await kmlToGeoJSON(await file.text(), e) };
     if (e === "kmz" || e === "zip") return fromZip(await file.arrayBuffer(), file.name);
     throw new Error(`.${e} files aren't supported. Try CSV, Excel, GeoJSON, KML/KMZ or a zipped shapefile`);
@@ -724,9 +731,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   async function readShapefileParts(parts) {
     const byExt = Object.fromEntries(parts.map(f => [ext(f.name), f]));
     if (!byExt.shp) throw new Error("a shapefile needs its .shp file. Pick the .shp, .dbf and .prj together, or zip them");
-    await Libs.need("shp");
+    await need("shp");
     const buf = async e => byExt[e] ? byExt[e].arrayBuffer() : undefined, txt = async e => byExt[e] ? byExt[e].text() : undefined;
-    return { geojson: await root.shp({ shp: await buf("shp"), dbf: await buf("dbf"), prj: await txt("prj"), cpg: await txt("cpg") }) };
+    return { geojson: await G.shp({ shp: await buf("shp"), dbf: await buf("dbf"), prj: await txt("prj"), cpg: await txt("cpg") }) };
   }
 
   // Many files -> [{ name, text|rows|geojson } | { name, error }], grouping shapefile parts by base name.
@@ -742,7 +749,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     return Promise.all(out);
   }
 
-  root.Formats = { read, ACCEPT, ext };
+  const api = { read, ACCEPT, ext };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Formats = api;
 })(this);
 
 </script>
@@ -1661,7 +1669,10 @@ function importParsed(input, filename) {
     DATASETS.push({ id, name: filename, count: res.projects.length, utils });
     // Compare the new utility against whichever current utility is nearest to its projects.
     state.utilB = utils[0];
-    if (state.utilA === state.utilB) state.utilA = utilities().find(u => u !== state.utilB);
+    // Nearest pair wins; more flagged pairs breaks a tie (several utilities can touch the new plan).
+    const score = u => { const ps = findOverlaps(PROJECTS, { utilA: u, utilB: state.utilB, maxKm: state.D, bufferMonths: state.B, mode: "near" }).pairs; return [ps.length ? Math.min(...ps.map(x => x.km)) : Infinity, -ps.length]; };
+    const others = utilities().filter(u => u !== state.utilB).map(u => [u, score(u)]).sort((a, b) => a[1][0] - b[1][0] || a[1][1] - b[1][1]);
+    if (others.length && (others[0][1][0] < Infinity || state.utilA === state.utilB)) state.utilA = others[0][0];
     renderDatasets(); rebuild();
     return `<p class="ok">Loaded ${res.projects.length} of ${res.total} rows from ${esc(filename)} (${esc(utils.join(", "))}). Now comparing with ${esc(lbl(state.utilA))}.</p>` +
       (res.errors.length ? `<p class="warn">Skipped ${res.errors.length}: ${res.errors.slice(0, 4).map(esc).join("; ")}${res.errors.length > 4 ? "…" : ""}</p>` : "");
