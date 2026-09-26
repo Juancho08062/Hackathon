@@ -27,6 +27,7 @@ const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
   tab: "overlaps", sort: "expected", shown: 60, askKey: false, keyNote: null,
+  lastView: "overlaps",
   askLang: store.get("askLang", (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en"),
   opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
   grid: true,
@@ -330,6 +331,15 @@ function renderTabs() {
   $("#b-checks").hidden = !review; $("#b-checks").textContent = review;
 }
 // Switch the panel's view, as the rail's tabs do.
+// Ask toggles; every other rail item switches. Leaving Ask returns to the view that was open before it, which is what
+// a panel you opened over your work should do.
+function toggleTab(t) {
+  if (t === "ask" && state.tab === "ask") return goTab(state.lastView || "overlaps");
+  if (t === "ask") store.set("askSeen", true);
+  else state.lastView = t;
+  goTab(t);
+}
+
 function goTab(t) { const keep = t === "overlaps" && state.tab === "ask"; state.tab = t; if (state.sel && !state.sel.cluster && !keep) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); }
 // Four headline numbers at the top of the Overlaps view; the last two open the Plan and Checks views.
 function renderKpis() {
@@ -1235,78 +1245,187 @@ function openBrief(x0, narrative) {
   // the what-if applies only when it was set on this pair; the assistant can open a brief for a pair nobody selected
   const wi = state.wi && state.wi.key === keyOf(x0) ? state.wi : { who: "q", shift: 0 };
   const y = whatIf(x0, wi.who, wi.shift), better = wi.shift && (y.ov > x0.ov || y.risk.expected > x0.risk.expected);
-  const x = better ? y : x0, moved = better ? x[wi.who] : null, s = x.sav, T = TIERS[x.tier];
-  const uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(wi.shift)}` : ""}.`
-    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = Engine.recommendShift(x0, "q", TODAY); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
-  const risk = x.risk.why === "built" ? "One of the projects is likely built already." : `Given how both utilities' dates have moved between plans, there is a ${pct(x.risk.chance)} chance both are in the field together from today on; expected savings ${money(x.risk.expected)}.`;
-  const steps = [
-    "Confirm both project locations and the closest-point distance with each utility's GIS team.",
-    x.tier === 0 && "Agree one outage window and crossing-structure design for where the projects meet.",
-    x.tier <= 1 && "Scope a shared right-of-way and access road, and file one joint permit package.",
-    x.tier <= 2 && "Site one laydown yard between the projects for material deliveries.",
-    "Compare contractor and crew plans; share mobilization where the windows overlap.",
-    "Name one coordinator at each utility and set a monthly check-in until both are in service.",
-  ].filter(Boolean);
-  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} to ${fmtD(p, "in_service")}${p === moved ? "<br><em>proposed</em>" : ""}</td><td>${c.est ? "est. " : ""}${money(c.v)}</td></tr>`;
+  const x = better ? y : x0, moved = better ? x[wi.who] : null, s = x.sav;
+  const D = doc(), uA = lblLong(x.p.utility), uB = lblLong(x.q.utility), today = docDate();
+  const when = x.ov > 0 ? D.windowsShare(Math.round(x.ov), moved ? esc(moved.name) : null, moved ? moLabel(wi.shift) : null)
+    : D.windowsApart(Math.round(x.gap)) + (() => { const r = Engine.recommendShift(x0, "q", TODAY); return r ? D.windowsFix(esc(x0.q.name), moLabel(r)) : ""; })();
+  const risk = x.risk.why === "built" ? D.riskBuilt : D.risk(pct(x.risk.chance), money(x.risk.expected));
+  const steps = [D.steps[0], x.tier === 0 && D.steps[1], x.tier <= 1 && D.steps[2], x.tier <= 2 && D.steps[3], D.steps[4], D.steps[5]].filter(Boolean);
+  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} ${esc(D.to2)} ${fmtD(p, "in_service")}${p === moved ? `<br><em>${esc(D.proposed)}</em>` : ""}</td><td>${c.est ? esc(D.est) : ""}${money(c.v)}</td></tr>`;
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">SEAMLINE <span>Coordination brief</span></div><div class="b-date">${today}</div></header>
-    <dl class="b-memo"><dt>To</dt><dd>${esc(uA)} transmission planning<br>${esc(uB)} transmission planning</dd>
-      <dt>Re</dt><dd>Coordinating ${esc(x.p.name)} and ${esc(x.q.name)}</dd></dl>
+    <header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandBrief)}</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(uA)} ${esc(D.planning)}<br>${esc(uB)} ${esc(D.planning)}</dd>
+      <dt>${esc(D.re)}</dt><dd>${esc(D.reCoord(x.p.name, x.q.name))}</dd></dl>
     ${briefNote(narrative)}
-    <p class="b-lede">These two planned projects come within <b>${km(x.km)}</b> of each other at their closest points (<b>${esc(T.label.toLowerCase())}</b>). ${esc(T.means)}. ${when} ${risk}</p>
+    <p class="b-lede">${D.ledePair(km(x.km), esc(D.tiers[x.tier]), esc(D.means[x.tier]))} ${when} ${risk}</p>
     <div class="b-grid"><div>${briefMap(x)}</div>
-      <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</b><span>chance of a shared window</span></div><div><b>${money(x.risk.expected)}</b><span>expected savings (${s.total ? money(s.total) : "$0"} if dates hold)</span></div></div></div>
-    <h4>The projects</h4>
-    <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
-    ${s.items.length ? `<h4>What they can share, and what each saves</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total if dates hold${Engine.customized() ? " (with edited unit costs)" : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
+      <div class="b-kpis"><div><b>${km(x.km)}</b><span>${esc(D.kpiApart)}</span></div><div><b>${x.risk.why === "built" ? "–" : pct(x.risk.chance)}</b><span>${esc(D.kpiChance)}</span></div><div><b>${money(x.risk.expected)}</b><span>${esc(D.kpiExpected(s.total ? money(s.total) : "$0"))}</span></div></div></div>
+    <h4>${esc(D.hProjects)}</h4>
+    <table class="b-tab"><thead><tr><th>${esc(D.thProject)}</th><th>${esc(D.thType)}</th><th>${esc(D.thWindow)}</th><th>${esc(D.thCost)}</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
+    ${s.items.length ? `<h4>${esc(D.hShare)}</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td><b>${esc(i.share)}</b> <span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>${esc(D.totalHold)}${Engine.customized() ? esc(D.edited) : ""}</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
     ${x.tier <= 3 ? (() => { const yd = pairYard(x), im = Engine.yardImpact(yd, 2); return `<p class="b-yard"><b>Shared yard.</b> The best spot for one staging yard is ${yd.near ? "next to " + esc(yd.near) : "open land"} at ${yd.at.map(v => v.toFixed(3)).join(", ")}, ${yardDist(yd)}${x.sameWindow ? `, saving about ${miles(im.netMi)} truck-miles and ${im.co2t.toFixed(1)} t of CO2` : ""}.</p>`; })() : ""}
-    <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
-    <p class="b-foot">Prepared with Seamline from public plans (${esc([...new Set([x.p, x.q].map(srcName))].join("; "))}). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
+    <h4>${esc(D.hSteps)}</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+    <p class="b-foot">${esc(D.footBrief([...new Set([x.p, x.q].map(srcName))].join("; ")))}${x.p.loc === "low" || x.q.loc === "low" ? esc(D.footApprox) : ""}${esc(D.footBriefEnd)}</p>`;
   showBrief();
 }
+// The printable documents in both languages. They follow the panel's flag, because a report is read by whoever asked
+// for it. Tier labels and unit-cost wording come from the engine in English, so the ones that reach a document are
+// translated here rather than in the engine, which has no notion of a reader.
+const DOC = {
+  en: {
+    locale: "en-US",
+    brandBrief: "Coordination brief", brandSchedule: "Joint schedule proposal", brandReport: "Project report",
+    to: "To", re: "Re", planning: "transmission planning",
+    reCoord: (a, b) => `Coordinating ${a} and ${b}`,
+    reMoves: n => `${n} date moves that line up nearby construction`,
+    reReport: (n, util, by) => `${n} planned projects${util ? ` (${util} only)` : ""}, ranked by ${by}`,
+    tiers: ["touching or crossing", "under 1.6 km", "under 8 km", "under 40 km", "over 40 km"],
+    means: ["Outage timing and crossing structures have to be coordinated", "They can share right-of-way, access roads and permits",
+      "They can share laydown yards and deliveries", "They can share crews, cranes and contractors", "They are beyond one staging yard's daily drive"],
+    ledePair: (d, tier, means) => `These two planned projects come within <b>${d}</b> of each other at their closest points (<b>${tier}</b>). ${means}.`,
+    windowsShare: (m, who, by) => `Their build windows overlap by about ${m} months${who ? `, if ${who} moves ${by}` : ""}.`,
+    windowsApart: m => `Their build windows are about ${m} months apart.`,
+    windowsFix: (who, by) => ` Moving ${who} ${by} would give them a shared window.`,
+    riskBuilt: "One of the projects is likely built already.",
+    risk: (p, m) => `Given how both utilities' dates have moved between plans, there is a ${p} chance both are in the field together from today on; expected savings ${m}.`,
+    kpiApart: "apart at the closest points", kpiChance: "chance of a shared window",
+    kpiExpected: hold => `expected savings (${hold} if dates hold)`,
+    hProjects: "The projects", thProject: "Project", thType: "Type", thWindow: "Build window", thCost: "Cost",
+    to2: "to", est: "est. ", proposed: "proposed",
+    hShare: "What they can share, and what each saves",
+    totalHold: "Total if dates hold", edited: " (with edited unit costs)",
+    yardLead: "Shared yard.", yardBest: "The best spot for one staging yard is", atCoords: "at", yardNear: n => `next to ${n}`, yardOpen: "open land",
+    yardSaves: (mi, co2) => `, saving about ${mi} truck-miles and ${co2} t of CO2`,
+    hSteps: "Proposed next steps",
+    steps: [
+      "Confirm both project locations and the closest-point distance with each utility's GIS team.",
+      "Agree one outage window and crossing-structure design for where the projects meet.",
+      "Scope a shared right-of-way and access road, and file one joint permit package.",
+      "Site one laydown yard between the projects for material deliveries.",
+      "Compare contractor and crew plans; share mobilization where the windows overlap.",
+      "Name one coordinator at each utility and set a monthly check-in until both are in service.",
+    ],
+    footBrief: srcs => `Prepared with Seamline from public plans (${srcs}). Locations are matched from substation names to OpenStreetMap and checked by hand`,
+    footApprox: ", and at least one of these is approximate",
+    footBriefEnd: "; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.",
+    ledeSchedule: (n, mo, before, after) => `Moving these ${n} projects by at most ${mo} months raises the expected savings from coordinating nearby work from <b>${before}</b> to <b>${after}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.`,
+    thMove: "Move", thInService: "In service", thAdds: "Adds", months: "months",
+    stepsSchedule: ["Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.",
+      "Agree the moves that fit at the next SERTP coordination meeting.", "Re-run Seamline on the next published plans to track the result."],
+    footSchedule: "Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.",
+    measures: { cost: "published cost", kv: "voltage", length_km: "length", in_service: "in-service date", name: "name" },
+    ledeReport: (n, checked, screen, flagged, expected, hold, priced) =>
+      `${n} planned projects are loaded${checked ? `, and ${checked} cross-utility pairs were checked against a ${screen} km screen` : ""}. ${flagged ? `<b>${flagged}</b> pairs are close enough to coordinate on, worth <b>${expected}</b> in expected savings (${hold} if every date holds).` : ""} Only ${priced} of the ${n} projects publish a cost; the rest are redacted in their own filing, so no figure is attributed to them here.`,
+    kpiChecked: "pairs checked", kpiFlagged: "flagged", kpiSavings: "expected savings", kpiOutside: "just outside the screen",
+    hRanked: by => `Projects by ${by}`, thLength: "Length", notPublished: "not published",
+    hTop: "Strongest coordination opportunities", thPair: "Pair", thApart: "Apart", thWindows: "Windows", thExpected: "Expected",
+    shared: m => `${m} mo shared`, apart: m => `${m} mo apart`,
+    hCovers: "What this covers",
+    coverPlaced: (ok, n, bad) => `${ok} of ${n} projects could be placed on a map${bad ? `; ${bad} could not and are excluded from every distance` : ""}.`,
+    coverBand: (n, from, to) => `${n} further pairs fall between ${from} km and ${to} km. They are deliberately outside the ranking and the totals; ${from} km is a chosen threshold, not a cliff.`,
+    coverFilters: (d, b, mode) => `Filters in effect: within ${d} km, window buffer ±${b} months, match rule "${mode}".`,
+    footReport: "Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand; costs are reproduced from the filings that publish them and never estimated for the ones that do not. Confirm with both utilities before acting.",
+  },
+  es: {
+    locale: "es-ES",
+    brandBrief: "Informe de coordinación", brandSchedule: "Propuesta conjunta de cronograma", brandReport: "Informe de proyectos",
+    to: "Para", re: "Asunto", planning: "planeación de transmisión",
+    reCoord: (a, b) => `Coordinar ${a} y ${b}`,
+    reMoves: n => `${n} movimientos de fecha que alinean obra cercana`,
+    reReport: (n, util, by) => `${n} proyectos planeados${util ? ` (solo ${util})` : ""}, ordenados por ${by}`,
+    tiers: ["se tocan o se cruzan", "a menos de 1,6 km", "a menos de 8 km", "a menos de 40 km", "a más de 40 km"],
+    means: ["Hay que coordinar las ventanas de corte y las estructuras de cruce", "Pueden compartir servidumbre, vías de acceso y permisos",
+      "Pueden compartir patios de acopio y entregas", "Pueden compartir cuadrillas, grúas y contratistas", "Están más lejos de lo que un patio cubre en un día"],
+    ledePair: (d, tier, means) => `Estos dos proyectos planeados quedan a <b>${d}</b> uno del otro en sus puntos más cercanos (<b>${tier}</b>). ${means}.`,
+    windowsShare: (m, who, by) => `Sus ventanas de obra se solapan unos ${m} meses${who ? `, si ${who} se mueve ${by}` : ""}.`,
+    windowsApart: m => `Sus ventanas de obra están separadas unos ${m} meses.`,
+    windowsFix: (who, by) => ` Mover ${who} ${by} les daría una ventana compartida.`,
+    riskBuilt: "Uno de los dos proyectos probablemente ya está construido.",
+    risk: (p, m) => `Según cómo se movieron las fechas de las dos utilities entre planes, hay ${p} de probabilidad de que ambos estén en obra al mismo tiempo de hoy en adelante; ahorro esperado ${m}.`,
+    kpiApart: "de separación en los puntos más cercanos", kpiChance: "probabilidad de ventana compartida",
+    kpiExpected: hold => `ahorro esperado (${hold} si las fechas se mantienen)`,
+    hProjects: "Los proyectos", thProject: "Proyecto", thType: "Tipo", thWindow: "Ventana de obra", thCost: "Costo",
+    to2: "a", est: "est. ", proposed: "propuesto",
+    hShare: "Qué pueden compartir, y cuánto ahorra cada cosa",
+    totalHold: "Total si las fechas se mantienen", edited: " (con costos unitarios editados)",
+    yardLead: "Patio compartido.", yardBest: "El mejor lugar para un solo patio de acopio es", atCoords: "en", yardNear: n => `junto a ${n}`, yardOpen: "campo abierto",
+    yardSaves: (mi, co2) => `, ahorrando unas ${mi} millas-camión y ${co2} t de CO2`,
+    hSteps: "Próximos pasos propuestos",
+    steps: [
+      "Confirmar las ubicaciones de ambos proyectos y la distancia entre puntos más cercanos con el equipo de GIS de cada utility.",
+      "Acordar una sola ventana de corte y un diseño de estructuras de cruce donde los proyectos se encuentran.",
+      "Dimensionar una servidumbre y una vía de acceso compartidas, y presentar un solo paquete de permisos.",
+      "Ubicar un único patio de acopio entre los dos proyectos para las entregas de material.",
+      "Comparar los planes de contratistas y cuadrillas; compartir la movilización donde las ventanas se solapan.",
+      "Nombrar un coordinador en cada utility y fijar una reunión mensual hasta que ambos entren en servicio.",
+    ],
+    footBrief: srcs => `Preparado con Seamline desde planes públicos (${srcs}). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano`,
+    footApprox: ", y al menos una de estas es aproximada",
+    footBriefEnd: "; los costos son estimaciones de nivel de planeación salvo que el plan publique uno. Confirmar con ambas utilities antes de actuar.",
+    ledeSchedule: (n, mo, before, after) => `Mover estos ${n} proyectos a lo sumo ${mo} meses sube el ahorro esperado por coordinar obra cercana de <b>${before}</b> a <b>${after}</b>. Cada movimiento es sobre un proyecto que no ha arrancado. Las probabilidades salen de cómo se movieron las fechas de cada utility entre sus dos últimos planes.`,
+    thMove: "Movimiento", thInService: "Entra en servicio", thAdds: "Agrega", months: "meses",
+    stepsSchedule: ["Cada utility revisa si sus movimientos calzan con fechas de necesidad de confiabilidad, temporadas de corte y ciclos de presupuesto.",
+      "Acordar los movimientos que calzan en la próxima reunión de coordinación de SERTP.", "Volver a correr Seamline sobre los próximos planes publicados para seguir el resultado."],
+    footSchedule: "Preparado con Seamline. Es una ayuda de planeación: asume que cada fecha se mueve una vez más como en las actualizaciones de plan anteriores, y que las utilities se mueven de forma independiente.",
+    measures: { cost: "costo publicado", kv: "voltaje", length_km: "longitud", in_service: "fecha de entrada en servicio", name: "nombre" },
+    ledeReport: (n, checked, screen, flagged, expected, hold, priced) =>
+      `Hay ${n} proyectos planeados cargados${checked ? `, y se revisaron ${checked} pares entre utilities contra un filtro de ${screen} km` : ""}. ${flagged ? `<b>${flagged}</b> pares están lo bastante cerca para coordinarse, por <b>${expected}</b> de ahorro esperado (${hold} si todas las fechas se mantienen).` : ""} Solo ${priced} de los ${n} proyectos publican un costo; el resto lo tienen tachado en su propio filing, así que acá no se les atribuye ninguna cifra.`,
+    kpiChecked: "pares revisados", kpiFlagged: "marcados", kpiSavings: "ahorro esperado", kpiOutside: "justo afuera del filtro",
+    hRanked: by => `Proyectos por ${by}`, thLength: "Longitud", notPublished: "no publicado",
+    hTop: "Oportunidades de coordinación más fuertes", thPair: "Par", thApart: "Separación", thWindows: "Ventanas", thExpected: "Esperado",
+    shared: m => `${m} meses compartidos`, apart: m => `${m} meses de diferencia`,
+    hCovers: "Qué cubre esto",
+    coverPlaced: (ok, n, bad) => `${ok} de ${n} proyectos se pudieron ubicar en el mapa${bad ? `; ${bad} no, y quedan excluidos de toda distancia` : ""}.`,
+    coverBand: (n, from, to) => `Otros ${n} pares caen entre ${from} km y ${to} km. Quedan deliberadamente afuera del ranking y de los totales; ${from} km es un umbral elegido, no un acantilado.`,
+    coverFilters: (d, b, mode) => `Filtros vigentes: a menos de ${d} km, margen de ventana ±${b} meses, regla de coincidencia "${mode}".`,
+    footReport: "Preparado con Seamline desde planes públicos (las listas de proyectos SCRTP de DESC, el plan a diez años del IRP 2025 de Georgia Power y SERTP). Las ubicaciones se cruzan desde los nombres de subestación contra OpenStreetMap y se revisan a mano; los costos se reproducen de los filings que los publican y nunca se estiman para los que no. Confirmar con ambas utilities antes de actuar.",
+  },
+};
+const doc = () => DOC[askLang()] || DOC.en;
+const docDate = () => new Date().toLocaleDateString(doc().locale, { year: "numeric", month: "long", day: "numeric" });
+
 function openReport(opts, narrative) {
   const o = Object.assign({ sort: "cost", order: "desc", limit: 20 }, opts || {});
-  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const D = doc(), today = docDate();
   const ranked = runTool("search_projects", { sort: o.sort, order: o.order, utility: o.utility, limit: Math.min(40, o.limit) });
   const top = RESULT.pairs.slice(0, 8);
   const priced = PROJECTS.filter(p => p.cost);
-  const MEASURE = { cost: "published cost", kv: "voltage", length_km: "length", in_service: "in-service date", name: "name" };
+  const MEASURE = D.measures;
   const unlocated = PROJECTS.filter(p => !(p.coords || []).length).length;
   const totals = { expected: RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0), hold: RESULT.pairs.reduce((a, x) => a + x.sav.total, 0) };
 
   $("#briefDoc").innerHTML = `
-    <header class="b-head"><div class="b-brand">SEAMLINE <span>Project report</span></div><div class="b-date">${today}</div></header>
-    <dl class="b-memo"><dt>To</dt><dd>${esc(lblLong(state.utilA))} transmission planning${solo() ? "" : `<br>${esc(lblLong(state.utilB))} transmission planning`}</dd>
-      <dt>Re</dt><dd>${PROJECTS.length} planned projects${o.utility ? ` (${esc(lblLong(o.utility))} only)` : ""}, ranked by ${esc(MEASURE[o.sort] || o.sort)}</dd></dl>
+    <header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandReport)}</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}${solo() ? "" : `<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}`}</dd>
+      <dt>${esc(D.re)}</dt><dd>${esc(D.reReport(PROJECTS.length, o.utility ? lblLong(o.utility) : null, MEASURE[o.sort] || o.sort))}</dd></dl>
     ${briefNote(narrative)}
-    <p class="b-lede">${PROJECTS.length} planned projects are loaded${solo() ? "" : `, and ${RESULT.checked.toLocaleString("en-US")} cross-utility pairs were checked against a ${state.D} km screen`}. ${solo() ? "" : `<b>${RESULT.pairs.length}</b> pairs are close enough to coordinate on, worth <b>${money(totals.expected)}</b> in expected savings (${money(totals.hold)} if every date holds).`} Only ${priced.length} of the ${PROJECTS.length} projects publish a cost; the rest are redacted in their own filing, so no figure is attributed to them here.</p>
-    ${solo() ? "" : `<div class="b-kpis b-row"><div><b>${RESULT.checked.toLocaleString("en-US")}</b><span>pairs checked</span></div><div><b>${RESULT.pairs.length}</b><span>flagged</span></div><div><b>${money(totals.expected)}</b><span>expected savings</span></div><div><b>${borderline().length}</b><span>just outside the screen</span></div></div>`}
-    <h4>Projects by ${esc(MEASURE[o.sort] || o.sort)}</h4>
-    <table class="b-tab"><thead><tr><th>#</th><th>Project</th><th>Type</th><th>In service</th><th>Length</th><th>Cost</th></tr></thead><tbody>
-      ${ranked.projects.map((p, i) => `<tr><td>${i + 1}</td><td><b>${esc(p.name)}</b><br><span>${esc(p.id)} · ${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(p.type || "")}</td><td>${esc(p.in_service)}</td><td class="n">${p.length_km ? p.length_km + " km" : "–"}</td><td class="n">${p.cost_usd ? money(p.cost_usd) : "<span>not published</span>"}</td></tr>`).join("")}
+    <p class="b-lede">${D.ledeReport(PROJECTS.length, solo() ? null : RESULT.checked.toLocaleString(D.locale), state.D, solo() ? null : RESULT.pairs.length, money(totals.expected), money(totals.hold), priced.length)}</p>
+    ${solo() ? "" : `<div class="b-kpis b-row"><div><b>${RESULT.checked.toLocaleString(D.locale)}</b><span>${esc(D.kpiChecked)}</span></div><div><b>${RESULT.pairs.length}</b><span>${esc(D.kpiFlagged)}</span></div><div><b>${money(totals.expected)}</b><span>${esc(D.kpiSavings)}</span></div><div><b>${borderline().length}</b><span>${esc(D.kpiOutside)}</span></div></div>`}
+    <h4>${esc(D.hRanked(MEASURE[o.sort] || o.sort))}</h4>
+    <table class="b-tab"><thead><tr><th>#</th><th>${esc(D.thProject)}</th><th>${esc(D.thType)}</th><th>${esc(D.thInService)}</th><th>${esc(D.thLength)}</th><th>${esc(D.thCost)}</th></tr></thead><tbody>
+      ${ranked.projects.map((p, i) => `<tr><td>${i + 1}</td><td><b>${esc(p.name)}</b><br><span>${esc(p.id)} · ${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(p.type || "")}</td><td>${esc(p.in_service)}</td><td class="n">${p.length_km ? p.length_km + " km" : "–"}</td><td class="n">${p.cost_usd ? money(p.cost_usd) : `<span>${esc(D.notPublished)}</span>`}</td></tr>`).join("")}
     </tbody></table>
-    ${top.length ? `<h4>Strongest coordination opportunities</h4>
-    <table class="b-tab"><thead><tr><th>Pair</th><th>Apart</th><th>Windows</th><th>Expected</th></tr></thead><tbody>
-      ${top.map(x => `<tr><td><b>${esc(short(x.p))}</b> × <b>${esc(short(x.q))}</b><br><span>${esc(TIERS[Math.min(x.tier, 4)].label)}</span></td><td class="n">${km(x.km)}</td><td>${x.ov > 0 ? `${Math.round(x.ov)} mo shared` : `${Math.round(x.gap)} mo apart`}</td><td class="n">${money(x.risk.expected)}</td></tr>`).join("")}
+    ${top.length ? `<h4>${esc(D.hTop)}</h4>
+    <table class="b-tab"><thead><tr><th>${esc(D.thPair)}</th><th>${esc(D.thApart)}</th><th>${esc(D.thWindows)}</th><th>${esc(D.thExpected)}</th></tr></thead><tbody>
+      ${top.map(x => `<tr><td><b>${esc(short(x.p))}</b> × <b>${esc(short(x.q))}</b><br><span>${esc(D.tiers[Math.min(x.tier, 4)])}</span></td><td class="n">${km(x.km)}</td><td>${x.ov > 0 ? esc(D.shared(Math.round(x.ov))) : esc(D.apart(Math.round(x.gap)))}</td><td class="n">${money(x.risk.expected)}</td></tr>`).join("")}
     </tbody></table>` : ""}
-    <h4>What this covers</h4>
-    <ul><li>${PROJECTS.length - unlocated} of ${PROJECTS.length} projects could be placed on a map${unlocated ? `; ${unlocated} could not and are excluded from every distance` : ""}.</li>
-      ${solo() ? "" : `<li>${borderline().length} further pairs fall between ${state.D} km and ${Math.round(state.D * 1.05)} km. They are deliberately outside the ranking and the totals; ${state.D} km is a chosen threshold, not a cliff.</li>`}
-      <li>Filters in effect: within ${state.D} km, window buffer ±${state.B} months, match rule "${esc(state.mode)}".</li></ul>
-    <p class="b-foot">Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand; costs are reproduced from the filings that publish them and never estimated for the ones that do not. Confirm with both utilities before acting.</p>`;
+    <h4>${esc(D.hCovers)}</h4>
+    <ul><li>${esc(D.coverPlaced(PROJECTS.length - unlocated, PROJECTS.length, unlocated))}</li>
+      ${solo() ? "" : `<li>${esc(D.coverBand(borderline().length, state.D, Math.round(state.D * 1.05)))}</li>`}
+      <li>${esc(D.coverFilters(state.D, state.B, state.mode))}</li></ul>
+    <p class="b-foot">${esc(D.footReport)}</p>`;
   showBrief();
 }
 
 function openScheduleBrief(o, narrative) {
-  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>Joint schedule proposal</span></div><div class="b-date">${today}</div></header>
-    <dl class="b-memo"><dt>To</dt><dd>${esc(lblLong(state.utilA))} transmission planning<br>${esc(lblLong(state.utilB))} transmission planning</dd><dt>Re</dt><dd>${o.moves.length} date moves that line up nearby construction</dd></dl>
+  const D = doc(), today = docDate();
+  $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>${esc(D.brandSchedule)}</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>${esc(D.to)}</dt><dd>${esc(lblLong(state.utilA))} ${esc(D.planning)}<br>${esc(lblLong(state.utilB))} ${esc(D.planning)}</dd><dt>${esc(D.re)}</dt><dd>${esc(D.reMoves(o.moves.length))}</dd></dl>
     ${briefNote(narrative)}
-    <p class="b-lede">Moving these ${o.moves.length} projects by at most ${state.opt.maxShift} months raises the expected savings from coordinating nearby work from <b>${money(o.before)}</b> to <b>${money(o.after)}</b>. Each move is on a project that has not started. Chances are worked out from how each utility's dates moved between its last two plans.</p>
-    <table class="b-tab"><thead><tr><th>Project</th><th>Move</th><th>In service</th><th>Adds</th></tr></thead><tbody>${o.moves.map(m => `<tr><td><b>${esc(m.project.name)}</b><br><span>${esc(lblLong(m.project.utility))}</span></td><td>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} months</td><td>${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</td><td class="n">${money(m.gain)}</td></tr>`).join("")}</tbody></table>
-    <h4>Proposed next steps</h4><ol><li>Each utility checks whether its moves fit reliability need dates, outage seasons and budget cycles.</li><li>Agree the moves that fit at the next SERTP coordination meeting.</li><li>Re-run Seamline on the next published plans to track the result.</li></ol>
-    <p class="b-foot">Prepared with Seamline. A planning aid: it assumes each date moves once more like past plan updates, and that the utilities move independently.</p>`;
+    <p class="b-lede">${D.ledeSchedule(o.moves.length, state.opt.maxShift, money(o.before), money(o.after))}</p>
+    <table class="b-tab"><thead><tr><th>${esc(D.thProject)}</th><th>${esc(D.thMove)}</th><th>${esc(D.thInService)}</th><th>${esc(D.thAdds)}</th></tr></thead><tbody>${o.moves.map(m => `<tr><td><b>${esc(m.project.name)}</b><br><span>${esc(lblLong(m.project.utility))}</span></td><td>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} ${esc(D.months)}</td><td>${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</td><td class="n">${money(m.gain)}</td></tr>`).join("")}</tbody></table>
+    <h4>${esc(D.hSteps)}</h4><ol>${D.stepsSchedule.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+    <p class="b-foot">${esc(D.footSchedule)}</p>`;
   showBrief();
 }
 const briefNote = text => text ? `<p class="b-note"><span>Assistant summary</span>${esc(String(text).slice(0, 1200))}</p>` : "";
@@ -1601,8 +1720,8 @@ $("#share").onclick = () => {
   clearTimeout(hashTimer); writeHash();
   setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share this view"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
 };
-$("#askFab").onclick = () => { store.set("askSeen", true); goTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
-document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => { if (b.dataset.tab === "ask") store.set("askSeen", true); goTab(b.dataset.tab); });
+$("#askFab").onclick = () => { toggleTab("ask"); const q = $("#askQ"); if (q) q.focus(); };
+document.querySelectorAll(".rail [role=tab]").forEach(b => b.onclick = () => toggleTab(b.dataset.tab));
 // Windows: unfold the build-windows chart under the map (the Play bar is always there).
 $("#railTl").onclick = () => {
   const on = !$(".left").classList.contains("tl-open");
