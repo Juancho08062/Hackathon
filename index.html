@@ -1964,7 +1964,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
 
 </script>
 <script>
-// Seamline 3D: a realistic scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
+// Nexxo 3D: a realistic scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
 // the closest-point link, and the shared zone the tier allows (corridor, laydown yard or staging yard).
 // three.js loads on first use. Horizontal positions are to scale; heights are exaggerated so towers read.
 // Rendering: PBR materials, a physical sky that also lights the scene, soft shadows, HDR bloom and ACES tone mapping.
@@ -2754,6 +2754,10 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     const towerCache = {};
     const towerAt = [];
     let towerTop = 0;
+    // Real spans run 8 to 10 times a tower's height (a 40 m 230 kV tower carries 300-400 m spans). Towers here are drawn
+    // many times taller than the ground scale so they read, so spans are set against that drawn height rather than the
+    // map distance, or the line becomes a solid fence of steel. SPAN_PER_HEIGHT trades realism for towers on screen.
+    const SPAN_PER_HEIGHT = 2.5;
     const place = (p, color) => {
       const kvH = (p.kv >= 500 ? 4.4 : p.kv >= 230 ? 3.4 : 2.6) * TS;
       const colorHex = new T.Color(color).getHex();
@@ -2763,7 +2767,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
       const lc = (p.parts || [p.coords]).filter(c => c.length > 1).sort((a, b) => d0(a) - d0(b))[0] || [];
       if (lc.length > 1) {
         for (let i = 1; i < lc.length; i++) {
-          const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
+          const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (SPAN_PER_HEIGHT * kvH)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
         // no tower on the plateau's edge, and none inside a substation or plant placed before this line
