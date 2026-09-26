@@ -301,6 +301,8 @@ svg text{font-family:var(--body)}
 .m3d-head p{margin:3px 0 0;color:rgba(255,255,255,.82)}
 .m3d-head .btn{pointer-events:auto;flex:none;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25);backdrop-filter:blur(6px)}
 .m3d-head .btn:hover{background:rgba(255,255,255,.22)}
+.m3d-head #m3dLabels[aria-pressed=false]{opacity:.75}
+.m3d-stage.nolabels .m3d-labels,.m3d-stage.nolabels~.m3d-foot{display:none}
 .m3d-msg{position:absolute;z-index:3;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(6,14,18,.8);padding:10px 16px;border-radius:var(--r-sm);max-width:80%}
 .m3d-foot{position:absolute;z-index:2;left:14px;bottom:14px;margin:0;max-width:calc(100% - 28px);padding:6px 12px;border-radius:999px;background:rgba(6,14,18,.62);color:rgba(255,255,255,.85);backdrop-filter:blur(6px);font-size:12px}
 .m3d-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
@@ -443,6 +445,7 @@ svg text{font-family:var(--body)}
   <div class="m3d-box">
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
+      <button type="button" class="btn" id="m3dLabels" aria-pressed="true">Labels on</button>
       <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>
     <div class="m3d-stage" id="m3dStage"></div>
@@ -2229,6 +2232,14 @@ $("#briefClose").onclick = closeBrief;
 $("#briefPrint").onclick = () => print();
 $("#briefCopy").onclick = () => navigator.clipboard.writeText($("#briefDoc").innerText).then(() => { $("#briefCopy").textContent = "Copied"; setTimeout(() => $("#briefCopy").textContent = "Copy text", 1500); }, () => getSelection().selectAllChildren($("#briefDoc")));
 $("#brief").addEventListener("click", e => { if (e.target.id === "brief") closeBrief(); });
+// 3D labels on or off, remembered between visits
+const setLabels3d = on => {
+  $("#m3dStage").classList.toggle("nolabels", !on);
+  $("#m3dLabels").setAttribute("aria-pressed", on); $("#m3dLabels").textContent = on ? "Labels on" : "Labels off";
+  try { localStorage.setItem("seamline.3dlabels", on ? "on" : "off"); } catch (err) { /* storage blocked: keep the choice for this visit only */ }
+};
+$("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-pressed") !== "true");
+try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
 $("#m3dClose").onclick = () => Scene3D.close();
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
 addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) Scene3D.close(); });
