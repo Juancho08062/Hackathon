@@ -330,6 +330,8 @@ svg text{font-family:var(--body)}
 .b-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:center;margin-bottom:6px}
 .b-map{display:block;width:100%;height:auto;border:1px solid #D0D7DE}
 .b-kpis{display:grid;gap:10px}
+/* The report puts its figures in a row across the page rather than beside a map. */
+.b-kpis.b-row{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:14px 0 4px}
 .b-kpis div{border-left:2px solid #1B1F23;padding-left:10px}
 .b-kpis b{display:block;font-size:22px;font-weight:600;line-height:1.1}
 .b-kpis span{font-size:12px;color:#57606A}
@@ -2555,6 +2557,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   const SMALLEST = ["smallest", "cheapest", "shortest", "lowest voltage", "mas pequeno", "mas barato", "mas corto", "menor voltaje"];
   const EARLIEST = ["earliest", "first to be built", "built first", "soonest", "mas pronto", "primero en construirse", "se construye primero", "mas temprano"];
   const LATEST = ["latest", "last to be built", "furthest out", "mas tarde", "ultimo en construirse", "mas lejano"];
+  const REPORT = ["report", "pdf", "printable", "print it", "document", "write it up", "send it",
+    "informe", "reporte", "imprimible", "imprimir", "documento", "en pdf", "generar el informe"];
   const COMPARE = ["compare", "versus", " vs ", "difference between", "side by side", "compara", "comparar", "frente a", "diferencia entre", "contra"];
   const EXPLAIN = ["explain", "tell me about", "describe", "detail", "explica", "explicame", "contame", "detalle", "detalles de"];
   // Anchored on a word boundary: a plain substring search for "in the " also fires inside "explain the".
@@ -2610,6 +2614,17 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     // "Compare A and B" is a question about the relationship between two projects, not about either one.
     const named = ids(q);
     if (named.length >= 2 && any(s, COMPARE)) return plan("compare_projects", { project_ids: named.slice(0, 5) }, ["compare", "two ids"]);
+
+    // A request for a document, before the topic checks: "a report of the longest projects" is a report first.
+    if (any(s, REPORT) && !ids(q).length) {
+      const input = {};
+      if (/longest|length|mas largo|longitud/.test(s)) input.sort = "length_km";
+      else if (/voltage|voltaje|kv/.test(s)) input.sort = "kv";
+      else if (/date|in service|fecha|servicio/.test(s)) input.sort = "in_service";
+      const util = s.match(/\b(desc|dominion|gpc|georgia)\b/);
+      if (util) input.utility = /desc|dominion/.test(util[1]) ? "DESC" : "GPC";
+      return plan("open_report", input, ["report"]);
+    }
 
     if (any(s, CHECKS)) return plan("get_data_checks", {}, "data quality");
     if (any(s, CHANGES)) return plan("get_plan_changes", {}, "plan changes");
@@ -2689,6 +2704,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       ifHold: "if dates hold",
       ref: "in the challenge's reference table",
       flagged: "flagged as pair",
+      reportOpened: by => `Opened the printable project report, ranked by ${by}. Use **Print or save as PDF** in the document to keep it.`,
       noProject: "No project matches that.",
       projects: n => `${n} matching ${n === 1 ? "project" : "projects"}:`,
       inService: "in service",
@@ -2721,6 +2737,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       ifHold: "si las fechas se mantienen",
       ref: "está en la tabla de referencia del reto",
       flagged: "marcado como par",
+      reportOpened: by => `Abrí el informe imprimible de proyectos, ordenado por ${by}. Usá **Print or save as PDF** en el documento para guardarlo.`,
       noProject: "Ningún proyecto coincide con eso.",
       projects: n => `${n} ${n === 1 ? "proyecto coincide" : "proyectos coinciden"}:`,
       inService: "entra en servicio",
@@ -2839,6 +2856,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
 
   const RENDER = {
+    open_report: (r, L) => L.reportOpened(r.ranked_by),
     compare_projects: renderCompare,
     list_overlaps: renderPairs,
     get_overlap: renderOverlap,
@@ -3543,7 +3561,7 @@ How Seamline measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
+The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version — open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves — and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
   { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
@@ -3575,6 +3593,12 @@ const TOOLS = [
   { name: "open_brief", description: "Open the printable coordination brief for one pair: the memo a planner would take to the other utility, with both projects, the distance, the build windows, what can be shared with the arithmetic behind each figure, the best shared yard and the proposed next steps. Use it when the user asks for a brief, a memo, a write-up or something to send or print.", input_schema: { type: "object", properties: {
     key: { type: "string", description: "Pair key from list_overlaps, 'PROJECTID|PROJECTID'" },
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing why this pair is worth coordinating. This is the only text in the brief you write; every figure in it is computed from the plans." } }, required: ["key"] } },
+  { name: "open_report", description: "Open a printable report over the whole comparison rather than one pair: the totals, the projects ranked by whichever measure the user asked for, the strongest coordination opportunities, and what the data does and does not cover. The reader can save it as PDF from the document. Use it when someone asks for a report, a list they can keep, or something to send that is not about a single pair.", input_schema: { type: "object", properties: {
+    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to rank the project table. Default cost, which only Dominion publishes — prefer kv or length_km when the question covers both utilities." },
+    order: { type: "string", enum: ["desc", "asc"] },
+    utility: { type: "string", description: "Optional: restrict the project table to one utility code, e.g. DESC" },
+    limit: { type: "integer", description: "Rows in the project table, default 20, at most 40" },
+    narrative: { type: "string", description: "One short paragraph, in the user's language, framing what the report shows. The only text in it you write." } } } },
   { name: "open_schedule_brief", description: "Open the printable joint schedule proposal: the date moves that most raise expected savings, with each move and what it adds. Use it when the user asks for a brief or memo about rescheduling rather than about one pair.", input_schema: { type: "object", properties: {
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing the proposal. The only text in the brief you write." },
     max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" } } } },
@@ -3733,6 +3757,10 @@ function runTool(name, i) {
     if (!x) throw new Error(`No flagged pair ${i.key}. Use list_overlaps to get keys.`);
     openBrief(x, i.narrative);
     return { opened: "coordination brief", pair: pairOut(x).project_a + " and " + pairOut(x).project_b };
+  }
+  if (name === "open_report") {
+    openReport({ sort: i.sort, order: i.order, utility: i.utility ? String(i.utility).toUpperCase() : null, limit: i.limit }, i.narrative);
+    return { opened: "project report", ranked_by: i.sort || "cost", projects: PROJECTS.length, flagged_pairs: RESULT.pairs.length };
   }
   if (name === "open_schedule_brief") {
     if (i.max_shift_months) state.opt.maxShift = i.max_shift_months;
@@ -3971,7 +3999,8 @@ function askWelcome() {
 const SPARK = `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
-  open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal" };
+  open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal",
+  open_report: "Writing the project report", compare_projects: "Comparing projects", why_not: "Checking why a pair was rejected" };
 // Answer a question without the model: the same tools, routed by pattern (agent-offline.js). Returns the answer text,
 // or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
 // saying the model is needed. reason, when given, is why the model was unavailable.
@@ -4074,6 +4103,39 @@ function openBrief(x0, narrative) {
     <p class="b-foot">Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
   showBrief();
 }
+function openReport(opts, narrative) {
+  const o = Object.assign({ sort: "cost", order: "desc", limit: 20 }, opts || {});
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const ranked = runTool("search_projects", { sort: o.sort, order: o.order, utility: o.utility, limit: Math.min(40, o.limit) });
+  const top = RESULT.pairs.slice(0, 8);
+  const priced = PROJECTS.filter(p => p.cost);
+  const MEASURE = { cost: "published cost", kv: "voltage", length_km: "length", in_service: "in-service date", name: "name" };
+  const unlocated = PROJECTS.filter(p => !(p.coords || []).length).length;
+  const totals = { expected: RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0), hold: RESULT.pairs.reduce((a, x) => a + x.sav.total, 0) };
+
+  $("#briefDoc").innerHTML = `
+    <header class="b-head"><div class="b-brand">SEAMLINE <span>Project report</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>To</dt><dd>${esc(lblLong(state.utilA))} transmission planning${solo() ? "" : `<br>${esc(lblLong(state.utilB))} transmission planning`}</dd>
+      <dt>Re</dt><dd>${PROJECTS.length} planned projects${o.utility ? ` (${esc(lblLong(o.utility))} only)` : ""}, ranked by ${esc(MEASURE[o.sort] || o.sort)}</dd></dl>
+    ${briefNote(narrative)}
+    <p class="b-lede">${PROJECTS.length} planned projects are loaded${solo() ? "" : `, and ${RESULT.checked.toLocaleString("en-US")} cross-utility pairs were checked against a ${state.D} km screen`}. ${solo() ? "" : `<b>${RESULT.pairs.length}</b> pairs are close enough to coordinate on, worth <b>${money(totals.expected)}</b> in expected savings (${money(totals.hold)} if every date holds).`} Only ${priced.length} of the ${PROJECTS.length} projects publish a cost; the rest are redacted in their own filing, so no figure is attributed to them here.</p>
+    ${solo() ? "" : `<div class="b-kpis b-row"><div><b>${RESULT.checked.toLocaleString("en-US")}</b><span>pairs checked</span></div><div><b>${RESULT.pairs.length}</b><span>flagged</span></div><div><b>${money(totals.expected)}</b><span>expected savings</span></div><div><b>${borderline().length}</b><span>just outside the screen</span></div></div>`}
+    <h4>Projects by ${esc(MEASURE[o.sort] || o.sort)}</h4>
+    <table class="b-tab"><thead><tr><th>#</th><th>Project</th><th>Type</th><th>In service</th><th>Length</th><th>Cost</th></tr></thead><tbody>
+      ${ranked.projects.map((p, i) => `<tr><td>${i + 1}</td><td><b>${esc(p.name)}</b><br><span>${esc(p.id)} · ${esc(lblLong(p.utility))}</span></td><td>${p.kv} kV ${esc(p.type || "")}</td><td>${esc(p.in_service)}</td><td class="n">${p.length_km ? p.length_km + " km" : "–"}</td><td class="n">${p.cost_usd ? money(p.cost_usd) : "<span>not published</span>"}</td></tr>`).join("")}
+    </tbody></table>
+    ${top.length ? `<h4>Strongest coordination opportunities</h4>
+    <table class="b-tab"><thead><tr><th>Pair</th><th>Apart</th><th>Windows</th><th>Expected</th></tr></thead><tbody>
+      ${top.map(x => `<tr><td><b>${esc(short(x.p))}</b> × <b>${esc(short(x.q))}</b><br><span>${esc(TIERS[Math.min(x.tier, 4)].label)}</span></td><td class="n">${km(x.km)}</td><td>${x.ov > 0 ? `${Math.round(x.ov)} mo shared` : `${Math.round(x.gap)} mo apart`}</td><td class="n">${money(x.risk.expected)}</td></tr>`).join("")}
+    </tbody></table>` : ""}
+    <h4>What this covers</h4>
+    <ul><li>${PROJECTS.length - unlocated} of ${PROJECTS.length} projects could be placed on a map${unlocated ? `; ${unlocated} could not and are excluded from every distance` : ""}.</li>
+      ${solo() ? "" : `<li>${borderline().length} further pairs fall between ${state.D} km and ${Math.round(state.D * 1.05)} km. They are deliberately outside the ranking and the totals; ${state.D} km is a chosen threshold, not a cliff.</li>`}
+      <li>Filters in effect: within ${state.D} km, window buffer ±${state.B} months, match rule "${esc(state.mode)}".</li></ul>
+    <p class="b-foot">Prepared with Seamline from public plans (DESC's SCRTP project lists, Georgia Power's 2025 IRP ten-year plan and SERTP). Locations are matched from substation names to OpenStreetMap and checked by hand; costs are reproduced from the filings that publish them and never estimated for the ones that do not. Confirm with both utilities before acting.</p>`;
+  showBrief();
+}
+
 function openScheduleBrief(o, narrative) {
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   $("#briefDoc").innerHTML = `<header class="b-head"><div class="b-brand">SEAMLINE <span>Joint schedule proposal</span></div><div class="b-date">${today}</div></header>

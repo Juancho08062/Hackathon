@@ -321,6 +321,8 @@ svg text{font-family:var(--body)}
 .b-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:center;margin-bottom:6px}
 .b-map{display:block;width:100%;height:auto;border:1px solid #D0D7DE}
 .b-kpis{display:grid;gap:10px}
+/* The report puts its figures in a row across the page rather than beside a map. */
+.b-kpis.b-row{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:14px 0 4px}
 .b-kpis div{border-left:2px solid #1B1F23;padding-left:10px}
 .b-kpis b{display:block;font-size:22px;font-weight:600;line-height:1.1}
 .b-kpis span{font-size:12px;color:#57606A}
