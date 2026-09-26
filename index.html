@@ -3667,10 +3667,20 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     map.on("zoom", zoomed); zoomed();
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
     const hit = ["grid", "links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
+    // A second click or tap on the same route within a moment opens its details; a double-click on a route does not
+    // also zoom the map, while one on empty map still does.
+    let lastTap = null;
+    const featAt = pt => { const f = map.queryRenderedFeatures(pt, { layers: hit.filter(l => map.getLayer(l)) })[0]; return f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null; };
+    // the first click already selects the pair and starts the map moving, so the second is matched by time, not by
+    // what is under it now
+    const recent = () => lastTap && performance.now() - lastTap.t < 450;
+    map.on("dblclick", e => { if (!measuring && (recent() || featAt(e.point))) e.preventDefault(); });
     map.on("click", e => {
       if (measuring) { mpts.push([e.lngLat.lat, e.lngLat.lng]); return drawMeasure(); }
-      const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      if (cbs.click) cbs.click(f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null);
+      if (recent()) { const h = lastTap.hit; lastTap = null; if (cbs.dblclick) cbs.dblclick(h); return; }
+      const h = featAt(e.point);
+      if (cbs.click) cbs.click(h);
+      lastTap = h ? { hit: h, t: performance.now() } : null;
     });
     map.on("mousemove", e => {
       if (measuring) return;
@@ -4608,6 +4618,19 @@ function mapClick(hit) {
   if (solo()) return select({ p, solo: true });
   const x = VIEW.find(v => v.p === p || v.q === p);
   if (x) select(x);
+}
+// Double-click or double-tap a route: bring the side panel back if it was hidden and open that route's pair, with
+// its distance, costs, what-if, brief and 3D.
+function mapOpen(hit) {
+  if (!hit) return;
+  if (panelMin()) setPanel(false);
+  if (["links", "rings", "sparks"].includes(hit.layer)) { const x = VIEW.find(v => keyOf(v) === hit.id) || RESULT.pairs.find(v => keyOf(v) === hit.id); if (x) select(x); return; }
+  if (hit.layer === "yards" && hit.id && hit.id[0] === "c") return select({ cluster: CLUSTERS[+hit.id.slice(1)] });
+  const p = PROJECTS.find(v => v.id === hit.id);
+  if (!p) return;
+  if (solo()) return select({ p, solo: true });
+  const x = pairFor(p);
+  if (x) select(x); else { state.tab = "overlaps"; renderPanel(); SeamMap.fit(p.coords, { padKm: 6 }); }
 }
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
@@ -6214,7 +6237,7 @@ readHash();
 syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
-  click: mapClick, hover: mapHover, recenter: () => fitAll(700),
+  click: mapClick, dblclick: mapOpen, hover: mapHover, recenter: () => fitAll(700),
   tilesFailed: name => { setBasemap("plain"); $("#tileNote").textContent = `${SeamMap.BASEMAPS[name].label} tiles couldn't load (they need an internet connection), so the map switched to Plain.`; $("#tileNote").hidden = false; },
 }).then(() => {
   mapReady = true;

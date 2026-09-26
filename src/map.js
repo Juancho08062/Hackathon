@@ -122,10 +122,20 @@
     map.on("zoom", zoomed); zoomed();
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
     const hit = ["grid", "links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
+    // A second click or tap on the same route within a moment opens its details; a double-click on a route does not
+    // also zoom the map, while one on empty map still does.
+    let lastTap = null;
+    const featAt = pt => { const f = map.queryRenderedFeatures(pt, { layers: hit.filter(l => map.getLayer(l)) })[0]; return f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null; };
+    // the first click already selects the pair and starts the map moving, so the second is matched by time, not by
+    // what is under it now
+    const recent = () => lastTap && performance.now() - lastTap.t < 450;
+    map.on("dblclick", e => { if (!measuring && (recent() || featAt(e.point))) e.preventDefault(); });
     map.on("click", e => {
       if (measuring) { mpts.push([e.lngLat.lat, e.lngLat.lng]); return drawMeasure(); }
-      const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      if (cbs.click) cbs.click(f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null);
+      if (recent()) { const h = lastTap.hit; lastTap = null; if (cbs.dblclick) cbs.dblclick(h); return; }
+      const h = featAt(e.point);
+      if (cbs.click) cbs.click(h);
+      lastTap = h ? { hit: h, t: performance.now() } : null;
     });
     map.on("mousemove", e => {
       if (measuring) return;

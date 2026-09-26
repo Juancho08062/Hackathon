@@ -222,6 +222,19 @@ function mapClick(hit) {
   const x = VIEW.find(v => v.p === p || v.q === p);
   if (x) select(x);
 }
+// Double-click or double-tap a route: bring the side panel back if it was hidden and open that route's pair, with
+// its distance, costs, what-if, brief and 3D.
+function mapOpen(hit) {
+  if (!hit) return;
+  if (panelMin()) setPanel(false);
+  if (["links", "rings", "sparks"].includes(hit.layer)) { const x = VIEW.find(v => keyOf(v) === hit.id) || RESULT.pairs.find(v => keyOf(v) === hit.id); if (x) select(x); return; }
+  if (hit.layer === "yards" && hit.id && hit.id[0] === "c") return select({ cluster: CLUSTERS[+hit.id.slice(1)] });
+  const p = PROJECTS.find(v => v.id === hit.id);
+  if (!p) return;
+  if (solo()) return select({ p, solo: true });
+  const x = pairFor(p);
+  if (x) select(x); else { state.tab = "overlaps"; renderPanel(); SeamMap.fit(p.coords, { padKm: 6 }); }
+}
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
   if (hit.layer === "grid") return tip(ev, `<b>Existing ${hit.kv} kV line</b>${hit.op ? "<br>" + esc(hit.op) : ""}<br><span style="opacity:.7">OpenStreetMap</span>`);
@@ -1827,7 +1840,7 @@ readHash();
 syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
-  click: mapClick, hover: mapHover, recenter: () => fitAll(700),
+  click: mapClick, dblclick: mapOpen, hover: mapHover, recenter: () => fitAll(700),
   tilesFailed: name => { setBasemap("plain"); $("#tileNote").textContent = `${SeamMap.BASEMAPS[name].label} tiles couldn't load (they need an internet connection), so the map switched to Plain.`; $("#tileNote").hidden = false; },
 }).then(() => {
   mapReady = true;
