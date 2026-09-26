@@ -694,8 +694,8 @@ function briefMap(x) {
     <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
 }
 function closeBrief() { closeAnimated($("#brief"), () => { $("#brief").hidden = true; }); }
-// 3D quality: Auto (default), Standard, High or Ultra, remembered between visits.
-const quality3d = () => { try { const q = localStorage.getItem("seamline.3dquality"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "auto"; };
+// 3D quality: Standard, High (default) or Ultra, remembered between visits.
+const quality3d = () => { try { const q = localStorage.getItem("seamline.3dquality"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
 function open3d(x) {
   $("#m3dQ").value = quality3d();
   Scene3D.open(x, {
