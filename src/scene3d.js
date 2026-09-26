@@ -903,6 +903,7 @@
     const focus = va.clone().lerp(vb, 0.5);
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
+    if (REAL && root.Realism3D) root.Realism3D.enhance(T, scene, { PAL, ground, walls, dem }); // ground, trees, crews, light
     linearize(T, scene, REAL ? 0.55 : 0.35);
     return { scene, sky, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
@@ -1066,9 +1067,10 @@
         ssao.overrideVisibility = function () { hide(); skip.forEach(o => { o.visible = false; }); };
         composer.addPass(ssao);
       } else composer.addPass(new T.RenderPass(built.scene, cam));
-      composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95));
+      const bloom = new T.UnrealBloomPass(new T.Vector2(256, 256), Q.real ? 0.08 : 0.18, 0.55, 0.95); composer.addPass(bloom);
       const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = Q.real ? 0.78 : 0.72; composer.addPass(tone);
       composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
+      if (Q.real && root.Realism3D) root.Realism3D.post(T, composer, tone, bloom); // exposure and color grade
       // SMAA keeps thin wires and lattice members crisp; FXAA is the cheaper fallback.
       const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
       composer.addPass(fxaa || smaa);
