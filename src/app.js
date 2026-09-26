@@ -694,8 +694,8 @@ function briefMap(x) {
     <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
 }
 function closeBrief() { closeAnimated($("#brief"), () => { $("#brief").hidden = true; }); }
-// 3D quality: Standard, High (default) or Ultra, remembered between visits.
-const quality3d = () => { try { const q = localStorage.getItem("seamline.3dq"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
+// 3D quality: Auto (default), Standard, High or Ultra, remembered between visits.
+const quality3d = () => { try { const q = localStorage.getItem("seamline.3dquality"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "auto"; };
 function open3d(x) {
   $("#m3dQ").value = quality3d();
   Scene3D.open(x, {
@@ -907,7 +907,7 @@ const setLabels3d = on => {
 $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-pressed") !== "true");
 try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
 $("#m3dQ").value = quality3d();
-$("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dq", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
+$("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dquality", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
 const close3d = () => closeAnimated($("#m3d"), () => Scene3D.close());
 $("#m3dClose").onclick = close3d;
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") close3d(); });
