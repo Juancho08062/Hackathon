@@ -41,6 +41,8 @@
   const SMALLEST = ["smallest", "cheapest", "shortest", "lowest voltage", "mas pequeno", "mas barato", "mas corto", "menor voltaje"];
   const EARLIEST = ["earliest", "first to be built", "built first", "soonest", "mas pronto", "primero en construirse", "se construye primero", "mas temprano"];
   const LATEST = ["latest", "last to be built", "furthest out", "mas tarde", "ultimo en construirse", "mas lejano"];
+  const REPORT = ["report", "pdf", "printable", "print it", "document", "write it up", "send it",
+    "informe", "reporte", "imprimible", "imprimir", "documento", "en pdf", "generar el informe"];
   const COMPARE = ["compare", "versus", " vs ", "difference between", "side by side", "compara", "comparar", "frente a", "diferencia entre", "contra"];
   const EXPLAIN = ["explain", "tell me about", "describe", "detail", "explica", "explicame", "contame", "detalle", "detalles de"];
   // Anchored on a word boundary: a plain substring search for "in the " also fires inside "explain the".
@@ -96,6 +98,17 @@
     // "Compare A and B" is a question about the relationship between two projects, not about either one.
     const named = ids(q);
     if (named.length >= 2 && any(s, COMPARE)) return plan("compare_projects", { project_ids: named.slice(0, 5) }, ["compare", "two ids"]);
+
+    // A request for a document, before the topic checks: "a report of the longest projects" is a report first.
+    if (any(s, REPORT) && !ids(q).length) {
+      const input = {};
+      if (/longest|length|mas largo|longitud/.test(s)) input.sort = "length_km";
+      else if (/voltage|voltaje|kv/.test(s)) input.sort = "kv";
+      else if (/date|in service|fecha|servicio/.test(s)) input.sort = "in_service";
+      const util = s.match(/\b(desc|dominion|gpc|georgia)\b/);
+      if (util) input.utility = /desc|dominion/.test(util[1]) ? "DESC" : "GPC";
+      return plan("open_report", input, ["report"]);
+    }
 
     if (any(s, CHECKS)) return plan("get_data_checks", {}, "data quality");
     if (any(s, CHANGES)) return plan("get_plan_changes", {}, "plan changes");
@@ -175,6 +188,7 @@
       ifHold: "if dates hold",
       ref: "in the challenge's reference table",
       flagged: "flagged as pair",
+      reportOpened: by => `Opened the printable project report, ranked by ${by}. Use **Print or save as PDF** in the document to keep it.`,
       noProject: "No project matches that.",
       projects: n => `${n} matching ${n === 1 ? "project" : "projects"}:`,
       inService: "in service",
@@ -207,6 +221,7 @@
       ifHold: "si las fechas se mantienen",
       ref: "está en la tabla de referencia del reto",
       flagged: "marcado como par",
+      reportOpened: by => `Abrí el informe imprimible de proyectos, ordenado por ${by}. Usá **Print or save as PDF** en el documento para guardarlo.`,
       noProject: "Ningún proyecto coincide con eso.",
       projects: n => `${n} ${n === 1 ? "proyecto coincide" : "proyectos coinciden"}:`,
       inService: "entra en servicio",
@@ -325,6 +340,7 @@
   }
 
   const RENDER = {
+    open_report: (r, L) => L.reportOpened(r.ranked_by),
     compare_projects: renderCompare,
     list_overlaps: renderPairs,
     get_overlap: renderOverlap,
