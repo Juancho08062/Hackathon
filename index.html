@@ -157,7 +157,8 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 @keyframes spin{to{transform:rotate(1turn)}}
 @keyframes ring{0%{opacity:.55;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.5)}}
 .askfab:hover{background:#1B2530}
-.askfab:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.askfab:focus-visible{outline:2px solid #2F81F7;outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.askfab::before,.askfab::after{animation:none}.askfab::after{opacity:0}}
 
 .legend{position:absolute;left:10px;bottom:10px;z-index:2;display:grid;gap:5px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);font-size:11.5px;box-shadow:0 1px 3px rgba(0,0,0,.12);max-width:calc(100% - 140px)}
 .lg-row{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
