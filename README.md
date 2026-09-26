@@ -58,10 +58,10 @@ Column names are matched loosely. For example, `owner` or `Transmission Owner` w
 | name | yes | project name |
 | utility | no | taken from a utility column, the name typed in the import panel, or the file name, in that order |
 | location | yes | `lat, lon` for a substation; add `lat2, lon2` for a line. GIS files carry their own geometry. |
-| in_service | yes | `2029`, `2029-06`, `6/1/2029` or `Summer 2029` |
+| in_service | yes | `2029`, `2029-06`, `6/1/2029` or `Summer 2029`. Files without dates, like GPX, use the default in-service date typed in the import panel |
 | kv, type, start, cost, description | no | type is `new_line`, `rebuild`, `substation` or `generation`, and is guessed from the name if left out |
 
-The [`samples/`](samples) folder has one fictional plan per format, each from a different made-up utility, with projects placed near the built-in DESC and Georgia work so overlaps show up:
+The [`samples/`](samples) folder has one fictional plan per format (nine files), each from a different made-up utility, with projects placed near the built-in DESC and Georgia work so overlaps show up:
 
 | file | utility | what it exercises |
 |---|---|---|
@@ -73,6 +73,7 @@ The [`samples/`](samples) folder has one fictional plan per format, each from a 
 | `savannah-river-transmission.kml` | Savannah River Transmission Co. | attributes in an ArcGIS-style HTML table in each description |
 | `piedmont-lakes-electric.kmz` | Piedmont Lakes Electric | zipped KML with ExtendedData and a MultiGeometry |
 | `tri-county-grid-shapefile.zip` | Tri-County Grid Cooperative | two layers in UTM zone 17N, reprojected using the `.prj` |
+| `edisto-electric-survey.gpx` | Edisto Electric Cooperative | a surveyed route and waypoints with no dates or utility: type the utility name and a default in-service date first |
 
 `tests/samples.test.js` loads each one through the same readers the browser uses. After an import, Seamline compares the new utility with whichever loaded utility has the nearest project.
 

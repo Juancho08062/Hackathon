@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Seamline sample" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Edisto Electric Cooperative field survey (sample, fictional)</name></metadata>
+  <wpt lat="32.905" lon="-80.668"><name>Walterboro North 115 kV Substation Site</name></wpt>
+  <wpt lat="32.731" lon="-80.581"><name>Ritter 115 kV Tap Point</name></wpt>
+  <trk>
+    <name>Walterboro - Ritter 115 kV Line Route</name>
+    <trkseg>
+      <trkpt lat="32.905" lon="-80.668"></trkpt>
+      <trkpt lat="32.860" lon="-80.650"></trkpt>
+      <trkpt lat="32.810" lon="-80.628"></trkpt>
+      <trkpt lat="32.770" lon="-80.607"></trkpt>
+      <trkpt lat="32.731" lon="-80.581"></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
