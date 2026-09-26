@@ -859,6 +859,8 @@
     const mid = va.clone().lerp(vb, 0.5), pulse = [];
     const dirAB = vb.clone().sub(va); dirAB.y = 0; if (dirAB.lengthSq() < 1e-6) dirAB.set(1, 0, 0); dirAB.normalize();
     const perp = new T.Vector3(dirAB.z, 0, -dirAB.x);
+    // the side of the gap the default camera looks from (see open), so the yard can go behind the line, not in front
+    const camSide = perp.dot(new T.Vector3(0.75, 0, 0.85)) < 0 ? perp.clone().negate() : perp.clone();
     // How the gap is marked on site: a surveyor's stake with flagging tape at each closest point, a painted line on
     // the ground between them (its length is the real gap, to scale), and a short marker post at every even step.
     // Stakes and posts are drawn a few times life size so they can be found from the air; the line itself is not.
@@ -866,16 +868,18 @@
     const tape = new T.MeshLambertMaterial({ color: 0xff3d9a, side: T.DoubleSide });
     // a surveyor's range pole (red and white half-meter bands) with flagging tape, set on each closest point
     const white = pbr(T, 0xf2f2ee, { rough: 0.6 }), red = pbr(T, 0xd8322a, { rough: 0.6 });
-    const stake = v => {
+    const stake = (v, minPx = 56) => {
       const g = new T.Group();
       for (let k = 0; k < 5; k++) g.add(mesh(T, new T.CylinderGeometry(0.05 * kS, 0.05 * kS, 0.5 * kS, 8).translate(0, (k + 0.5) * 0.5 * kS, 0), k % 2 ? white : red, false));
       g.add(mesh(T, new T.BoxGeometry(0.4 * kS, 0.08 * kS, 0.4 * kS).translate(0, 0.04 * kS, 0), wood, false)); // hub stake driven flush, painted
       g.add(mesh(T, new T.BoxGeometry(0.1 * kS, 0.06 * kS, 0.1 * kS).translate(0, 0.1 * kS, 0), paint, false));
       [[0.06, 0.3], [-0.05, -0.35]].forEach(([x, r]) => { const f = new T.Mesh(new T.PlaneGeometry(0.06 * kS, 0.6 * kS), tape); f.position.set(x * kS, 2.2 * kS, 0.05 * kS); f.rotation.set(0.1, r, r * 0.4); g.add(f); });
+      // a survey flag at the top of the pole, the brightest thing on it from the air
+      const flag = new T.Mesh(new T.PlaneGeometry(0.5 * kS, 0.3 * kS).translate(0.25 * kS, 0, 0), tape); flag.position.set(0.05 * kS, 2.35 * kS, 0); g.add(flag);
       g.userData.kind = "stake"; g.position.set(v.x, surf(v.x, v.z), v.z); g.rotation.y = Math.atan2(dirAB.x, dirAB.z); scene.add(g);
       solids.push([v.x, v.z, 0.2 * kS]);
       // at least 56 px tall and 6 px thick, so the pole stands out even where it sits among a crossing's towers
-      marks.push({ at: g.position, fit: px => { const h = Math.max(1, 56 * px / (2.5 * kS)); g.scale.set(Math.min(h, Math.max(1, 6 * px / (0.1 * kS))), h, Math.min(h, Math.max(1, 6 * px / (0.1 * kS)))); } });
+      marks.push({ at: g.position, fit: px => { const h = Math.max(1, minPx * px / (2.5 * kS)); g.scale.set(Math.min(h, Math.max(1, 6 * px / (0.1 * kS))), h, Math.min(h, Math.max(1, 6 * px / (0.1 * kS)))); } });
     };
     if (pair.km > 0.1) { stake(va); stake(vb); } else {
       // where the lines cross, a tower usually stands on the point, so the pole goes on the nearest clear ground as a
@@ -885,15 +889,18 @@
         const c = va.clone().add(new T.Vector3(Math.cos(k * Math.PI / 6) * rad, 0, Math.sin(k * Math.PI / 6) * rad));
         if (obstacles.every(([ox, oz, r]) => Math.hypot(c.x - ox, c.z - oz) > r * 0.8 + 0.4)) at = c;
       }
-      stake(at);
+      stake(at, 84); // taller than the far-apart poles: it stands among the crossing's towers
       const x = 0.25 * TS;
       for (const d of [dirAB.clone().add(perp), dirAB.clone().sub(perp)]) { d.normalize(); strip(va.clone().addScaledVector(d, -1.2 * TS), va.clone().addScaledVector(d, 1.2 * TS), x, flat(0xff5a1f), 0.09, 4); }
       if (at !== va) strip(va, at, x * 0.6, flat(0xfbfaf4), 0.08, 3);
     }
     const fmtD = d => d < 1 ? Math.round(d * 1000) + " m" : (d < 10 ? +d.toFixed(2) : +d.toFixed(1)) + " km";
     let every = null;
+    const chain = [];
     if (pair.km > 0.1) {
       const w = Math.max(0.16, Math.min(0.45, pair.km * S * 0.012));
+      // brush cut along the line, as a survey crew clears it to sight pole to pole, so no tree hides the paint
+      for (let t = 0, nc = Math.ceil(va.distanceTo(vb) / 1.5); t <= nc; t++) { const c = va.clone().lerp(vb, t / Math.max(1, nc)); obstacles.push([c.x, c.z, 1.4]); }
       // white paint over a dark casing, so the line reads over grass, sand and water alike
       strip(va, vb, w * 2, flat(0x1d2328), 0.07, 9);
       strip(va, vb, w, flat(0xfbfaf4), 0.08, 4);
@@ -904,8 +911,10 @@
       if (n >= 1) {
         const post = new T.InstancedMesh(new T.BoxGeometry(0.08 * kS, 1.2 * kS, 0.08 * kS).translate(0, 0.6 * kS, 0), pbr(T, 0xf2f2ee, { rough: 0.7 }), n);
         const cap = new T.InstancedMesh(new T.BoxGeometry(0.085 * kS, 0.2 * kS, 0.085 * kS).translate(0, 1.1 * kS, 0), pbr(T, tierHex, { rough: 0.6 }), n);
+        const lab = Math.max(1, Math.ceil(n / 4)); // up to four stakes carry their distance from the first pole
         for (let j = 1; j <= n; j++) {
           const v = va.clone().lerp(vb, j * step / pair.km), major = j % 5 === 0;
+          if (j % lab === 0 && j * step < pair.km - step * 0.6) chain.push([fmtD(j * step), v.clone().addScaledVector(perp, w * 5).setY(surf(v.x, v.z) + 1.6 * kS)]);
           cross(v, w * (major ? 7 : 4));
           const pp = v.clone().addScaledVector(perp, w * 5); pp.y = surf(pp.x, pp.z);
           const set = k => { mtx.makeScale(k, k, k).setPosition(pp); post.setMatrixAt(j - 1, mtx); cap.setMatrixAt(j - 1, mtx); post.instanceMatrix.needsUpdate = cap.instanceMatrix.needsUpdate = true; };
@@ -925,6 +934,7 @@
       makeLabel(`${gapText}${every ? ` · a post every ${every}` : ""}`, opts.tierColor, new T.Vector3(mid.x, mid.y + 4.5 * Math.min(1.6, TS), mid.z), "big"),
       makeLabel(opts.nameA, opts.colorA, new T.Vector3(A.anchor.x, A.anchor.y + A.top + 1.6, A.anchor.z)),
       makeLabel(opts.nameB, opts.colorB, new T.Vector3(B.anchor.x, B.anchor.y + B.top + 1.6, B.anchor.z)),
+      ...chain.map(([t, v]) => makeLabel(t, opts.tierColor, v, "tick")),
     ];
     if (pair.tier <= 1) {
       // shared right-of-way at the wider of the two lines' real widths, with a gravel access road down the middle
@@ -941,11 +951,11 @@
       const yd = yardGroup(T, 12, 8, K), yr = 7.4 * TS;
       let spot = null;
       for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
-        const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
+        const a = Math.atan2(-camSide.z, -camSide.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
         const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
         if (Math.hypot(x, z) < R * 1.05 && offGap(x, z) > yr + 3 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
       }
-      if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
+      if (!spot) spot = [mid.x - camSide.x * 6, mid.z - camSide.z * 6];
       yd.userData.kind = "yard"; yd.scale.setScalar(TS); yd.position.set(spot[0], topOf(spot[0], spot[1], 6.6 * TS), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
       obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
@@ -1060,7 +1070,7 @@
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene, REAL ? 0.55 : 0.35);
-    return { scene, sky, marks, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, groundAt, toV, TS, R, obstacles, solids, water: !!dem, walkStart };
+    return { scene, sky, marks, puffs, pulse, clouds, labels, focus, relief, K, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, groundAt, toV, TS, R, obstacles, solids, water: !!dem, walkStart, gapDir: pair.km > 0.1 ? dirAB : null };
   }
 
   // ---------- modal and render loop ----------
@@ -1133,7 +1143,10 @@
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
-      const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
+      // the default view looks across the gap from the side, not along it, so its whole length reads at true scale
+      const hd = new T.Vector3(0.75, 0, 0.85), hl = d * hd.length(); hd.normalize();
+      if (built.gapDir) { const g = built.gapDir, side = new T.Vector3(g.z, 0, -g.x); if (side.dot(hd) < 0) side.negate(); hd.addScaledVector(side, 3).normalize(); }
+      const endPos = new T.Vector3(f.x + hd.x * hl, f.y + d * (built.gapDir ? 0.62 : 0.5), f.z + hd.z * hl), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const INTRO = reduced || opts.walkAt ? 0 : 2.6;
