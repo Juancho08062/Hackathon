@@ -411,3 +411,19 @@ body.m3d-open .app{visibility:hidden}
 .peg.dragging{opacity:.35}
 .peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
 .peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}
+
+/* pastel chips re-toned for the dark theme so they don't glare on dark panels */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .sev.s0{color:#1B0A10}
+  :root:not([data-theme="light"]) .sev.s1{background:#4A1D1B;color:#FFB4A8}
+  :root:not([data-theme="light"]) .sev.s2{background:#43300F;color:#F2C774}
+  :root:not([data-theme="light"]) .tag.green,:root:not([data-theme="light"]) .st.pass{background:#12351F;color:#7EE2A0}
+  :root:not([data-theme="light"]) .st.fixed{background:#0F2E45;color:#8CC8FF}
+  :root:not([data-theme="light"]) .st.warn{background:#3A2E0B;color:#F2C774}
+}
+:root[data-theme="dark"] .sev.s0{color:#1B0A10}
+:root[data-theme="dark"] .sev.s1{background:#4A1D1B;color:#FFB4A8}
+:root[data-theme="dark"] .sev.s2{background:#43300F;color:#F2C774}
+:root[data-theme="dark"] .tag.green,:root[data-theme="dark"] .st.pass{background:#12351F;color:#7EE2A0}
+:root[data-theme="dark"] .st.fixed{background:#0F2E45;color:#8CC8FF}
+:root[data-theme="dark"] .st.warn{background:#3A2E0B;color:#F2C774}

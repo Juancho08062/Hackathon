@@ -39,6 +39,7 @@
       for (const [pt, s1, s2] of [[a, c, d], [b, c, d]]) { const [dd, qq] = segDist(pt, s1, s2); if (dd < best[0]) best = [dd, pt, qq]; }
       for (const [pt, s1, s2] of [[c, a, b], [d, a, b]]) { const [dd, qq] = segDist(pt, s1, s2); if (dd < best[0]) best = [dd, qq, pt]; }
     }
+    if (!best[1]) return [Infinity, null, null]; // a project with no usable geometry never overlaps
     return [best[0], unxy(best[1]), unxy(best[2])];
   }
   const lengthKm = p => p.miles ? p.miles * 1.609
@@ -260,15 +261,21 @@
   // Smallest move of one project ("p" or "q") that gives the two builds a real shared window: 6 months, or all of the
   // shorter build. 0 if they already share it, null if no move within 5 years does. Remembered per pair and dates.
   const recCache = new Map();
-  function recommendShift(x, who) {
-    const key = `${x.p.id}|${x.q.id}|${who}|${x.p.start}|${x.p.in_service}|${x.q.start}|${x.q.in_service}`;
+  // With today given, it follows the optimizer's rules: no move for a project already under way or likely built,
+  // and never a start before today.
+  function recommendShift(x, who, today) {
+    const key = `${x.p.id}|${x.q.id}|${who}|${x.p.start}|${x.p.in_service}|${x.q.start}|${x.q.in_service}|${today || ""}`;
     if (recCache.has(key)) return recCache.get(key);
     recommendShift.computed++;
     const dur = p => monthIndex(p.in_service) - monthIndex(p.start), need = Math.min(6, dur(x.p), dur(x.q));
     const moved = m => { const o = x[who], n = { start: shiftISO(o.start, m), in_service: shiftISO(o.in_service, m) }; return who === "p" ? windowOverlap(n, x.q) : windowOverlap(x.p, n); };
+    const o = x[who], now = today ? monthIndex(today) : -Infinity;
+    const allowed = m => !o.likely_built && monthIndex(o.start) > now && monthIndex(shiftISO(o.start, m)) >= now;
     let rec = null;
     if (windowOverlap(x.p, x.q) >= need) rec = 0;
-    else for (let a = 1; a <= 60 && rec == null; a++) for (const m of [-a, a]) if (moved(m) >= need) { rec = m; break; }
+    else if (!today || (!o.likely_built && monthIndex(o.start) > now)) {
+      for (let a = 1; a <= 60 && rec == null; a++) for (const m of [-a, a]) if (allowed(m) && moved(m) >= need) { rec = m; break; }
+    }
     recCache.set(key, rec);
     return rec;
   }
@@ -342,13 +349,12 @@
     const rows = pairs.map(x => { const e = expectedSavings(x, 0); return { x, fixed: e.fixed, windowed: e.windowed }; });
     const chanceOf = (r, p, q) => r.windowed ? overlapChance({ p, q }, slips, { bufferMonths: o.bufferMonths, today: o.today, draws: o.draws }).p : 0;
     rows.forEach(r => { r.c = chanceOf(r, r.x.p, r.x.q); });
-    const total = () => rows.reduce((s, r) => s + r.fixed + r.c * r.windowed, 0);
     const byProject = new Map();
     rows.forEach(r => [r.x.p, r.x.q].forEach(p => { if (!byProject.has(p.id)) byProject.set(p.id, { p, rows: [] }); byProject.get(p.id).rows.push(r); }));
     // Power plants are left where they are: their dates follow resource planning, not transmission crews.
     const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && p.type !== "generation" && monthIndex(p.start) > now &&
       (!o.utilities || o.utilities.includes(p.utility)));
-    const before = total(), moves = [];
+    const moves = [];
     while (moves.length < o.maxMoves) {
       let best = null;
       for (const { p, rows: rs } of movable) {
@@ -369,7 +375,18 @@
       moves.push({ id: best.p.id, project: best.p, months: best.m, gain: best.gain,
         from: { start: best.p.start, in_service: best.p.in_service }, to: { start: best.n.start, in_service: best.n.in_service }, pairs: affected });
     }
-    return { moves, before, after: total() };
+    // The search ran on fewer draws for speed; report the totals and each move's gain with the full draw count
+    // used everywhere else, so the numbers match the rest of the page (and add up move by move).
+    const full = opts.finalDraws || 2000;
+    const totalWith = k => {
+      const moved = new Map(moves.slice(0, k).map(m => [m.id, Object.assign({}, m.project, m.to)]));
+      const at = p => moved.get(p.id) || p;
+      return rows.reduce((s, r) => s + r.fixed + (r.windowed ? overlapChance({ p: at(r.x.p), q: at(r.x.q) }, slips, { bufferMonths: o.bufferMonths, today: o.today, draws: full }).p * r.windowed : 0), 0);
+    };
+    const totals = moves.map((m, i) => totalWith(i + 1));
+    const base = totalWith(0);
+    moves.forEach((m, i) => { m.gain = totals[i] - (i ? totals[i - 1] : base); });
+    return { moves, before: base, after: moves.length ? totals[moves.length - 1] : base };
   }
 
   const api = { optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };

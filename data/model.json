@@ -154,7 +154,7 @@
   {
    "id": "rows",
    "title": "Every project in both PDFs was read",
-   "result": "DESC 44 of 44; Georgia 218 rows from Table 2",
+   "result": "DESC 44 of 44 pages; Georgia 218 rows from Table 2",
    "status": "pass"
   },
   {
@@ -241,9 +241,15 @@
   {
    "id": "namesakes",
    "title": "Substation matches are in the project's own area",
-   "result": "6 OpenStreetMap namesake(s) more than 150 km from the planning zone rejected",
+   "result": "7 OpenStreetMap namesake(s) more than 150 km from the planning zone rejected",
    "status": "fixed",
    "records": [
+    {
+     "endpoint": "Dawson Sub",
+     "zone": "desc",
+     "candidate": "Dawson Substation",
+     "km": 0
+    },
     {
      "endpoint": "HATCH",
      "zone": "215",
