@@ -1502,9 +1502,14 @@ function briefMap(x) {
   const [lo0, la0] = pr.invert([0, 0]), [lo1, la1] = pr.invert([W, H]), tiles = [];
   for (let j = Math.floor(ty(la0)); j <= Math.floor(ty(la1)); j++) for (let i = Math.floor(tx(lo0)); i <= Math.floor(tx(lo1)); i++) {
     const [px, py] = pr([i / n * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * j / n))) * 180 / Math.PI]);
-    tiles.push(`<image href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${j}/${i}" x="${f1(px)}" y="${f1(py)}" width="${f1(ts) + 0.4}" height="${f1(ts) + 0.4}" preserveAspectRatio="none" onerror="this.remove()"/>`);
+    tiles.push([i, j, px, py]);
   }
+  // satellite imagery with Esri's road and place-name overlays on top: the ground as it is, labeled like a road map
+  const layer = svc => tiles.map(([i, j, px, py]) => `<image href="https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/${z}/${j}/${i}" x="${f1(px)}" y="${f1(py)}" width="${f1(ts) + 0.4}" height="${f1(ts) + 0.4}" preserveAspectRatio="none" onerror="this.remove()"/>`).join("");
+  const imagery = ["World_Imagery", "Reference/World_Transportation", "Reference/World_Boundaries_and_Places"].map(layer).join("");
   const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#F1F2EE" stroke="#B9C0C4" stroke-width=".8"/>`).join("");
+  // offline, the counties give the plain fallback some ground detail
+  const co = (BASE.counties || []).map(v => `<path d="${path(v.g)}" fill="none" stroke="#D3D8DB" stroke-width=".6"/>`).join("");
   const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" stroke="#8FB6CC" stroke-width="2.5"/>` : "";
   // each route over a white casing so it reads on the busy topo sheet
   const one = (p, c) => Engine.isLine(p) ? `<path d="${path(feat(p))}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`
@@ -1516,7 +1521,7 @@ function briefMap(x) {
   const kmV = nice(1000, 110), miV = nice(1609.344, 110), kmW = kmV * 1000 / mPer, miW = miV * 1609.344 / mPer;
   const bar = (y, w, t) => `<rect x="14" y="${y}" width="${f1(w)}" height="4" fill="#1F2328"/><rect x="${f1(14 + w / 2)}" y="${y}" width="${f1(w / 2)}" height="4" fill="#fff" stroke="#1F2328" stroke-width=".8"/><text x="${f1(20 + w)}" y="${y + 6}" font-size="12.5" fill="#1F2328">${t}</text>`;
   const lg = [[lbl(x.p.utility), "#1668A8"], [lbl(x.q.utility), "#C4540E"]];
-  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map of the two projects"><rect width="${W}" height="${H}" fill="#E4EBEF"/>${st}${seam}<g>${tiles.join("")}</g>${one(x.p, "#1668A8")}${one(x.q, "#C4540E")}
+  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map of the two projects"><rect width="${W}" height="${H}" fill="#E4EBEF"/>${st}${co}${seam}<g>${imagery}</g>${one(x.p, "#1668A8")}${one(x.q, "#C4540E")}
     <line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#fff" stroke-width="4"/><line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#B42318" stroke-width="2" stroke-dasharray="4 3"/>
     <circle cx="${f1(m[0])}" cy="${f1(m[1])}" r="10" fill="none" stroke="#fff" stroke-width="4"/><circle cx="${f1(m[0])}" cy="${f1(m[1])}" r="10" fill="none" stroke="#B42318" stroke-width="2"/>
     <g font-size="13" fill="#1F2328"><rect x="8" y="8" width="214" height="72" rx="3" fill="#fff" fill-opacity=".92" stroke="#D0D7DE"/>
@@ -1524,7 +1529,7 @@ function briefMap(x) {
       <circle cx="27" cy="62" r="6" fill="none" stroke="#B42318" stroke-width="2.2"/><text x="46" y="66.5">Closest points, ${esc(km(x.km))} apart</text></g>
     <rect x="8" y="${H - 48}" width="${f1(Math.max(kmW, miW) + 70)}" height="40" rx="3" fill="#fff" fill-opacity=".92" stroke="#D0D7DE"/>${bar(H - 40, kmW, kmV + " km")}${bar(H - 24, miW, miV + " mi")}
     <g transform="translate(${W - 26},28)"><circle r="17" fill="#fff" fill-opacity=".92" stroke="#D0D7DE"/><path d="M0,-3 L5.5,11 L0,7.5 L-5.5,11 Z" fill="#1F2328"/><text y="-5" text-anchor="middle" font-size="10" font-weight="700" fill="#1F2328">N</text></g>
-    <text x="${W - 6}" y="${H - 6}" text-anchor="end" font-size="9.5" fill="#57606A" paint-order="stroke" stroke="#fff" stroke-width="2.5">Basemap © Esri, HERE, Garmin, USGS</text></svg>`;
+    <text x="${W - 6}" y="${H - 6}" text-anchor="end" font-size="9.5" fill="#57606A" paint-order="stroke" stroke="#fff" stroke-width="2.5">Imagery and labels © Esri, Maxar, Earthstar, HERE, Garmin</text></svg>`;
 }
 function closeBrief() { $("#brief").hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; }
 
