@@ -176,10 +176,8 @@ select{font-weight:500;min-width:0}
 .m3d-head>div{flex:1 1 300px;min-width:0}
 .m3d-head h2{margin:0;font-family:var(--display);font-size:22px;font-weight:600;text-wrap:balance}
 .m3d-head p{margin:2px 0 0}
-.px{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--ink2);padding-top:6px}
 .m3d-stage{position:relative;height:min(64vh,620px);background:#aebfcc}
 .m3d-stage canvas{display:block;width:100%;height:100%}
-.m3d-stage.pixel canvas{image-rendering:pixelated;image-rendering:crisp-edges}
 .m3d-msg{position:absolute;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--ink);background:var(--panel);padding:10px 14px;border-radius:6px;max-width:80%}
 .m3d-box{position:relative}
 .m3d-foot{margin:0;padding:8px 16px}
@@ -187,3 +185,4 @@ select{font-weight:500;min-width:0}
 .m3d-tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;color:#fff;background:rgba(21,35,42,.85);border-left:4px solid var(--c);padding:3px 8px;border-radius:2px}
 .m3d-tag.big{font-size:14px;padding:4px 10px}
 .m3d-tag.small{font-size:11px;font-weight:500}
+.controls.off{opacity:.45}
