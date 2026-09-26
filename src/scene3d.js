@@ -188,7 +188,8 @@
     const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
     const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
     const reels = [];
-    for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
+    // cable reels in a row, spaced wider than their 1.04 diameter so they never touch
+    for (let i = 0; i < 4; i++) { const x = -w * 0.34 + i * 1.2; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.18 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.18); reels.push(hub); }
     g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
     const trucks = [], cabs = [], tires = [], glass = [];
     for (let i = 0; i < 3; i++) {
@@ -216,7 +217,7 @@
     const cones = [];
     for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
     g.add(mesh(T, merge(T, cones), pbr(T, 0xf07a22)));
-    const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
+    const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-0.4, 0.12, d * 0.08); g.add(crew);
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
     g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
@@ -464,7 +465,8 @@
           const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
-        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3);
+        // no tower on the plateau's edge, and none inside a substation or plant placed before this line
+        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3 && obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 0.8 * TS));
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
@@ -510,7 +512,10 @@
       if (node.userData.stacks) node.userData.stacks.forEach(st => { const w = new T.Vector3(st[0], st[1], st[2]).applyAxisAngle(sv.set(0, 1, 0), 0.35).add(v); steam.push({ at: w, big: !!st[3], s }); });
       return { anchor: v, top: gen ? s * 0.65 : s * 0.45 };
     };
-    const A = place(pair.p, opts.colorA), B = place(pair.q, opts.colorB);
+    // substations and plants first, so the other project's towers can keep off their pads
+    const isL = p => (p.parts || [p.coords]).some(c => c.length > 1);
+    let A, B;
+    if (isL(pair.p) && !isL(pair.q)) { B = place(pair.q, opts.colorB); A = place(pair.p, opts.colorA); } else { A = place(pair.p, opts.colorA); B = place(pair.q, opts.colorB); }
 
     // ---------- the closest-point link and what the tier lets them share ----------
     const va = toV(pair.ca), vb = toV(pair.cb), tierHex = new T.Color(opts.tierColor).getHex();
@@ -543,10 +548,32 @@
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
-      const yd = yardGroup(T, 7, 4.6), o = perp.clone().multiplyScalar(6);
-      yd.scale.setScalar(TS); yd.position.set(mid.x + o.x, heightAt(mid.x + o.x, mid.z + o.z), mid.z + o.z); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
-      obstacles.push([yd.position.x, yd.position.z, 5 * TS]);
+      // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
+      const yd = yardGroup(T, 7, 4.6), yr = 4.4 * TS;
+      let spot = null;
+      for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
+        const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
+        const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
+        if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
+      }
+      if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
+      yd.scale.setScalar(TS); yd.position.set(spot[0], heightAt(spot[0], spot[1]), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
+    }
+    // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
+    // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    let walkStart = null;
+    if (opts.walkAt) {
+      const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
+      if (away.lengthSq() < 1e-6) away.copy(perp);
+      away.normalize();
+      const clearOf = v => obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 3 * TS);
+      walkStart = at.clone().add(away.clone().multiplyScalar(4 * TS));
+      for (let k = 0; k < 30 && !clearOf(walkStart); k++) walkStart.add(away.clone().multiplyScalar(1.5));
+      const look = f0.clone().sub(walkStart); look.y = 0;
+      const steps = Math.min(8, Math.ceil(look.length() / 4));
+      for (let k = 0; k <= steps; k++) { const v = walkStart.clone().lerp(f0, k / Math.max(1, steps) * 0.6); obstacles.push([v.x, v.z, k ? 2.5 : 4]); }
     }
     const clear = (x, z, pad) => (!dem || heightAt(x, z) > 0.12) && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
@@ -607,7 +634,13 @@
     const tufts = scatter(tuft, pbr(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
 
     // work crews at the closest points
-    [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
+    [va, vb].forEach((v, i) => {
+      const cr = crewGroup(T, 4, 21 + i, 1.4), sg = i ? -1 : 1;
+      let off = 1.4;
+      while (off < 14 && !obstacles.every(([ox, oz, r]) => Math.hypot(v.x + perp.x * off * sg - ox, v.z + perp.z * off * sg - oz) > r)) off += 1;
+      const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
+      cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
+    });
 
     // steam sprites over stacks and cooling towers
     const puffs = [];
@@ -618,7 +651,7 @@
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -683,7 +716,7 @@
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced ? 0 : 2.6;
+      const INTRO = reduced || opts.walkAt ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
       if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
       cam.lookAt(f);
@@ -693,6 +726,56 @@
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+      // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
+      // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
+      // terrain and inside the plateau.
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot");
+      const setWalk = on => {
+        walk.on = on; controls.enabled = !on; controls.autoRotate = false;
+        if (on) {
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
+          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+        } else {
+          const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
+          controls.target.copy(ahead); cam.position.y += 8;
+        }
+        if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
+        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
+          : "Illustration of the pair: distances along the ground are to scale; terrain and towers are schematic. Drag to orbit, scroll to zoom.";
+      };
+      const typing = e => /input|select|textarea/i.test(e.target.tagName);
+      const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
+      const onKeyDown = e => { if (!walk.on || typing(e)) return; if (MOVE[e.code] || e.code === "ShiftLeft" || e.code === "ShiftRight") { walk.keys.add(e.code); e.preventDefault(); } };
+      const onKeyUp = e => walk.keys.delete(e.code);
+      const cv = renderer.domElement;
+      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      const onMove = e => {
+        if (!walk.on || !walk.drag) return;
+        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        walk.drag = [e.clientX, e.clientY];
+      };
+      const onUp = () => { walk.drag = null; };
+      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
+      const stepWalk = dt => {
+        let fw = 0, sd = 0;
+        walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
+        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
+        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const r = Math.hypot(nx, nz), lim = built.R * 1.25;
+        if (r > lim) { nx *= lim / r; nz *= lim / r; }
+        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
+      };
+      if (built.walkStart) {
+        const w0 = built.walkStart;
+        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        setWalk(true);
+      } else setWalk(false);
 
       // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
       const pmrem = new T.PMREMGenerator(renderer);
@@ -736,8 +819,9 @@
       size();
       const clock = new T.Clock();
       let raf;
+      let lastT = 0;
       const loop = () => {
-        const t = clock.getElapsedTime();
+        const t = clock.getElapsedTime(), dt = Math.min(0.05, t - lastT); lastT = t;
         if (INTRO && !controls.enabled) {
           const k = Math.min(1, t / INTRO), e = 1 - Math.pow(1 - k, 3);
           orbitAt(endR * (2.3 - 1.3 * e), endAz + 1.1 * (1 - e), endEl + (Math.min(1.25, endEl + 0.5) - endEl) * (1 - e)); cam.lookAt(f);
@@ -756,7 +840,7 @@
         });
         built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 260) c.position.x = -260; });
         built.waterTex.offset.set(t * 0.012, t * 0.007);
-        controls.update();
+        if (walk.on) stepWalk(dt); else controls.update();
         composer.render();
         placeTags(); raf = requestAnimationFrame(loop);
       };
@@ -767,6 +851,7 @@
       ctx = {
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
+          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp);
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
