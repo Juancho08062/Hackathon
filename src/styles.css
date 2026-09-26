@@ -288,8 +288,8 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
   .b-tab{font-size:10.5px}
   .b-tab td span{font-size:9.5px}
   /* two columns of steps; numbers live inside each column so they never reach into the neighbor */
-  .brief ol{columns:2;column-gap:40px;display:block;padding-left:0;list-style:none;counter-reset:step}
-  .brief ol li{break-inside:avoid;margin-bottom:3px;position:relative;padding-left:18px;counter-increment:step}
+  .brief ol{display:block;padding-left:0;list-style:none;counter-reset:step}
+  .brief ol li{margin-bottom:1px;position:relative;padding-left:18px;counter-increment:step}
   .brief ol li::before{content:counter(step) ".";position:absolute;left:0;font-weight:600}
   .b-tab td{padding:3px 8px 3px 0}
   .brief ul,.brief ol{gap:1px}
