@@ -1,0 +1,1187 @@
+{
+ "as_of": "2026-09-26",
+ "slips": {
+  "DESC": {
+   "n": 30,
+   "months": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    6,
+    11,
+    11,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    16,
+    21,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    36,
+    36,
+    36,
+    36,
+    55
+   ],
+   "slipped": 23,
+   "advanced": 0,
+   "median": 12,
+   "source": "Same project in DESC's 2024-2028 and 2026-2030 lists: change in in-service date"
+  },
+  "GPC": {
+   "n": 94,
+   "months": [
+    -36,
+    -36,
+    -36,
+    -24,
+    -24,
+    -24,
+    -24,
+    -12,
+    -12,
+    -12,
+    -12,
+    -12,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    24,
+    24,
+    36,
+    36,
+    36,
+    36,
+    36
+   ],
+   "slipped": 16,
+   "advanced": 12,
+   "median": 0,
+   "source": "Georgia IRP 2025 project pages: change from the previous ten-year plan"
+  }
+ },
+ "checks": [
+  {
+   "id": "rows",
+   "title": "Every project in both PDFs was read",
+   "result": "DESC 44 of 44; Georgia 218 rows from Table 2",
+   "status": "pass"
+  },
+  {
+   "id": "detail",
+   "title": "Each Georgia row has its detail page (start date, description, miles)",
+   "result": "209 of 218 matched by TEAMS number",
+   "status": "warn",
+   "records": [
+    {
+     "id": "IRP-12016",
+     "name": "ARKWRIGHT - LLOYD SHOALS 115 KV LINE RECONDUCTOR"
+    },
+    {
+     "id": "IRP-19628",
+     "name": "ARLINGTON PRIMARY - LIZARD LOPE 115KV RECONDUCTOR"
+    },
+    {
+     "id": "IRP-20477",
+     "name": "BANKS CROSSING - CENTER PRIMARY (BLACK) 230 KV LINE"
+    },
+    {
+     "id": "IRP-12063",
+     "name": "DOUGLASVILLE - POST RD 115KV REBUILD"
+    },
+    {
+     "id": "IRP-19623",
+     "name": "GTC: AUGUSTA CORPORATE PARK - VOGTLE 230KV REBUILD"
+    },
+    {
+     "id": "IRP-20513",
+     "name": "GTC: BIG GROCERY-WESTLAKE ROAD 230KV PROJECTS"
+    },
+    {
+     "id": "IRP-15228",
+     "name": "KRAFT 230/115KV TRANSFORMER RATING INCREASE"
+    },
+    {
+     "id": "IRP-20000",
+     "name": "YATES 6 AND 7 230KV LIMITING ELEMENT REPLACEMENT"
+    },
+    {
+     "id": "IRP-20266",
+     "name": "GTC: GOSHEN - VOGTLE 230KV REBUILD"
+    }
+   ]
+  },
+  {
+   "id": "dates",
+   "title": "Start date is before the need date",
+   "result": "2 plan page(s) list a start after the need date; start estimated instead",
+   "status": "fixed",
+   "records": [
+    {
+     "id": "IRP-21138",
+     "name": "GLENWOOD SPRINGS - PORTERDALE PRIMARY 230KV LINE SWITCH REPL",
+     "start": "2029-06-01",
+     "need": "2029-06-01"
+    },
+    {
+     "id": "IRP-20248",
+     "name": "BAY CREEK - CONYERS 230KV REBUILD",
+     "start": "2031-06-01",
+     "need": "2029-12-31"
+    }
+   ]
+  },
+  {
+   "id": "dupes",
+   "title": "TEAMS numbers are unique",
+   "result": "1 number(s) used twice, kept as two phases",
+   "status": "fixed",
+   "records": [
+    {
+     "id": "IRP-20482-2031"
+    }
+   ]
+  },
+  {
+   "id": "same",
+   "title": "Projects listed in two plans are counted once",
+   "result": "62 official records matched to 60 newer entries",
+   "status": "pass"
+  },
+  {
+   "id": "namesakes",
+   "title": "Substation matches are in the project's own area",
+   "result": "6 OpenStreetMap namesake(s) more than 150 km from the planning zone rejected",
+   "status": "fixed",
+   "records": [
+    {
+     "endpoint": "HATCH",
+     "zone": "215",
+     "candidate": "Hatch Nuclear Plant Substation",
+     "km": 175
+    },
+    {
+     "endpoint": "SOUTH HAZLEHURST",
+     "zone": "214",
+     "candidate": "South Hazlehurst Substation",
+     "km": 150
+    },
+    {
+     "endpoint": "HYUNDAI",
+     "zone": "211",
+     "candidate": "Hyundai Motors Substation",
+     "km": 362
+    },
+    {
+     "endpoint": "BUZZARD ROOST",
+     "zone": "201",
+     "candidate": "Buzzard Roost Dam Substation",
+     "km": 244
+    },
+    {
+     "endpoint": "SAND )",
+     "zone": "214",
+     "candidate": "Sand Hill Switching Station",
+     "km": 169
+    },
+    {
+     "endpoint": "BUZZARD ROOST",
+     "zone": "201",
+     "candidate": "Buzzard Roost Dam Substation",
+     "km": 244
+    }
+   ]
+  },
+  {
+   "id": "span",
+   "title": "Line end points agree with the length in the plan",
+   "result": "2 end point(s) dropped because the line would be far longer than the plan says",
+   "status": "fixed",
+   "records": [
+    {
+     "id": "IRP-20271",
+     "name": "MEAG: RAY PLACE RD - WASHINGTON (WASHINGTON - WASHINGTON 3)",
+     "span_km": 27,
+     "plan_miles": 1.2
+    },
+    {
+     "id": "IRP-19601",
+     "name": "MORROW - YATES COMMON 115KV LINE UPGRADE",
+     "span_km": 55,
+     "plan_miles": 5.8
+    }
+   ]
+  },
+  {
+   "id": "placed",
+   "title": "Every official project is on the map",
+   "result": "194 of 262 placed; 68 not found (none in the Augusta or Savannah zones)",
+   "status": "warn",
+   "records": [
+    {
+     "id": "DESCP-11",
+     "name": "Hopkins-CIP 230kV: Rebuild",
+     "endpoints": [
+      "Hopkins",
+      "CIP"
+     ]
+    },
+    {
+     "id": "DESCP-13",
+     "name": "Square D - Hopkins 115kV: Rebuild",
+     "endpoints": [
+      "Square D",
+      "Hopkins"
+     ]
+    },
+    {
+     "id": "DESCP-16",
+     "name": "Edenwood Sub: #1 & #2 230-115kV Autobanks, Replace with 336MVA",
+     "endpoints": [
+      "Edenwood Sub"
+     ]
+    },
+    {
+     "id": "DESCP-27",
+     "name": "Goose Creek Reservoir: Rebuild Transmission Line Crossings",
+     "endpoints": [
+      "Goose Creek Reservoir"
+     ]
+    },
+    {
+     "id": "IRP-18670",
+     "name": "GTC: BANKS CROSSING - POND FORK 115 KV",
+     "endpoints": [
+      "BANKS CROSSING",
+      "POND FORK"
+     ]
+    },
+    {
+     "id": "IRP-19676",
+     "name": "ADAMSVILLE - JACK MCDONOUGH 230KV LINE REBUILD",
+     "endpoints": [
+      "ADAMSVILLE",
+      "JACK MCDONOUGH"
+     ]
+    },
+    {
+     "id": "IRP-18800",
+     "name": "ECHECONNEE-WELLSTON 115KV REBUILD",
+     "endpoints": [
+      "ECHECONNEE",
+      "WELLSTON"
+     ]
+    },
+    {
+     "id": "IRP-20342",
+     "name": "GTC: CAMDEN INDUSTRIAL PARK 230/115KV NEW SUBSTATION",
+     "endpoints": [
+      "CAMDEN INDUSTRIAL PARK"
+     ]
+    },
+    {
+     "id": "IRP-13753",
+     "name": "MEAG: ALCOVY ROAD - SKC 115 KV RECONDUCTOR",
+     "endpoints": [
+      "ALCOVY ROAD",
+      "SKC"
+     ]
+    },
+    {
+     "id": "IRP-20466",
+     "name": "SMART VALVE INSTALLATION",
+     "endpoints": [
+      "SMART VALVE"
+     ]
+    },
+    {
+     "id": "IRP-21046",
+     "name": "THALMANN AND COLERAIN 23O KV LINE RELAY PANEL UPGRADES",
+     "endpoints": [
+      "THALMANN AND COLERAIN 23O KV"
+     ]
+    },
+    {
+     "id": "IRP-20684",
+     "name": "CAMDEN INDUSTRIAL PARK (GPC)",
+     "endpoints": [
+      "CAMDEN INDUSTRIAL PARK (GPC)"
+     ]
+    },
+    {
+     "id": "IRP-18889",
+     "name": "JEFFERSON STREET#3 - NORTHWEST (WHITE) 115 KV RECONDUCTOR",
+     "endpoints": [
+      "JEFFERSON STREET",
+      "NORTHWEST (WHITE)"
+     ]
+    },
+    {
+     "id": "IRP-20152",
+     "name": "CC - CASS PINE- HILL VIEW 230 KV LINE- CC IMPROVEMENTS",
+     "endpoints": [
+      "CASS PINE",
+      "HILL VIEW",
+      "CC"
+     ]
+    },
+    {
+     "id": "IRP-18691",
+     "name": "GTC: LIZARD LOPE - WESTOVER 115 KV NEW LINE",
+     "endpoints": [
+      "LIZARD LOPE",
+      "WESTOVER"
+     ]
+    },
+    {
+     "id": "IRP-20018",
+     "name": "CC - QTS FAYETTEVILLE TRANSMISSION NEEDS",
+     "endpoints": [
+      "QTS FAYETTEVILLE TRANSMISSION"
+     ]
+    },
+    {
+     "id": "IRP-20243",
+     "name": "CC - GARRETT ROAD SWITCHING STATION - TRAE LANE",
+     "endpoints": [
+      "GARRETT ROAD SWITCHING STATION",
+      "TRAE LANE"
+     ]
+    },
+    {
+     "id": "IRP-20216",
+     "name": "CC - STONEWALL TELL ROAD (TA REALTY)",
+     "endpoints": [
+      "STONEWALL TELL ROAD (TA REALTY)"
+     ]
+    },
+    {
+     "id": "IRP-18679",
+     "name": "DU: EAST DALTON - OOSTANAULA 115KV REBUILD",
+     "endpoints": [
+      "EAST DALTON",
+      "OOSTANAULA"
+     ]
+    },
+    {
+     "id": "IRP-20516",
+     "name": "GOAT ROCK 230KV SWITCH, JUMPER, & LINE TRAP REPLACEMENT",
+     "endpoints": [
+      "GOAT ROCK"
+     ]
+    },
+    {
+     "id": "IRP-20474",
+     "name": "GRADY 230/115KV RELAY MODERNIZATION",
+     "endpoints": [
+      "GRADY"
+     ]
+    },
+    {
+     "id": "IRP-20015",
+     "name": "GTC: MORNING HORNET 2ND 230/115 KV BANK & THUMBS UP 115KV TL",
+     "endpoints": [
+      "MORNING HORNET"
+     ]
+    },
+    {
+     "id": "IRP-19636",
+     "name": "HAMMOND - WEISS DAM 115KV LINE REBUILD",
+     "endpoints": [
+      "HAMMOND",
+      "WEISS DAM"
+     ]
+    },
+    {
+     "id": "IRP-20512",
+     "name": "KATHLEEN AREA IMPROVEMENTS",
+     "endpoints": [
+      "KATHLEEN"
+     ]
+    },
+    {
+     "id": "IRP-18690",
+     "name": "PALMYRA REACTOR REMOVAL",
+     "endpoints": [
+      "PALMYRA"
+     ]
+    },
+    {
+     "id": "IRP-20223",
+     "name": "CC - PROJECT PAYTON BAINBRIDGE",
+     "endpoints": []
+    },
+    {
+     "id": "IRP-21022",
+     "name": "OHARA BREAKER REPLACEMENT",
+     "endpoints": [
+      "OHARA"
+     ]
+    },
+    {
+     "id": "IRP-20151",
+     "name": "CC - CASS PINE 230/25 NEW SUB - QCELLS - CC IMPROVEMENTS",
+     "endpoints": [
+      "CASS PINE 230",
+      "QCELLS",
+      "CC"
+     ]
+    },
+    {
+     "id": "IRP-19287",
+     "name": "GRADY-WEST END 115KV REBUILD",
+     "endpoints": [
+      "GRADY",
+      "WEST END"
+     ]
+    },
+    {
+     "id": "IRP-20509",
+     "name": "CC - EMBLEM RIVERSIDE CUSTOMER SUB (FLEXENTIAL)",
+     "endpoints": [
+      "EMBLEM RIVERSIDE CUSTOMER SUB (FLEXENTIAL)"
+     ]
+    },
+    {
+     "id": "IRP-20771",
+     "name": "CC - GULLATT ROAD TRANSMISSION IMPROVEMENTS",
+     "endpoints": [
+      "GULLATT ROAD TRANSMISSION"
+     ]
+    },
+    {
+     "id": "IRP-18736",
+     "name": "CC - MICROSOFT - SHUGART (CCO06)",
+     "endpoints": [
+      "MICROSOFT",
+      "SHUGART (CCO06)"
+     ]
+    },
+    {
+     "id": "IRP-20736",
+     "name": "CC - TA REALTY ELLENWOOD NETWORK IMPROVEMENTS",
+     "endpoints": [
+      "TA REALTY ELLENWOOD"
+     ]
+    },
+    {
+     "id": "IRP-20505",
+     "name": "GTC: GARRETT RD - V. RICA 230KV LINE RECONDUCTOR (CC NET IM)",
+     "endpoints": [
+      "GARRETT RD",
+      "V. RICA"
+     ]
+    },
+    {
+     "id": "IRP-19622",
+     "name": "GTC: RIDDLEVILLE BUS REPLACEMENT",
+     "endpoints": [
+      "RIDDLEVILLE"
+     ]
+    },
+    {
+     "id": "IRP-19606",
+     "name": "GTC: SKC 115KV BUS AND JUMPER REPLACEMENT",
+     "endpoints": [
+      "SKC"
+     ]
+    },
+    {
+     "id": "IRP-20506",
+     "name": "GTC: SWITCH WAY - THORNTON ROAD 230KV LINE REBUILD",
+     "endpoints": [
+      "THORNTON ROAD"
+     ]
+    },
+    {
+     "id": "IRP-20150",
+     "name": "CC - HILL VIEW & GRASSY HOLLOW SUB - CC IMPROVEMENTS",
+     "endpoints": [
+      "HILL VIEW"
+     ]
+    },
+    {
+     "id": "IRP-20024",
+     "name": "DYER ROAD - EAST ROANOKE 115KV (REBUILD)",
+     "endpoints": [
+      "DYER ROAD",
+      "EAST ROANOKE ("
+     ]
+    },
+    {
+     "id": "IRP-20777",
+     "name": "JACK MCDONOUGH - NORTHWEST (BLACK) 230KV RECONDUCTOR",
+     "endpoints": [
+      "JACK MCDONOUGH",
+      "NORTHWEST (BLACK)"
+     ]
+    },
+    {
+     "id": "IRP-21069",
+     "name": "SMART VALVES AT EAST VILLA RICA SWITCHING STATION",
+     "endpoints": [
+      "SMART VALVES AT EAST VILLA RICA SWITCHING STATION"
+     ]
+    },
+    {
+     "id": "IRP-13166",
+     "name": "FIRST AVENUE - NORTH COLUMBUS 115KV LINE REBUILD",
+     "endpoints": [
+      "FIRST AVENUE",
+      "NORTH COLUMBUS"
+     ]
+    },
+    {
+     "id": "IRP-21047",
+     "name": "BROADWAY - ECHECONNEE 115 KV LINE REBUILD",
+     "endpoints": [
+      "BROADWAY",
+      "ECHECONNEE"
+     ]
+    },
+    {
+     "id": "IRP-21036",
+     "name": "BUZZARD ROOST - FACTORY SHOALS 230KV NEW LINE",
+     "endpoints": [
+      "BUZZARD ROOST",
+      "FACTORY SHOALS"
+     ]
+    },
+    {
+     "id": "IRP-20849",
+     "name": "GTC: CLIFTONDALE - LINE CREEK 230KV LINE",
+     "endpoints": [
+      "CLIFTONDALE"
+     ]
+    },
+    {
+     "id": "IRP-20285",
+     "name": "LOWER RIVER - WEBB (APC) 115KV RECONDUCTOR",
+     "endpoints": [
+      "LOWER RIVER",
+      "WEBB (APC)"
+     ]
+    },
+    {
+     "id": "IRP-11051",
+     "name": "MEAG: SLAPPEY DRIVE - WESTOVER 115KV LINE REBUILD",
+     "endpoints": [
+      "SLAPPEY DRIVE",
+      "WESTOVER"
+     ]
+    },
+    {
+     "id": "IRP-21129",
+     "name": "ANNISTON - HAMMOND 230KV LINE",
+     "endpoints": [
+      "ANNISTON",
+      "HAMMOND"
+     ]
+    },
+    {
+     "id": "IRP-21130",
+     "name": "CC - NORTH GEORGIA DATA NETWORK UPGRADES",
+     "endpoints": [
+      "NORTH GEORGIA DATA"
+     ]
+    },
+    {
+     "id": "IRP-19627",
+     "name": "ECHECONNEE-WELLSTON 115KV LINE REBUILD",
+     "endpoints": [
+      "ECHECONNEE",
+      "WELLSTON"
+     ]
+    },
+    {
+     "id": "IRP-21063",
+     "name": "FARLEY (APC)-TAZEWELL 500KV",
+     "endpoints": [
+      "FARLEY (APC)",
+      "TAZEWELL"
+     ]
+    },
+    {
+     "id": "IRP-21128",
+     "name": "GOAT ROCK REACTORS INSTALLATION",
+     "endpoints": [
+      "GOAT ROCK"
+     ]
+    },
+    {
+     "id": "IRP-21014",
+     "name": "GTC: BUZZARD ROOST - CAVENDER DRIVE 230KV NEW LINE",
+     "endpoints": [
+      "BUZZARD ROOST",
+      "CAVENDER DRIVE"
+     ]
+    },
+    {
+     "id": "IRP-21013",
+     "name": "GTC: CAVENDER DRIVE 500/230KV AUTOBANK",
+     "endpoints": [
+      "CAVENDER DRIVE"
+     ]
+    },
+    {
+     "id": "IRP-21131",
+     "name": "GTC: POND FORK - MIDWAY 115KV LINE",
+     "endpoints": [
+      "POND FORK",
+      "MIDWAY"
+     ]
+    },
+    {
+     "id": "IRP-21076",
+     "name": "GTC: TALLBOT #2 - TAZEWELL 500KV LINE",
+     "endpoints": [
+      "TALLBOT",
+      "TAZEWELL"
+     ]
+    },
+    {
+     "id": "IRP-20857",
+     "name": "NEW CAVENDER DRIVE - TRIBUTARY 230KV LINE",
+     "endpoints": [
+      "TRIBUTARY"
+     ]
+    },
+    {
+     "id": "IRP-21093",
+     "name": "NORTH SPA 230KV STRATEGIC PROJECT",
+     "endpoints": [
+      "NORTH SPA"
+     ]
+    },
+    {
+     "id": "IRP-21098",
+     "name": "TRIBUTARY - THORNTON RD 230KV REBUILD",
+     "endpoints": [
+      "TRIBUTARY",
+      "THORNTON RD"
+     ]
+    },
+    {
+     "id": "IRP-20160",
+     "name": "THOMASTON 230 NEW BUILD SUB",
+     "endpoints": [
+      "THOMASTON 230"
+     ]
+    },
+    {
+     "id": "IRP-19626",
+     "name": "GLENWOOD SPRINGS 115KV CAP BANK",
+     "endpoints": [
+      "GLENWOOD SPRINGS"
+     ]
+    },
+    {
+     "id": "IRP-21114",
+     "name": "MEAG: SOUTH GRIFFIN 230/115KV BANK #5",
+     "endpoints": [
+      "SOUTH GRIFFIN"
+     ]
+    },
+    {
+     "id": "IRP-20767",
+     "name": "ARKWRIGHT BUS AND JUMPER REPLACEMENT",
+     "endpoints": [
+      "ARKWRIGHT"
+     ]
+    },
+    {
+     "id": "IRP-20773",
+     "name": "GTC: CLARKSBORO - WINDER PRIMARY 230KV REBUILD",
+     "endpoints": [
+      "CLARKSBORO",
+      "WINDER PRIMARY"
+     ]
+    },
+    {
+     "id": "IRP-21075",
+     "name": "GTC: EAST WALTON - MIDDLE FORK 500KV",
+     "endpoints": [
+      "EAST WALTON",
+      "MIDDLE FORK"
+     ]
+    },
+    {
+     "id": "IRP-20759",
+     "name": "WINDER PRIMARY 230KV BUS 1-2 PARALLEL BUS-TIE INSTALLATION",
+     "endpoints": [
+      "WINDER PRIMARY"
+     ]
+    },
+    {
+     "id": "IRP-20513",
+     "name": "GTC: BIG GROCERY-WESTLAKE ROAD 230KV PROJECTS",
+     "endpoints": [
+      "BIG GROCERY",
+      "WESTLAKE ROAD PROJECTS"
+     ]
+    },
+    {
+     "id": "IRP-20000",
+     "name": "YATES 6 AND 7 230KV LIMITING ELEMENT REPLACEMENT",
+     "endpoints": [
+      "YATES 6 AND 7"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "past",
+   "title": "In-service dates are still ahead",
+   "result": "55 projects list a date before 2026-09-26; 8 are gone from DESC's newer list, so likely built",
+   "status": "warn",
+   "records": [
+    {
+     "id": "DESC-01",
+     "name": "Summerville 115kV Loop: Rebuild",
+     "in_service": "2026-04-30",
+     "likely_built": false
+    },
+    {
+     "id": "DESC-02",
+     "name": "Columbia Canal 115kV: Rebuild",
+     "in_service": "2026-05-31",
+     "likely_built": false
+    },
+    {
+     "id": "DESC-03",
+     "name": "Scout 230kV Sub and Fold-in: Construct",
+     "in_service": "2026-05-31",
+     "likely_built": false
+    },
+    {
+     "id": "DESC-04",
+     "name": "Eastover - Sumter 115kV DEP Tie: Rebuild",
+     "in_service": "2026-05-31",
+     "likely_built": false
+    },
+    {
+     "id": "DESC-05",
+     "name": "Batesburg - Saluda County 115kV: Rebuild",
+     "in_service": "2026-06-30",
+     "likely_built": false
+    },
+    {
+     "id": "DESC-06",
+     "name": "Summerville - Boone Hill 115kV: Move Line",
+     "in_service": "2026-07-31",
+     "likely_built": false
+    },
+    {
+     "id": "DESC-07",
+     "name": "Urquhart - Toolebeck 115kV: Rebuild",
+     "in_service": "2026-08-12",
+     "likely_built": false
+    },
+    {
+     "id": "GA-17",
+     "name": "Gainesville #2: Equipment Replacement",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "GA-18",
+     "name": "Conyers - Cornish Mountain 115kV: Upgrade",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "GA-19",
+     "name": "Dresden 500kV Bus Expansion",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "GA-20",
+     "name": "Gordon - Sandersville #1 115kV: Rebuild",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "GA-21",
+     "name": "LaGrange - North Opelika 230kV: Construct",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "GA-22",
+     "name": "Robins Spring 115kV Bus and Capacitor Bank",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "DESCP-01",
+     "name": "Queensboro - Ft Johnson 115 kV & Queensboro-Bayfront 115kV (Queensboro-James Island Sect)",
+     "in_service": "2023-12-31",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-05",
+     "name": "Eastover - Square D 115kV: Rebuild",
+     "in_service": "2024-06-01",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-07",
+     "name": "Burton-St Helena 115kV: Frogmore Distribution - St Helena",
+     "in_service": "2025-12-31",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-10",
+     "name": "Okatie-Bluffton 115kV: Rebuild",
+     "in_service": "2025-06-01",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-14",
+     "name": "Stevens Creek - Hooks 115kV/LR Plumb Branch 46kV Rebuilds",
+     "in_service": "2024-12-31",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-15",
+     "name": "Stevens Creek - Hooks 115kV/LR Plumb Branch 46kV",
+     "in_service": "2025-12-31",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-19",
+     "name": "Summerville: Replace and Spare 230-115kV 336MVA Auto Bank",
+     "in_service": "2024-12-31",
+     "likely_built": true
+    },
+    {
+     "id": "DESCP-31",
+     "name": "Hooks - Thurmond 115kV Tie: Rebuild",
+     "in_service": "2024-12-31",
+     "likely_built": true
+    },
+    {
+     "id": "IRP-19523",
+     "name": "SAV: CC - Hyundai Motors Savannah Aka. Project Ea",
+     "in_service": "2025-01-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-18492",
+     "name": "Mitchell - North Tifton 230kV Reconductor",
+     "in_service": "2025-05-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-19187",
+     "name": "Grid - Bremen - Crooked Creek (APC) 115 Kv Project",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-18153",
+     "name": "GTC: Bonaire Pri- Echeconnee 115 Kv Partial Rebuild",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20590",
+     "name": "GTC: Eatonton Primary - Lick Creek 115kV Line Switch Replacement",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-11821",
+     "name": "Jesup - Ludowici Primary 115kV Rebuild",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-13787",
+     "name": "MEAG: Aultman Road - Bonaire Primary 115 Kv Rebuild",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20464",
+     "name": "Norcross 230kV Bus 1-3 Series Bus Tie Breaker Installation",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-19631",
+     "name": "Pine Grove Primary 115 Kv Dual Stage Capacitor Bank",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20067",
+     "name": "SAV: Deptford - Magnolia 115kV Reconductor",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20431",
+     "name": "Villa Rica Low Side Breaker",
+     "in_service": "2025-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-18774",
+     "name": "GTC: Heard County - Tenaska 500kV (Second Line)",
+     "in_service": "2025-12-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20326",
+     "name": "Anthony Shoals Statcom System",
+     "in_service": "2025-12-31",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20175",
+     "name": "CC - Project Chronos- Sk/hyundai",
+     "in_service": "2025-12-31",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20010",
+     "name": "GTC: Anthony Shoals - Washington 115 Kv Line Rebuild",
+     "in_service": "2025-12-31",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-17075",
+     "name": "SAV: Little Ogeechee 230- 115kV: Relay Modernization",
+     "in_service": "2025-12-31",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-18960",
+     "name": "Blankets Creek - Woodstock 115kV Line Rebuild",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20491",
+     "name": "East Point Relay Modernization",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-16007",
+     "name": "Fenwick Street - Sand Bar Ferry 115kV (Reconductor/rebuild)",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-19618",
+     "name": "Gordon-n Dublin 115kV (Gordon-engl McI J) Rebuild",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-21139",
+     "name": "Grady - Morrow (White) 115kV Rebuild",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-19706",
+     "name": "Grid - Gainesville #2 Equipment Replacement",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20490",
+     "name": "Klondike Relay Modernization",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-19598",
+     "name": "MEAG: Dresden - Lagrange Primary 230kV Upgrade & Jumpers",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20270",
+     "name": "MEAG: Ray Place Rd - Washington #3",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20271",
+     "name": "MEAG: Ray Place Rd - Washington (Washington - Washington 3)",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20300",
+     "name": "Morrow 115kV Relay Upgrade",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20066",
+     "name": "SAV: Boulevard - Deptford 115kV Reconductor",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-19966",
+     "name": "SAV: CC - Big Ogeechee 500/230kV (CC Network Improvements)",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20277",
+     "name": "SAV: McIntosh - Purrysburg 230kV Reactors",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20489",
+     "name": "Scottdale Relay Modernization",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-17900",
+     "name": "Union City - Yates 230 Kv White Line Rebuild",
+     "in_service": "2026-04-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-20691",
+     "name": "Union City - Yates 230kV (White) Switch And Trap Replacement",
+     "in_service": "2026-06-01",
+     "likely_built": false
+    },
+    {
+     "id": "IRP-12016",
+     "name": "Arkwright - Lloyd Shoals 115 Kv Line Reconductor",
+     "in_service": "2024-06-01",
+     "likely_built": false
+    }
+   ]
+  },
+  {
+   "id": "notes",
+   "title": "Plan-change notes are understood",
+   "result": "6 note(s) without years, left out of the slip model",
+   "status": "warn",
+   "records": [
+    {
+     "id": "IRP-18670",
+     "note": "Project advanced in 2025"
+    },
+    {
+     "id": "IRP-18492",
+     "note": "Project advanced in 2025"
+    },
+    {
+     "id": "IRP-17075",
+     "note": "Project delayed in 2025"
+    },
+    {
+     "id": "IRP-17900",
+     "note": "Delayed in 2026."
+    },
+    {
+     "id": "IRP-20002",
+     "note": "Project delayed in 2026"
+    },
+    {
+     "id": "IRP-20298",
+     "note": "Advance to 2030 from 2033."
+    }
+   ]
+  }
+ ]
+}

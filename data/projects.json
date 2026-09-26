@@ -36,7 +36,15 @@
     "confidence": "high",
     "note": "Summerville SC, DESC substation area"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2024-12-31",
+   "to_in_service": "2026-04-30",
+   "months": 16,
+   "from_cost": 12475000,
+   "to_cost": 15775885
+  }
  },
  {
   "id": "DESC-02",
@@ -90,7 +98,15 @@
     "in_service": "2026-03-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-03-31",
+   "to_in_service": "2026-05-31",
+   "months": 2,
+   "from_cost": 23685000,
+   "to_cost": 19418000
+  }
  },
  {
   "id": "DESC-04",
@@ -121,7 +137,15 @@
     "in_service": "2026-05-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-05-31",
+   "to_in_service": "2026-05-31",
+   "months": 0,
+   "from_cost": 1100000,
+   "to_cost": 1238443
+  }
  },
  {
   "id": "DESC-05",
@@ -156,7 +180,15 @@
     "in_service": "2025-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-12-31",
+   "to_in_service": "2026-06-30",
+   "months": 6,
+   "from_cost": 8750000,
+   "to_cost": 13040765
+  }
  },
  {
   "id": "DESC-06",
@@ -218,7 +250,15 @@
     "in_service": "2026-08-12",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-08-12",
+   "to_in_service": "2026-08-12",
+   "months": 0,
+   "from_cost": 17520000,
+   "to_cost": 15948620
+  }
  },
  {
   "id": "DESC-08",
@@ -253,7 +293,15 @@
     "in_service": "2025-10-01",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-10-01",
+   "to_in_service": "2026-10-01",
+   "months": 12,
+   "from_cost": 93538207,
+   "to_cost": 93603207
+  }
  },
  {
   "id": "DESC-09",
@@ -302,7 +350,15 @@
     "confidence": "high",
     "note": "Hamlin Substation (w229116306)"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-12-01",
+   "to_in_service": "2026-12-02",
+   "months": 12,
+   "from_cost": 19890850,
+   "to_cost": 40858628
+  }
  },
  {
   "id": "DESC-10",
@@ -337,7 +393,15 @@
     "in_service": "2024-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2024-12-31",
+   "to_in_service": "2026-12-31",
+   "months": 24,
+   "from_cost": 2509602,
+   "to_cost": 5773202
+  }
  },
  {
   "id": "DESC-11",
@@ -376,7 +440,15 @@
     "confidence": "high",
     "note": "Projects_Overlaps.xlsx"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2024-12-31",
+   "to_in_service": "2026-12-31",
+   "months": 24,
+   "from_cost": 11116933,
+   "to_cost": 11630257
+  }
  },
  {
   "id": "DESC-12",
@@ -425,7 +497,15 @@
     "confidence": "high",
     "note": "Projects_Overlaps.xlsx"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-12-31",
+   "to_in_service": "2026-12-01",
+   "months": 11,
+   "from_cost": 23787423,
+   "to_cost": 19280474
+  }
  },
  {
   "id": "DESC-13",
@@ -460,7 +540,15 @@
     "in_service": "2025-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-12-31",
+   "to_in_service": "2026-12-01",
+   "months": 11,
+   "from_cost": 34877427,
+   "to_cost": 41389047
+  }
  },
  {
   "id": "DESC-14",
@@ -545,7 +633,15 @@
     "in_service": "2027-05-01",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2027-05-01",
+   "to_in_service": "2027-05-01",
+   "months": 0,
+   "from_cost": 34174682,
+   "to_cost": 22788174
+  }
  },
  {
   "id": "DESC-17",
@@ -580,7 +676,15 @@
     "in_service": "2026-06-01",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-06-01",
+   "to_in_service": "2027-06-01",
+   "months": 12,
+   "from_cost": 40611419,
+   "to_cost": 39066742
+  }
  },
  {
   "id": "DESC-18",
@@ -656,7 +760,15 @@
     "confidence": "high",
     "note": "Sumter Substation (w185032893)"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-12-31",
+   "to_in_service": "2027-12-31",
+   "months": 24,
+   "from_cost": 4000000,
+   "to_cost": 4569331
+  }
  },
  {
   "id": "DESC-20",
@@ -718,7 +830,15 @@
     "in_service": "2024-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2024-12-31",
+   "to_in_service": "2027-12-31",
+   "months": 36,
+   "from_cost": 8580000,
+   "to_cost": 18129932
+  }
  },
  {
   "id": "DESC-22",
@@ -757,7 +877,15 @@
     "confidence": "high",
     "note": "Wagener Substation (w993540535)"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2025-12-31",
+   "to_in_service": "2027-12-31",
+   "months": 24,
+   "from_cost": 6005000,
+   "to_cost": 7540000
+  }
  },
  {
   "id": "DESC-23",
@@ -806,7 +934,15 @@
     "confidence": "high",
     "note": "Elloree Substation (w1075509549)"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-12-31",
+   "to_in_service": "2027-12-31",
+   "months": 12,
+   "from_cost": 4500000,
+   "to_cost": 8075000
+  }
  },
  {
   "id": "DESC-24",
@@ -864,7 +1000,15 @@
     "in_service": "2027-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2027-12-31",
+   "to_in_service": "2027-12-31",
+   "months": 0,
+   "from_cost": 4500000,
+   "to_cost": 10294609
+  }
  },
  {
   "id": "DESC-26",
@@ -899,7 +1043,15 @@
     "in_service": "2027-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2027-12-31",
+   "to_in_service": "2027-12-31",
+   "months": 0,
+   "from_cost": 3000000,
+   "to_cost": 3000000
+  }
  },
  {
   "id": "DESC-27",
@@ -1034,7 +1186,15 @@
     "in_service": "2027-05-01",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2027-05-01",
+   "to_in_service": "2028-05-01",
+   "months": 12,
+   "from_cost": 19300000,
+   "to_cost": 31100000
+  }
  },
  {
   "id": "DESC-32",
@@ -1069,7 +1229,15 @@
     "in_service": "2024-06-01",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2024-06-01",
+   "to_in_service": "2028-12-31",
+   "months": 55,
+   "from_cost": 10850000,
+   "to_cost": 11424330
+  }
  },
  {
   "id": "DESC-33",
@@ -1131,7 +1299,15 @@
     "confidence": "high",
     "note": "Harleyville Substation (w1075801506)"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2027-03-31",
+   "to_in_service": "2028-12-31",
+   "months": 21,
+   "from_cost": 2750000,
+   "to_cost": 2750000
+  }
  },
  {
   "id": "DESC-35",
@@ -1193,7 +1369,15 @@
     "in_service": "2026-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-12-31",
+   "to_in_service": "2028-12-31",
+   "months": 24,
+   "from_cost": 4912096,
+   "to_cost": 13285118
+  }
  },
  {
   "id": "DESC-37",
@@ -1270,7 +1454,15 @@
     "in_service": "2028-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2028-12-31",
+   "to_in_service": "2028-12-31",
+   "months": 0,
+   "from_cost": 9898924,
+   "to_cost": 11182924
+  }
  },
  {
   "id": "DESC-40",
@@ -1305,7 +1497,15 @@
     "in_service": "2028-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2028-12-31",
+   "to_in_service": "2028-12-31",
+   "months": 0,
+   "from_cost": 5900000,
+   "to_cost": 11700000
+  }
  },
  {
   "id": "DESC-41",
@@ -1413,7 +1613,15 @@
     "in_service": "2026-06-01",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2026-06-01",
+   "to_in_service": "2029-06-01",
+   "months": 36,
+   "from_cost": 40000000,
+   "to_cost": 38121795
+  }
  },
  {
   "id": "DESC-45",
@@ -1448,7 +1656,15 @@
     "in_service": "2028-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2028-12-31",
+   "to_in_service": "2029-12-31",
+   "months": 12,
+   "from_cost": 48224719,
+   "to_cost": 44517719
+  }
  },
  {
   "id": "DESC-46",
@@ -1610,7 +1826,15 @@
     "in_service": "2027-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2027-12-31",
+   "to_in_service": "2030-12-31",
+   "months": 36,
+   "from_cost": 5300000,
+   "to_cost": 22400000
+  }
  },
  {
   "id": "DESC-52",
@@ -1645,7 +1869,15 @@
     "in_service": "2028-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2028-12-31",
+   "to_in_service": "2030-12-31",
+   "months": 24,
+   "from_cost": 10200000,
+   "to_cost": 18964478
+  }
  },
  {
   "id": "DESC-53",
@@ -1707,7 +1939,15 @@
     "in_service": "2029-12-31",
     "start": null
    }
-  ]
+  ],
+  "drift": {
+   "plans": "SCRTP 2024-2028 to 2026-2030",
+   "from_in_service": "2029-12-31",
+   "to_in_service": "2032-12-31",
+   "months": 36,
+   "from_cost": 30000000,
+   "to_cost": 18875000
+  }
  },
  {
   "id": "GA-01",
@@ -1743,7 +1983,12 @@
     "start": "2022-06-01"
    }
   ],
-  "project_start": "2022-06-01"
+  "project_start": "2022-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-02",
@@ -1775,7 +2020,12 @@
     "start": "2023-06-01"
    }
   ],
-  "project_start": "2023-06-01"
+  "project_start": "2023-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-03",
@@ -1944,7 +2194,12 @@
     "start": "2025-06-01"
    }
   ],
-  "project_start": "2025-06-01"
+  "project_start": "2025-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-09",
@@ -2335,7 +2590,12 @@
     "confidence": "high",
     "note": "Dresden Substation (w163891152)"
    }
-  ]
+  ],
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-20",
@@ -2403,7 +2663,12 @@
     "start": "2023-06-01"
    }
   ],
-  "project_start": "2023-06-01"
+  "project_start": "2023-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-22",
@@ -2441,7 +2706,12 @@
     "start": "2023-01-01"
    }
   ],
-  "project_start": "2023-01-01"
+  "project_start": "2023-01-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 12,
+   "note": "Project delayed from 2025 to 2026"
+  }
  },
  {
   "id": "GA-23",
@@ -2477,7 +2747,12 @@
     "start": "2021-06-01"
    }
   ],
-  "project_start": "2021-06-01"
+  "project_start": "2021-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 36,
+   "note": "Project delayed from 2024 to 2027"
+  }
  },
  {
   "id": "GA-24",
@@ -2515,7 +2790,12 @@
     "start": "2024-06-01"
    }
   ],
-  "project_start": "2024-06-01"
+  "project_start": "2024-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -12,
+   "note": "Project advanced from 2027 to 2026"
+  }
  },
  {
   "id": "GA-25",
@@ -2583,7 +2863,12 @@
     "start": "2023-10-01"
    }
   ],
-  "project_start": "2023-10-01"
+  "project_start": "2023-10-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-27",
@@ -2646,7 +2931,12 @@
     "start": "2024-05-01"
    }
   ],
-  "project_start": "2024-05-01"
+  "project_start": "2024-05-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -24,
+   "note": "Project advanced from 2029 to 2027"
+  }
  },
  {
   "id": "GA-29",
@@ -2682,7 +2972,12 @@
     "start": "2024-01-15"
    }
   ],
-  "project_start": "2024-01-15"
+  "project_start": "2024-01-15",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-30",
@@ -2714,7 +3009,12 @@
     "start": "2025-01-01"
    }
   ],
-  "project_start": "2025-01-01"
+  "project_start": "2025-01-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 24,
+   "note": "Project delayed from 2025 to 2027"
+  }
  },
  {
   "id": "GA-31",
@@ -2750,7 +3050,12 @@
     "start": "2026-01-01"
    }
   ],
-  "project_start": "2026-01-01"
+  "project_start": "2026-01-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -36,
+   "note": "Project advanced from 2030 to 2027"
+  }
  },
  {
   "id": "GA-32",
@@ -2786,7 +3091,12 @@
     "start": "2025-06-01"
    }
   ],
-  "project_start": "2025-06-01"
+  "project_start": "2025-06-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-33",
@@ -2854,7 +3164,12 @@
     "start": "2024-12-31"
    }
   ],
-  "project_start": "2024-12-31"
+  "project_start": "2024-12-31",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -24,
+   "note": "Project advanced from 2030 to 2028"
+  }
  },
  {
   "id": "GA-35",
@@ -2913,7 +3228,12 @@
     "start": "2023-11-01"
    }
   ],
-  "project_start": "2023-11-01"
+  "project_start": "2023-11-01",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "GA-37",
@@ -3027,7 +3347,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-05",
@@ -3065,7 +3386,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-07",
@@ -3103,7 +3425,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-10",
@@ -3147,7 +3470,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-14",
@@ -3195,7 +3519,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-15",
@@ -3243,7 +3568,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "Planned"
+  "status": "Planned",
+  "likely_built": true
  },
  {
   "id": "DESCP-19",
@@ -3277,7 +3603,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-31",
@@ -3321,7 +3648,8 @@
    }
   ],
   "past_in_service": true,
-  "status": "In Progress"
+  "status": "In Progress",
+  "likely_built": true
  },
  {
   "id": "DESCP-37",
@@ -3422,7 +3750,7 @@
   ],
   "project_start": "2022-06-01",
   "past_in_service": true,
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-18492",
@@ -3467,7 +3795,7 @@
   ],
   "project_start": "2021-12-31",
   "past_in_service": true,
-  "plan_change": "Project advanced in 2025 Project delayed from 2024 to 2025"
+  "plan_change": "Project advanced in 2025"
  },
  {
   "id": "IRP-19187",
@@ -3506,7 +3834,7 @@
   ],
   "project_start": "2021-09-01",
   "past_in_service": true,
-  "plan_change": "Project delayed from 2024 to 2025 New Project"
+  "plan_change": "Project delayed from 2024 to 2025"
  },
  {
   "id": "IRP-18153",
@@ -3545,7 +3873,7 @@
   ],
   "project_start": "2023-01-01",
   "past_in_service": true,
-  "plan_change": "No Change Project advanced from 2030 to 2025"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20590",
@@ -3584,7 +3912,7 @@
   ],
   "project_start": "2023-12-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-11821",
@@ -3629,7 +3957,7 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "No Change Project delayed from 2024 to 2025"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-13787",
@@ -3668,7 +3996,7 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20464",
@@ -3703,7 +4031,7 @@
   ],
   "project_start": "2023-11-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-19631",
@@ -3738,7 +4066,7 @@
   ],
   "project_start": "2023-11-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20067",
@@ -3783,7 +4111,7 @@
   ],
   "project_start": "2023-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20431",
@@ -3818,7 +4146,7 @@
   ],
   "project_start": "2024-06-01",
   "past_in_service": true,
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-18774",
@@ -3863,7 +4191,7 @@
   ],
   "project_start": "2021-12-01",
   "past_in_service": true,
-  "plan_change": "Project delayed from 2024 to 2025 Project delayed from 2024 to 2025"
+  "plan_change": "Project delayed from 2024 to 2025"
  },
  {
   "id": "IRP-20326",
@@ -3898,7 +4226,7 @@
   ],
   "project_start": "2023-08-04",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20175",
@@ -3937,7 +4265,7 @@
   ],
   "project_start": "2023-07-31",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20010",
@@ -3982,7 +4310,7 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-17075",
@@ -4017,7 +4345,7 @@
   ],
   "project_start": "2022-06-01",
   "past_in_service": true,
-  "plan_change": "Project delayed in 2025 New Project"
+  "plan_change": "Project delayed in 2025"
  },
  {
   "id": "IRP-18960",
@@ -4062,7 +4390,7 @@
   ],
   "project_start": "2025-06-01",
   "past_in_service": true,
-  "plan_change": "No Change No Change"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20491",
@@ -4097,7 +4425,7 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-16007",
@@ -4142,7 +4470,7 @@
   ],
   "project_start": "2022-09-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-19618",
@@ -4185,7 +4513,7 @@
   ],
   "project_start": "2023-10-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-21139",
@@ -4224,7 +4552,7 @@
   ],
   "project_start": "2024-06-01",
   "past_in_service": true,
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-19706",
@@ -4259,7 +4587,7 @@
   ],
   "project_start": "2024-12-31",
   "past_in_service": true,
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20490",
@@ -4294,7 +4622,7 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-19598",
@@ -4339,7 +4667,7 @@
   ],
   "project_start": "2024-06-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20270",
@@ -4384,7 +4712,7 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20271",
@@ -4427,7 +4755,7 @@
   ],
   "project_start": "2025-06-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20300",
@@ -4462,7 +4790,7 @@
   ],
   "project_start": "2024-06-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20066",
@@ -4507,7 +4835,7 @@
   ],
   "project_start": "2025-06-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-19966",
@@ -4542,7 +4870,7 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20277",
@@ -4587,7 +4915,7 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20489",
@@ -4622,7 +4950,7 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-17900",
@@ -4661,7 +4989,7 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "Delayed in 2026. New Project"
+  "plan_change": "Delayed in 2026."
  },
  {
   "id": "IRP-20691",
@@ -4706,7 +5034,7 @@
   ],
   "project_start": "2024-05-15",
   "past_in_service": true,
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20668",
@@ -4740,7 +5068,7 @@
    }
   ],
   "project_start": "2024-12-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20874",
@@ -4780,7 +5108,7 @@
    }
   ],
   "project_start": "2024-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-19363",
@@ -4818,7 +5146,7 @@
    }
   ],
   "project_start": "2024-01-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-19601",
@@ -4856,7 +5184,7 @@
    }
   ],
   "project_start": "2024-05-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-15879",
@@ -4894,7 +5222,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20781",
@@ -4932,7 +5260,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20234",
@@ -4974,7 +5302,7 @@
    }
   ],
   "project_start": "2027-01-03",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20778",
@@ -5012,7 +5340,7 @@
    }
   ],
   "project_start": "2025-12-31",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-18668",
@@ -5056,7 +5384,7 @@
    }
   ],
   "project_start": "2021-04-06",
-  "plan_change": "No Change Project delayed from 2024 to 2027"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-10143",
@@ -5094,7 +5422,7 @@
    }
   ],
   "project_start": "2026-10-15",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-10481",
@@ -5132,7 +5460,7 @@
    }
   ],
   "project_start": "2024-06-01",
-  "plan_change": "Project advanced from 2029 to 2027 New Project"
+  "plan_change": "Project advanced from 2029 to 2027"
  },
  {
   "id": "IRP-19248",
@@ -5176,7 +5504,7 @@
    }
   ],
   "project_start": "2022-02-15",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20785",
@@ -5220,7 +5548,7 @@
    }
   ],
   "project_start": "2024-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20065",
@@ -5264,7 +5592,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-17977",
@@ -5308,7 +5636,7 @@
    }
   ],
   "project_start": "2024-08-01",
-  "plan_change": "Delayed from 2026 to 2027 New Project"
+  "plan_change": "Delayed from 2026 to 2027"
  },
  {
   "id": "IRP-19997",
@@ -5346,7 +5674,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20774",
@@ -5380,7 +5708,7 @@
    }
   ],
   "project_start": "2026-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21048",
@@ -5424,7 +5752,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-08458",
@@ -5462,7 +5790,7 @@
    }
   ],
   "project_start": "2026-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-19629",
@@ -5500,7 +5828,7 @@
    }
   ],
   "project_start": "2024-01-01",
-  "plan_change": "Project delayed from 2025 to 2028 New Project"
+  "plan_change": "Project delayed from 2025 to 2028"
  },
  {
   "id": "IRP-19630",
@@ -5534,7 +5862,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "Project advanced from 2029 to 2028 New Project"
+  "plan_change": "Project advanced from 2029 to 2028"
  },
  {
   "id": "IRP-20482",
@@ -5572,7 +5900,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "Project advanced from 2031 to 2028 New Project"
+  "plan_change": "Project advanced from 2031 to 2028"
  },
  {
   "id": "IRP-20656",
@@ -5606,7 +5934,7 @@
    }
   ],
   "project_start": "2024-05-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20783",
@@ -5650,7 +5978,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20407",
@@ -5688,7 +6016,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "No Changes New Project"
+  "plan_change": "No Changes"
  },
  {
   "id": "IRP-20768",
@@ -5722,7 +6050,7 @@
    }
   ],
   "project_start": "2025-01-15",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20274",
@@ -5766,7 +6094,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-21062",
@@ -5804,7 +6132,7 @@
    }
   ],
   "project_start": "2024-12-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-10222",
@@ -5842,7 +6170,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-16887",
@@ -5886,7 +6214,7 @@
    }
   ],
   "project_start": "2025-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21142",
@@ -5930,7 +6258,7 @@
    }
   ],
   "project_start": "2026-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21138",
@@ -5968,7 +6296,7 @@
    }
   ],
   "date_note": "The plan lists a start date (2029-06-01) after the need date, so the start is estimated.",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21112",
@@ -6012,7 +6340,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-10814",
@@ -6046,7 +6374,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-21140",
@@ -6090,7 +6418,7 @@
    }
   ],
   "project_start": "2026-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20760",
@@ -6124,7 +6452,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21123",
@@ -6168,7 +6496,7 @@
    }
   ],
   "project_start": "2024-12-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21141",
@@ -6212,7 +6540,7 @@
    }
   ],
   "project_start": "2026-03-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-19621",
@@ -6250,7 +6578,7 @@
    }
   ],
   "project_start": "2024-12-31",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20346",
@@ -6294,7 +6622,7 @@
    }
   ],
   "project_start": "2026-01-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-17706",
@@ -6332,7 +6660,7 @@
    }
   ],
   "project_start": "2026-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20757",
@@ -6376,7 +6704,7 @@
    }
   ],
   "project_start": "2025-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21006",
@@ -6420,7 +6748,7 @@
    }
   ],
   "project_start": "2027-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21023",
@@ -6464,7 +6792,7 @@
    }
   ],
   "project_start": "2026-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20989",
@@ -6498,7 +6826,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-13628",
@@ -6536,7 +6864,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20248",
@@ -6580,7 +6908,7 @@
    }
   ],
   "date_note": "The plan lists a start date (2031-06-01) after the need date, so the start is estimated.",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20764",
@@ -6618,7 +6946,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20761",
@@ -6656,7 +6984,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-10478",
@@ -6694,7 +7022,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-18669",
@@ -6738,7 +7066,7 @@
    }
   ],
   "project_start": "2024-12-31",
-  "plan_change": "New Project Project delayed from 2028 to 2030"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21097",
@@ -6776,7 +7104,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20480",
@@ -6814,7 +7142,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "Project advanced from 2031 to 2030 New Project"
+  "plan_change": "Project advanced from 2031 to 2030"
  },
  {
   "id": "IRP-12120",
@@ -6858,7 +7186,7 @@
    }
   ],
   "project_start": "2025-12-31",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20298",
@@ -6896,7 +7224,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "Advance to 2030 from 2033. New Project"
+  "plan_change": "Advance to 2030 from 2033."
  },
  {
   "id": "IRP-19996",
@@ -6934,7 +7262,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20428",
@@ -6982,7 +7310,7 @@
    }
   ],
   "project_start": "2023-12-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20375",
@@ -7016,7 +7344,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21111",
@@ -7056,7 +7384,7 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21094",
@@ -7098,7 +7426,7 @@
    }
   ],
   "project_start": "2025-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20789",
@@ -7136,7 +7464,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20284",
@@ -7174,7 +7502,7 @@
    }
   ],
   "project_start": "2026-06-02",
-  "plan_change": "Project delayed from 2029 to 2030 New Project"
+  "plan_change": "Project delayed from 2029 to 2030"
  },
  {
   "id": "IRP-19995",
@@ -7212,7 +7540,7 @@
    }
   ],
   "project_start": "2025-12-31",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-18848",
@@ -7246,7 +7574,7 @@
    }
   ],
   "project_start": "2023-06-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-20690",
@@ -7290,7 +7618,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-19632",
@@ -7334,7 +7662,7 @@
    }
   ],
   "project_start": "2028-01-01",
-  "plan_change": "No Change New Project"
+  "plan_change": "No Change"
  },
  {
   "id": "IRP-10811",
@@ -7368,7 +7696,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20784",
@@ -7412,7 +7740,7 @@
    }
   ],
   "project_start": "2029-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20758",
@@ -7456,7 +7784,7 @@
    }
   ],
   "project_start": "2031-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20793",
@@ -7500,7 +7828,7 @@
    }
   ],
   "project_start": "2029-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20794",
@@ -7544,7 +7872,7 @@
    }
   ],
   "project_start": "2030-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-12217",
@@ -7582,7 +7910,7 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-12147",
@@ -7626,7 +7954,7 @@
    }
   ],
   "project_start": "2030-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20791",
@@ -7664,7 +7992,7 @@
    }
   ],
   "project_start": "2029-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-21053",
@@ -7702,7 +8030,7 @@
    }
   ],
   "project_start": "2030-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20796",
@@ -7736,7 +8064,7 @@
    }
   ],
   "project_start": "2030-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-14222",
@@ -7770,7 +8098,7 @@
    }
   ],
   "project_start": "2025-08-01",
-  "plan_change": "Project delayed from 2031 to 2033 New Project"
+  "plan_change": "Project delayed from 2031 to 2033"
  },
  {
   "id": "IRP-10487",
@@ -7808,7 +8136,7 @@
    }
   ],
   "project_start": "2029-12-31",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-18700",
@@ -7852,7 +8180,7 @@
    }
   ],
   "project_start": "2032-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-20787",
@@ -7886,7 +8214,7 @@
    }
   ],
   "project_start": "2030-06-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-17993",
@@ -7930,7 +8258,7 @@
    }
   ],
   "project_start": "2031-01-01",
-  "plan_change": "New Project New Project"
+  "plan_change": "New Project"
  },
  {
   "id": "IRP-12016",
@@ -8181,7 +8509,7 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "Project advanced from 2031 to 2028 New Project"
+  "plan_change": "Project advanced from 2031 to 2028"
  },
  {
   "id": "IRP-20266",

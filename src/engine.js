@@ -274,6 +274,58 @@
   }
   recommendShift.computed = 0;
 
-  const api = { cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
+  // ---------- schedule risk ----------
+  // Plans move. slips holds, per utility, how many months each project's date moved between two published plans
+  // (data/model.json). Each draw moves both projects by a month count picked from their utility's list and checks
+  // whether they still share a window; the chance is the share of draws that do. The random numbers are seeded from
+  // the pair, so the same pair always gets the same answer. A project that is likely built has no window left.
+  // opts: { bufferMonths, draws, today }
+  const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return (h >>> 0) || 1; };
+  function overlapChance(x, slips, opts = {}) {
+    const draws = opts.draws || 2000, buf = opts.bufferMonths || 0;
+    if (x.p.likely_built || x.q.likely_built) return { p: 0, why: "built" };
+    const pooled = Object.values(slips || {}).flatMap(s => s.months || []);
+    const list = u => (slips && slips[u] && slips[u].months && slips[u].months.length ? slips[u].months : pooled.length ? pooled : [0]);
+    const la = list(x.p.utility), lb = list(x.q.utility);
+    const a0 = monthIndex(x.p.start), a1 = monthIndex(x.p.in_service), b0 = monthIndex(x.q.start), b1 = monthIndex(x.q.in_service);
+    let seed = hash(x.p.id + "|" + x.q.id);
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    // With opts.today, only time from today on counts: a window that has already closed cannot be shared any more.
+    const now = opts.today ? monthIndex(opts.today) : -Infinity;
+    let hit = 0;
+    for (let i = 0; i < draws; i++) {
+      const sa = la[Math.floor(rnd() * la.length)], sb = lb[Math.floor(rnd() * lb.length)];
+      const end = Math.min(a1 + sa, b1 + sb);
+      if (end <= now) continue;
+      const ov = end - Math.max(a0 + sa, b0 + sb, now);
+      if (-ov <= buf) hit++;
+    }
+    return { p: hit / draws, draws };
+  }
+  // Savings weighted by that chance: items that need both crews in the field together (yards, deliveries, crews,
+  // cranes, contractors) count by the chance; outage, crossing, right-of-way, access roads and permits count in full.
+  function expectedSavings(x, chance) {
+    const all = savings(Object.assign({}, x, { sameWindow: true })).items;
+    const needs = new Set(SHARES.filter(s => s.window).flatMap(s => s.items));
+    const fixed = all.filter(i => !needs.has(i.share)).reduce((s, i) => s + i.v, 0);
+    const windowed = all.filter(i => needs.has(i.share)).reduce((s, i) => s + i.v, 0);
+    return { fixed, windowed, expected: fixed + chance * windowed };
+  }
+
+  // Which shared windows a plan update opened or closed: each pair is checked again with the dates the previous
+  // plan listed for any project that has a drift record (months moved), keeping the other project where it is.
+  function driftChanges(pairs, bufferMonths = 0) {
+    const before = p => p.drift && p.drift.months ? { start: shiftISO(p.start, -p.drift.months), in_service: shiftISO(p.in_service, -p.drift.months) } : p;
+    const opened = [], closed = [];
+    for (const x of pairs) {
+      if (!(x.p.drift && x.p.drift.months) && !(x.q.drift && x.q.drift.months)) continue;
+      const was = -windowOverlap(before(x.p), before(x.q)) <= bufferMonths;
+      if (!was && x.sameWindow) opened.push(x);
+      if (was && !x.sameWindow) closed.push(x);
+    }
+    return { opened, closed };
+  }
+
+  const api = { driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);
