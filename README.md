@@ -55,6 +55,32 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 - **Timeline (secondary).** Two projects are in the same build window if their construction periods overlap, plus an optional buffer. Plans usually list only an in-service date, so the start date is estimated from project type, voltage and length unless the file provides one.
 - **Cost and impact.** Each shareable item the tier allows gets its own planning estimate, and yard, delivery, crew, crane and contractor items count only when the builds share a window. When one side's cost can be shared, each utility saves its share (50% by default); a coordinated outage and a crossing designed once count in full. The defaults are in `ASSUMPTIONS` in `src/engine.js` and can be changed in the app. They are round planning numbers, not quotes: compare them with USDA NASS Land Values, the MISO Transmission Cost Estimation Guide, and local crane and heavy-haul rates.
 
+## Cost and impact: a worked example
+
+The challenge's bonus asks for a rough cost or impact estimate for at least one flagged opportunity. Seamline prices every pair item by item; here is one in full, as the pair panel and the coordination brief show it.
+
+**DESC Okatie - McIntosh 115 kV tie: series reactor × Georgia Plant McIntosh Unit 12 combined cycle.** Both work at the McIntosh end of the tie across the Savannah River: 0.6 km apart at the closest points, so they can share land (right-of-way, access roads, permits) as well as a yard, deliveries, crews, cranes and contractors. On paper their construction windows share 13 months (DESC Dec 2027 - Dec 2028, estimated; Georgia Jun 2027 - Jun 2030, estimated).
+
+| shared item | each utility saves | how |
+|---|---|---|
+| Right-of-way | $83K | 11.1 acres (1 km × 45 m) × $15K/acre × 50% |
+| Access road | $45K | 1 km × $90K/km × 50% |
+| Joint permit package | $75K | one $150K package instead of two × 50% |
+| One laydown yard | $200K | one $400K yard instead of two × 50% |
+| Combined deliveries | $30K | 12 loads × $5K × 50% |
+| One crew mobilization | $134K | 5% of the smaller project ($5.4M) × 50% |
+| Shared crane time | $65K | 20 days × $6.5K/day × 50% |
+| One contractor setup | $27K | 1% of the smaller project ($5.4M) × 50% |
+| **If both dates hold** | **$660K** | |
+
+**Land.** Sharing one corridor and access road instead of two saves about 11 acres of easement near the plant.
+
+**Schedule risk.** The land and permit items ($203K) don't depend on timing. The other $456K needs both crews in the field together, which happens in 75% of the schedule draws (see Schedule risk below), so the **expected saving is $546K** per utility.
+
+**Road impact.** The best single staging yard is at the Plant McIntosh site, 0.6 km from the DESC work. Sharing it saves about 2,350 truck-miles, 52 driver-hours and 4.0 t of CO2 (EPA diesel factor).
+
+Every unit cost is a planning number, editable under **Unit costs**, and the totals update at once. Check them against USDA NASS land values, the MISO Transmission Cost Estimation Guide and local crane and heavy-haul rates.
+
 ## Loading a utility's plans
 
 Click **Import plans** and drop one or more files, or paste CSV rows.
