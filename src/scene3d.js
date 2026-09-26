@@ -897,7 +897,7 @@
         const c = va.clone().add(new T.Vector3(Math.cos(k * Math.PI / 6) * rad, 0, Math.sin(k * Math.PI / 6) * rad));
         if (obstacles.every(([ox, oz, r]) => Math.hypot(c.x - ox, c.z - oz) > r * 0.8 + 0.4)) at = c;
       }
-      stake(at, 120, 1.5 * towerTop, 9); // half again as tall as the crossing's towers, so it stands out among them
+      stake(at, 170, 2.2 * towerTop, 10); // more than twice as tall as the crossing's towers, so it stands out above them
       const x = 0.25 * TS;
       for (const d of [dirAB.clone().add(perp), dirAB.clone().sub(perp)]) { d.normalize(); strip(va.clone().addScaledVector(d, -1.2 * TS), va.clone().addScaledVector(d, 1.2 * TS), x, flat(0xff5a1f), 0.09, 4); }
       if (at !== va) strip(va, at, x * 0.6, flat(0xfbfaf4), 0.08, 3);

@@ -42,6 +42,13 @@
     if (!best[1]) return [Infinity, null, null]; // a project with no usable geometry never overlaps
     return [best[0], unxy(best[1]), unxy(best[2])];
   }
+  // The voltage a project's tags show is its own kv. When the title names voltages and kv isn't one of them (the
+  // source's title and description disagree), the title's voltage is returned too, so the view can say so.
+  const kvOf = p => {
+    const named = [...String(p.name || "").matchAll(/(\d{2,3}(?:\.\d)?)(?:\s*[/-]\s*\d{2,3}(?:\.\d)?)*\s*kv/gi)]
+      .flatMap(m => m[0].match(/\d{2,3}(?:\.\d)?/g).map(Number));
+    return { kv: p.kv || null, titleKv: named.length && p.kv && !named.includes(+p.kv) ? named[0] : null };
+  };
   const lengthKm = p => p.miles ? p.miles * 1.609
     : isLine(p) ? segments(p).reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1]), 0) : 0;
 
@@ -391,6 +398,6 @@
     return { moves, before: base, after: moves.length ? totals[moves.length - 1] : base };
   }
 
-  const api = { optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
+  const api = { kvOf, optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);

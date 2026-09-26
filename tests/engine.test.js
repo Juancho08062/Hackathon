@@ -309,5 +309,16 @@ t("a per-row source link is kept, and falls back to the import default", () => {
   assert.deepStrictEqual(r.projects.map(p => p.source), ["https://example.com/plan.pdf", "Typed source"]);
   for (const col of ["source", "url", "link"]) assert.ok(I.ALIASES.source.includes(col));
 });
+t("3D tag voltage is the project's own kv, and flags a title that disagrees", () => {
+  assert.deepStrictEqual(E.kvOf({ name: "Jasper - Okatie 230kV #2", kv: 230 }), { kv: 230, titleKv: null });
+  assert.deepStrictEqual(E.kvOf({ name: "Hooks - Modoc 115/46kV Rebuild", kv: 115 }), { kv: 115, titleKv: null });
+  assert.deepStrictEqual(E.kvOf({ name: "Okatie 230-115kV Substation", kv: 115 }), { kv: 115, titleKv: null });
+  assert.deepStrictEqual(E.kvOf({ name: "Plant McIntosh Unit 12", kv: 500 }), { kv: 500, titleKv: null });
+  // the SCRTP title says 115 kV, its description and the 2024-2028 list say 230 kV
+  const rp = projects.find(p => p.name.startsWith("Riverport"));
+  assert.deepStrictEqual(E.kvOf(rp), { kv: 230, titleKv: 115 });
+  // every other project's kv agrees with its title
+  assert.deepStrictEqual(projects.filter(p => E.kvOf(p).titleKv).map(p => p.name), [rp.name]);
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);

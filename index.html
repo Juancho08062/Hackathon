@@ -751,6 +751,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     if (!best[1]) return [Infinity, null, null]; // a project with no usable geometry never overlaps
     return [best[0], unxy(best[1]), unxy(best[2])];
   }
+  // The voltage a project's tags show is its own kv. When the title names voltages and kv isn't one of them (the
+  // source's title and description disagree), the title's voltage is returned too, so the view can say so.
+  const kvOf = p => {
+    const named = [...String(p.name || "").matchAll(/(\d{2,3}(?:\.\d)?)(?:\s*[/-]\s*\d{2,3}(?:\.\d)?)*\s*kv/gi)]
+      .flatMap(m => m[0].match(/\d{2,3}(?:\.\d)?/g).map(Number));
+    return { kv: p.kv || null, titleKv: named.length && p.kv && !named.includes(+p.kv) ? named[0] : null };
+  };
   const lengthKm = p => p.miles ? p.miles * 1.609
     : isLine(p) ? segments(p).reduce((s, [a, b]) => s + Math.hypot(b[0] - a[0], b[1] - a[1]), 0) : 0;
 
@@ -1100,7 +1107,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     return { moves, before: base, after: moves.length ? totals[moves.length - 1] : base };
   }
 
-  const api = { optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
+  const api = { kvOf, optimizeSchedule, driftChanges, overlapChance, expectedSavings, cachedOverlaps, shiftISO, recommendShift, partsOf, isLine, closest, lengthKm, TIERS, tierOf, SHARES, shareable, ASSUMPTIONS, setAssumptions, customized, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, yardFor, yardImpact, clusters, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);
 
@@ -2848,7 +2855,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         const c = va.clone().add(new T.Vector3(Math.cos(k * Math.PI / 6) * rad, 0, Math.sin(k * Math.PI / 6) * rad));
         if (obstacles.every(([ox, oz, r]) => Math.hypot(c.x - ox, c.z - oz) > r * 0.8 + 0.4)) at = c;
       }
-      stake(at, 120, 1.5 * towerTop, 9); // half again as tall as the crossing's towers, so it stands out among them
+      stake(at, 170, 2.2 * towerTop, 10); // more than twice as tall as the crossing's towers, so it stands out above them
       const x = 0.25 * TS;
       for (const d of [dirAB.clone().add(perp), dirAB.clone().sub(perp)]) { d.normalize(); strip(va.clone().addScaledVector(d, -1.2 * TS), va.clone().addScaledVector(d, 1.2 * TS), x, flat(0xff5a1f), 0.09, 4); }
       if (at !== va) strip(va, at, x * 0.6, flat(0xfbfaf4), 0.08, 3);
@@ -6039,7 +6046,7 @@ const quality3d = () => Scene3D.qualityKey(store.get("3dquality", "detailed"));
 // A project's own measurements for its 3D tag: a line's length (as published, or measured along its mapped route),
 // voltage and typical cleared right-of-way; a substation or plant has no published footprint, so only its voltage.
 function measure3d(p) {
-  const kv = p.kv ? `${p.kv} kV` : null;
+  const K = Engine.kvOf(p), kv = K.kv ? `${K.kv} kV${K.titleKv ? ` (title says ${K.titleKv} kV)` : ""}` : null;
   if (!Engine.isLine(p) && !p.miles) return [p.type === "generation" ? "Plant" : "Substation", kv, "footprint not published"].filter(Boolean).join(" · ");
   const L = Engine.lengthKm(p), mi = L / 1.609344, row = p.kv >= 500 ? [200, 61] : p.kv >= 230 ? [150, 46] : [100, 30];
   const len = `${L < 10 ? +L.toFixed(1) : Math.round(L)} km · ${mi < 10 ? +mi.toFixed(1) : Math.round(mi)} mi ${p.miles ? "long" : "as mapped"}`;

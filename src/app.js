@@ -1498,7 +1498,7 @@ const quality3d = () => Scene3D.qualityKey(store.get("3dquality", "detailed"));
 // A project's own measurements for its 3D tag: a line's length (as published, or measured along its mapped route),
 // voltage and typical cleared right-of-way; a substation or plant has no published footprint, so only its voltage.
 function measure3d(p) {
-  const kv = p.kv ? `${p.kv} kV` : null;
+  const K = Engine.kvOf(p), kv = K.kv ? `${K.kv} kV${K.titleKv ? ` (title says ${K.titleKv} kV)` : ""}` : null;
   if (!Engine.isLine(p) && !p.miles) return [p.type === "generation" ? "Plant" : "Substation", kv, "footprint not published"].filter(Boolean).join(" · ");
   const L = Engine.lengthKm(p), mi = L / 1.609344, row = p.kv >= 500 ? [200, 61] : p.kv >= 230 ? [150, 46] : [100, 30];
   const len = `${L < 10 ? +L.toFixed(1) : Math.round(L)} km · ${mi < 10 ? +mi.toFixed(1) : Math.round(mi)} mi ${p.miles ? "long" : "as mapped"}`;
