@@ -21,9 +21,10 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 - **Overlap finder.** Measures the distance between the closest points of every pair of projects (lines, substations, plants), flags pairs within 40 km, and tiers them by what the utilities could share.
 - **Ranked list.** Tier first, then pairs built in the same window, then distance. Filter by tier, search, and copy the list as CSV.
 - **Cost and impact estimate.** A rough savings figure for each pair, with every assumption listed.
+- **Light and dark themes** that follow the system setting.
 - **Map** with pan and zoom and four styles: Plain, Streets, Satellite and Terrain.
 - **Timeline** of each flagged project's estimated construction window.
-- **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Two styles: **Realistic** (physically based materials, sky lighting, soft shadows, bloom and filmic tone mapping) and **Stylized**, which is lighter on slow laptops.
+- **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Rendered realistically: physically based materials, a physical sky that lights the scene, soft shadows, bloom and filmic tone mapping.
 - **Import** any utility's plan and compare any two utilities, or set the second utility to **None** to just browse one utility's projects.
 
 ![3D view of a pair that can share a crew staging yard](docs/screenshots/3d-view.png)
