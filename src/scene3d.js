@@ -172,8 +172,17 @@
   // ---------- vehicles ----------
   // Real proportions in meters (x forward, y up, origin at ground under the middle), then placed with a matrix.
   // Kinds: pickup, flatbed (with a cable reel), bucket truck, all-terrain crane, excavator.
-  function vehicle(T, B, kind, x, y, z, rot, k) {
-    if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put)) return;
+  // When vehicles3d.js is loaded, its richer models replace these for the kinds it has; they are added to `g`.
+  const V3D = { pickup: "pickup", bucket: "bucket", flatbed: "flatbed", crane: "truckCrane" };
+  let vehLevel = "detailed";
+  function vehicle(T, B, kind, x, y, z, rot, k, g) {
+    if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put, g)) return;
+    if (g && root.Vehicles3D && V3D[kind] && root.Vehicles3D.KINDS.includes(V3D[kind])) {
+      const v = root.Vehicles3D.build(T, V3D[kind], { level: vehLevel });
+      v.scale.setScalar(k); v.position.set(x, y, z); v.rotation.y = rot;
+      v.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      g.add(v); return;
+    }
     const P = {}, box = (key, w, h, d, px, py, pz) => put(P, key, boxAt(T, w, h, d, px, py, pz));
     const wheel = (px, pz, r, w) => { put(P, "tire", cylZ(T, r, r, w, 18, px, r, pz)); put(P, "rim", cylZ(T, r * 0.58, r * 0.58, w + 0.02, 12, px, r, pz)); };
     const cabAt = (cx, w, h, d, y0, color) => {
@@ -466,13 +475,13 @@
     // cones along the gate
     for (let i = 0; i < 6; i++) put(B, "orange", cylAt(T, 0.015, 0.07, 0.22, 10, hw * 0.5 - 0.6 + i * 0.24, Y + 0.11, hd + 0.3));
     // equipment, in meters times U
-    vehicle(T, B, "pickup", -hw + 0.8, Y, 0.2, Math.PI / 2, U);
-    vehicle(T, B, "pickup", -hw + 1.6, Y, 0.2, Math.PI / 2, U);
-    vehicle(T, B, "pickup", -hw + 2.4, Y, 0.25, Math.PI / 2 + 0.05, U);
-    vehicle(T, B, "flatbed", -0.3, Y, 0.55, 0, U);
-    vehicle(T, B, "bucket", 0.1, Y, -0.55, Math.PI, U);
-    vehicle(T, B, "crane", hw - 2.0, Y, 1.3, Math.PI, U);
-    vehicle(T, B, "excavator", hw - 1.2, Y, -0.95, Math.PI, U);
+    vehicle(T, B, "pickup", -hw + 0.8, Y, 0.2, Math.PI / 2, U, g);
+    vehicle(T, B, "pickup", -hw + 1.6, Y, 0.2, Math.PI / 2, U, g);
+    vehicle(T, B, "pickup", -hw + 2.4, Y, 0.25, Math.PI / 2 + 0.05, U, g);
+    vehicle(T, B, "flatbed", -0.3, Y, 0.55, 0, U, g);
+    vehicle(T, B, "bucket", 0.1, Y, -0.55, Math.PI, U, g);
+    vehicle(T, B, "crane", hw - 2.0, Y, 1.3, Math.PI, U, g);
+    vehicle(T, B, "excavator", hw - 1.2, Y, -0.95, Math.PI, U, g);
     flush(T, B, K, g);
     const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-1.9, Y, -1.35); g.add(crew);
     return g;
@@ -589,6 +598,7 @@
     const F = frame(pair), { c0, KX, KY, S, R, RG, H } = F, LOW = -14;
     const TS = Math.max(1, Math.min(2.2, pair.km / 8));        // exaggerate structures when the pair is far apart
     const K = kit(T, Q.real, Q.aniso), REAL = Q.real;
+    vehLevel = REAL ? "ultra" : "detailed";
 
     // Ground height. With real elevation: meters above the block's low ground, stretched so the relief reads (the
     // Savannah River lowlands are flat), and the factor is shown in the footer. Without it: a gentle made-up roll.
@@ -896,8 +906,9 @@
       cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
       // their pickup, parked beside them facing along the line
       const px = x + perp.x * sg * 1.6 * TS, pz = z + perp.z * sg * 1.6 * TS, VB = {};
-      vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS));
-      const tr = flush(T, VB, K, new T.Group()); tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
+      const tr = new T.Group();
+      vehicle(T, VB, i ? "bucket" : "pickup", 0, 0, 0, Math.atan2(-dirAB.z, dirAB.x), U * Math.min(1.6, TS), tr);
+      flush(T, VB, K, tr); tr.position.set(px, heightAt(px, pz), pz); scene.add(tr);
     });
 
     // steam sprites over stacks and cooling towers
