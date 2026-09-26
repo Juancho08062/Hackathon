@@ -11,6 +11,7 @@ for key, text in {
     "/*FORMATS*/": src("formats.js"),
     "/*SCENE3D*/": src("scene3d.js"),
     "/*MAP*/": src("map.js"),
+    "/*AGENT*/": src("agent.js"),
     "/*APP*/": src("app.js"),
     "/*BASEMAP*/null": (root / "data/basemap.json").read_text(),
     "/*PROJECTS*/[]": json.dumps(json.load(open(root / "data/projects.json")), separators=(",", ":")),
