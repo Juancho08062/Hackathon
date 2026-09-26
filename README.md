@@ -1,57 +1,52 @@
 # Seamline
 
-Seamline compares the planned transmission construction of two neighboring utilities and flags where their work overlaps, so they can share crews, equipment, land and outages.
+Seamline compares the planned transmission construction of two neighboring utilities, flags where their work overlaps (within 40 km, measured between the closest points), and tells planners which of those overlaps are **likely to really happen**, what coordinating them would save, and which few date moves would save the most.
 
-The built-in example compares **Dominion Energy South Carolina** with **Georgia** (Georgia Power, Georgia Transmission and MEAG) along the Savannah River. You can load any other utility's plan from the files utilities actually publish: Excel project lists, CSV, KML/KMZ, shapefiles and GeoJSON.
+The built-in example is **Dominion Energy South Carolina** against **Georgia** (Georgia Power, Georgia Transmission and MEAG) along the Savannah River, built from the challenge's own PDFs plus the newer published lists. Any other utility's plan can be loaded from the files utilities publish (Excel, CSV, KML/KMZ, shapefile, GeoJSON, GPX).
 
-![Overview: ranked coordination opportunities next to the map](docs/screenshots/overview.png)
+![Seamline: overlaps ranked by expected savings next to the map](docs/screenshots/overview.jpg)
 
-A plain-language walkthrough of every screen, with screenshots, is in [`docs/Seamline-Field-Guide.docx`](docs/Seamline-Field-Guide.docx).
+## What makes it different
+
+1. **It reads the plans itself.** A reproducible pipeline extracts all 44 DESC and 218 Georgia projects from the challenge PDFs, including each Georgia project's detail page (published start date, description, miles), places every end point on OpenStreetMap substations, and runs 10 validation checks on every rebuild. Every number traces back to a PDF page, a TEAMS number and how its location was found. It reproduces **all 6** overlaps in the challenge's reference table.
+2. **It knows plans move.** Comparing two editions of each utility's plan shows 23 of 30 DESC projects slipped (median 12 months). Seamline turns that into a **chance** that each pair is really in the field together, from today on, and ranks pairs by **expected savings**. Of the 41 pairs that overlap on paper, 23 are less than 50% likely to still overlap; 13 pairs that don't overlap on paper are 50% or more likely to. The last plan updates opened 9 shared windows and closed 3.
+3. **It says what to do.** A schedule optimizer finds the 8 date moves (at most 6 months, projects not yet started) that raise expected savings from $13.7M to $16.2M, and prints a joint proposal for both utilities.
+4. **It shows the real place.** The map tilts into 3D over real terrain and satellite imagery, with towers along each planned line, across the river that separates the two states.
+5. **You can ask it.** An assistant answers plain-language questions from the same data and flies the map to what it's talking about.
+
+![A pair on satellite imagery in 3D, with its chance and expected savings](docs/screenshots/pair.jpg)
 
 ## Quick start
 
-Open `index.html` in a browser. That's it: everything it needs is in this folder.
-
-To serve it locally instead (some browsers limit local files):
+Open `index.html` in a browser, or serve the folder:
 
 ```
 npm start            # python3 -m http.server 8000, then open http://localhost:8000
 ```
 
-## Interface
+The Plain map and everything except the imagery, the 3D terrain and the assistant work offline. The existing-grid layer is a separate file the page fetches, so it shows when the folder is served (`npm start`, GitHub Pages), not when `index.html` is opened straight from disk. Those three need an internet connection; the assistant also needs an Anthropic API key (see Ask below).
+
+## The screen
 
 One screen, laid out like the coordination tools planners already use (Esri Capital Project Coordination, one.network): a map, the ranked overlaps beside it, and the build windows underneath, all linked.
 
-- **Map** (MapLibre GL): Plain (works offline), Light, Satellite and Topo basemaps. **3D** tilts the same map over real terrain (Terrarium elevation tiles from USGS 3DEP data) and raises a tower every ~450 m along each planned line, so a pair can be seen where it really is, across the Savannah River. Line width is voltage, dashed is an approximate location, faded is a date that has passed, rings mark how close a pair is. Bottom-right controls work like a web map: recenter, a click-to-measure ruler (each leg and the total in miles and km), zoom and compass, and scale bars in miles and km. Each listed pair's link is labeled with its gap (the open pair always, all of them from zoom 9).
-- **Overlaps**: ranked by expected savings (or chance, or distance), with each pair's chance of sharing a build window, what it would save if the dates held, and filters for distance tier, build period (next 12 months, next 3 years) and dates already passed.
-- **Pair panel**: both projects side by side (work, window, plan drift, cost, how each end point was located, source page), the chance and why, what they can share item by item, the shared yard, a schedule what-if, a coordination status and a printable brief.
-- **Plan changes**: how far each utility's dates moved between its last two plans, and which shared windows the latest updates opened or closed.
-- **Optimize**: the few date moves that most raise expected savings, with a joint schedule proposal to print.
-- **Data checks**: the validation report from the data pipeline, each check with the records it caught, downloadable as JSON.
-- **Ask**: an assistant that answers plain-language questions ("which overlaps near Augusta are most likely to happen?", "what changed in DESC's plan?") from the same data, and can fly the map to what it's talking about. It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with nine tools that read Seamline's own data (`src/agent.js` runs the loop; the tools are in `src/app.js`). Since the site has no server, each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API.
-- The three.js pair scene is kept as a "3D illustration" from the pair panel. Its ground is a cut-out terrain block with earthen sides, shaped from the same elevation tiles; heights are stretched so the flat river country reads, and the footer gives the real range in meters and the factor. Offline it falls back to an illustrative ground.
+- **Map** (MapLibre GL): Plain (offline), Relief (colour by elevation under a hillshade, drawn from the elevation tiles), Satellite and Topo basemaps. **3D** tilts the map over real terrain (Terrarium elevation tiles from USGS 3DEP data, exaggerated 3× since the Southeast is low), adds hillshading and a sky, and raises a tower every ~450 m along each planned line. **Grid** draws today's transmission lines (10,092 lines of 115 kV and up in Georgia and South Carolina, from OpenStreetMap) underneath, coloured by voltage. Line width is voltage, dashed is an approximate location, faded is a date that has passed, rings mark how close a pair is, dots mark shared staging yards. Bottom-right controls work like a web map: recenter, a click-to-measure ruler (each leg and the total in miles and km), zoom and compass, and scale bars in miles and km. Each listed pair's link is labeled with its gap (the open pair always, all of them from zoom 9).
+- **Drop-in walker**: drag the orange figure onto any project, like Google Maps' Street View figure. The 3D illustration of that project's most valuable pair opens at ground level where it landed; walk with W A S D or the arrow keys, drag to look around, hold Shift to run, or switch back to the orbit view.
+- **Overlaps**: ranked by expected savings (or chance, or distance). Each row shows the distance tier, the chance of a shared window with what the plan says, and the expected savings next to the savings if the dates held. Filters for distance tier, build period (next 12 months, next 3 years), dates already passed and a text search; shared-yard groups sit above the list; Export CSV downloads it.
+- **Pair panel**: both projects side by side (work, window, plan drift, cost, how each end point was located, source page), the chance and why, each item they can share with its saving and math, the best shared yard, a schedule what-if, a coordination status saved on the device, a printable one-page brief, and a three.js 3D illustration of the pair.
+- **Changes**: how far each utility's dates moved between its last two plans, and which shared windows the latest updates opened or closed, and why.
+- **Optimize**: the date moves that most raise expected savings, with limits you set, shown on the map and printable as a joint schedule proposal.
+- **Checks**: the pipeline's validation report, each check with the records it caught, downloadable as JSON.
+- **Ask**: an assistant for questions like "which overlaps near Augusta are most likely to happen?" or "what changed in DESC's plan?". It runs Claude (`claude-opus-5`, with server-side fallbacks) through the Anthropic TypeScript SDK in the browser, with eight tools that read Seamline's own data and one that selects things on the map (`src/agent.js` runs the loop; the tools are in `src/app.js`). The site has no server, so each viewer pastes their own Anthropic API key; it stays in that browser and is sent only to Anthropic's API.
+- **Share** copies a link to exactly what's on screen: utilities, filters, tab, selected pair, basemap, 3D and camera. Planners can paste it into an email and the other side opens the same view.
+- **Play** steps the map month by month: projects light up while under construction and pairs building at the same time spark. **Unit costs** edits every number behind the savings; **Import plans** loads another utility.
+- **3D illustration** (from the pair panel, or the walker): Its ground is a cut-out terrain block with earthen sides, shaped from the same elevation tiles; heights are stretched so the flat river country reads, and the footer gives the real range in meters and the factor. Offline it falls back to an illustrative ground.
 
-## Features
+![3D over satellite imagery: towers along the Jasper - Okatie 230 kV line](docs/screenshots/3d.jpg)
 
-- **Overlap finder.** Measures the distance between the closest points of every pair of projects (lines, substations, plants), flags pairs within 40 km, and tiers them by what the utilities could share.
-- **Ranked list.** Tier first, then pairs built in the same window, then distance. Filter by tier, search, and copy the list as CSV.
-- **What each pair can share.** Every pair lists what its tier allows, in the challenge's words: outage timing and crossing structures (touching), right-of-way, access roads and permits (under 1.6 km), laydown yards and deliveries (under 8 km), and crews, cranes and contractors (under 40 km). Closer pairs get everything farther tiers allow; yard and crew sharing needs a shared build window.
-- **Existing infrastructure.** Existing plants, the Stevens Creek hydro plant and existing lines are drawn in grey and can be switched off. Existing lines and substations downloaded from HIFLD (GeoJSON, shapefile or KML) load as a background layer from the import panel.
-- **Cost for each shared item.** Every item a pair can share gets its own savings figure with the math shown, like "20 days × $6.5K/day × 50%". The pair's total is their sum.
-- **Shared yard finder.** For every pair, and for groups of 3 or more projects from both utilities built at the same time, Seamline finds the single best staging-yard spot: the point with the least total distance to every work site (a geometric median), moved to an existing substation or plant when one is almost as good. The map shows the yard, its 40 km crew-drive ring and a spoke to each site, and the app reports net truck-miles, driver-hours and CO2 avoided (EPA diesel factor) alongside the dollars. Groups appear at the top of the list under Shared yards.
-- **Cost assumptions.** Every unit cost behind those figures (easement $ per acre, access road $ per km, permit package, laydown yard, heavy-haul trip, crane day, mobilization and contractor percentages, and each side's share) is editable at the bottom of the page. Every pair, the totals and the brief recalculate at once, and the numbers are remembered on that device.
-- **Motion.** Staggered load-in, numbers that count to new values, scroll reveals, tier filters that lift and sink, a map that glides to the selected pair or yard, and 3D and brief windows that lift open. Only transforms and opacity animate, and it all switches off under the system's reduced-motion setting.
-- **Light and dark themes** that follow the system setting.
-- **Map** with pan and zoom and four styles: Plain, Streets, Satellite and Terrain.
-- **Timeline** of each flagged project's estimated construction window.
-- **The Seam.** The Georgia and South Carolina border, the Savannah River both utilities build along, is drawn as a stitched seam on the map.
-- **Play the build years.** A time scrubber steps the map month by month. Projects light up while they're under construction, and flagged pairs that are building at the same time spark.
-- **What-if schedule shift.** For any pair, slide one project earlier or later and watch the shared window and savings update. Seamline suggests the smallest move that gives both builds a real shared window.
-- **Coordination brief.** One click writes a one-page memo for a pair, addressed to both utilities' planners: where and when they meet, each item they can share with its savings and math, a locator map and next steps. Print it, save it as a PDF, or copy the text.
-- **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Rendered realistically: physically based materials, a physical sky that lights the scene, soft shadows, bloom and filmic tone mapping. A Labels button hides the floating tags for a clean view. A Quality menu picks Standard, High (the default: sharper resolution, ambient occlusion and SMAA) or Ultra (full screen resolution).
-- **Import** any utility's plan and compare any two utilities, or set the second utility to **None** to just browse one utility's projects.
+![The Changes tab: how each utility's dates moved, and the shared windows the latest plans opened](docs/screenshots/changes.jpg)
 
-![3D view of a pair that can share a crew staging yard](docs/screenshots/3d-view.png)
+![The Optimize tab: date moves that raise expected savings](docs/screenshots/optimize.jpg)
 
 ## How overlap is defined
 
@@ -63,9 +58,35 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 - **Timeline (secondary).** Two projects are in the same build window if their construction periods overlap, plus an optional buffer. Plans usually list only an in-service date, so the start date is estimated from project type, voltage and length unless the file provides one.
 - **Cost and impact.** Each shareable item the tier allows gets its own planning estimate, and yard, delivery, crew, crane and contractor items count only when the builds share a window. When one side's cost can be shared, each utility saves its share (50% by default); a coordinated outage and a crossing designed once count in full. The defaults are in `ASSUMPTIONS` in `src/engine.js` and can be changed in the app. They are round planning numbers, not quotes: compare them with USDA NASS Land Values, the MISO Transmission Cost Estimation Guide, and local crane and heavy-haul rates.
 
+## Cost and impact: a worked example
+
+The challenge's bonus asks for a rough cost or impact estimate for at least one flagged opportunity. Seamline prices every pair item by item; here is one in full, as the pair panel and the coordination brief show it.
+
+**DESC Okatie - McIntosh 115 kV tie: series reactor × Georgia Plant McIntosh Unit 12 combined cycle.** Both work at the McIntosh end of the tie across the Savannah River: 0.6 km apart at the closest points, so they can share land (right-of-way, access roads, permits) as well as a yard, deliveries, crews, cranes and contractors. On paper their construction windows share 13 months (DESC Dec 2027 - Dec 2028, estimated; Georgia Jun 2027 - Jun 2030, estimated).
+
+| shared item | each utility saves | how |
+|---|---|---|
+| Right-of-way | $83K | 11.1 acres (1 km × 45 m) × $15K/acre × 50% |
+| Access road | $45K | 1 km × $90K/km × 50% |
+| Joint permit package | $75K | one $150K package instead of two × 50% |
+| One laydown yard | $200K | one $400K yard instead of two × 50% |
+| Combined deliveries | $30K | 12 loads × $5K × 50% |
+| One crew mobilization | $134K | 5% of the smaller project ($5.4M) × 50% |
+| Shared crane time | $65K | 20 days × $6.5K/day × 50% |
+| One contractor setup | $27K | 1% of the smaller project ($5.4M) × 50% |
+| **If both dates hold** | **$660K** | |
+
+**Land.** Sharing one corridor and access road instead of two saves about 11 acres of easement near the plant.
+
+**Schedule risk.** The land and permit items ($203K) don't depend on timing. The other $456K needs both crews in the field together, which happens in 75% of the schedule draws (see Schedule risk below), so the **expected saving is $546K** per utility.
+
+**Road impact.** The best single staging yard is at the Plant McIntosh site, 0.6 km from the DESC work. Sharing it saves about 2,350 truck-miles, 52 driver-hours and 4.0 t of CO2 (EPA diesel factor).
+
+Every unit cost is a planning number, editable under **Unit costs**, and the totals update at once. Check them against USDA NASS land values, the MISO Transmission Cost Estimation Guide and local crane and heavy-haul rates.
+
 ## Loading a utility's plans
 
-Click **Add a utility's plans** and drop one or more files, or paste CSV rows.
+Click **Import plans** and drop one or more files, or paste CSV rows.
 
 | format | typical source | notes |
 |---|---|---|
@@ -105,8 +126,6 @@ The [`samples/`](samples) folder has one fictional plan per format (nine files) 
 
 Most published plan lists name substations but give no coordinates, and PDF-only plans need their table copied into Excel first. Adding coordinates is the one manual step.
 
-![Import panel after loading the Excel sample](docs/screenshots/import.png)
-
 ## Project layout
 
 ```
@@ -126,14 +145,16 @@ data/
   projects.json         built-in DESC and Georgia projects (generated by scripts/build_projects.py)
   official/             the challenge's project lists as CSV, the OpenStreetMap extract, the reference overlaps and the unplaced list
   basemap.json          US state outlines and GA/SC counties
+  grid.json             existing transmission lines (OpenStreetMap), loaded by the page on demand
 scripts/
   build.py              inlines src/ and data/ into index.html
   build_projects.py     the built-in project list, with sources and hand-placed coordinates, merged with the official lists
   extract_official.py   reads the challenge's DESC and Georgia Power PDFs into data/official/*.csv (needs pypdf)
   locate_official.py    places official projects from OpenStreetMap substations, with hand-checked overrides
+  fetch_grid.py         downloads and simplifies today's transmission lines from OpenStreetMap into data/grid.json
 samples/                sample plans in every supported format
 tests/                  engine, importer and sample-file tests
-vendor/                 pinned copies of d3, three.js, SheetJS, togeojson, JSZip and shpjs (see vendor/README.md)
+vendor/                 pinned copies of d3, MapLibre GL, three.js, SheetJS, togeojson, JSZip and shpjs (see vendor/README.md)
 docs/screenshots/       images used in this README
 ```
 
@@ -159,7 +180,7 @@ Seamline is a static site: `index.html` plus the `vendor/` folder. Any static ho
 - **GitHub Pages:** in the repository's Settings, open Pages, set Source to "Deploy from a branch", pick `main` and `/ (root)`, and save. The site appears at `https://<user>.github.io/<repo>/`. On a free GitHub plan the repository has to be public for Pages to work.
 - **Netlify, Vercel, Cloudflare Pages or S3:** publish the repository root.
 
-Satellite, Streets and Terrain map tiles come from Esri and OpenStreetMap and need an internet connection. The Plain map, the 3D view and every importer work offline.
+Satellite and Topo (Esri) tiles, the Relief map and 3D terrain (AWS Terrarium elevation tiles) and the assistant (Anthropic API) need an internet connection. The Plain map, the three.js pair illustration and every importer work offline.
 
 ## Official challenge data
 
@@ -212,6 +233,6 @@ The model assumes each project moves once more, by an amount like the moves alre
 
 - DESC: [SCRTP 2026–2030 project descriptions ($2M and above)](https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf). This list includes costs and exact dates.
 - Georgia: [SERTP 2026 preliminary expansion plan](https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf), [2025 SERTP report](https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf), and Georgia Power's project pages for Callaway Road–Thomson and Effingham County. These give year-only dates and no costs.
-- Public plans name substations but give no coordinates, so the built-in locations are placed by hand. `loc: "low"` marks best guesses, which are drawn dashed on the map. Spot-check project rows against the source PDFs.
+- Public plans name substations but give no coordinates. Official projects are placed from OpenStreetMap substation names and the challenge's reference table (see Official challenge data); SCRTP 2026-2030 and SERTP entries not in the official lists are placed by hand. `loc: "low"` marks best guesses, which are drawn dashed on the map.
 - The Thomson–Vogtle 500 kV line has been in service since 2018. It appears as an existing asset for reference, along with DESC's Stevens Creek hydro plant in Martinez, Georgia.
 - The files in `samples/` are fictional.

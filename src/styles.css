@@ -367,3 +367,11 @@ body.m3d-open .app{visibility:hidden}
 .ask-in textarea{flex:1;font:inherit;font-size:13px;resize:none;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink)}
 .ask-key .chk{justify-self:start}
 .tabs button{padding:10px 10px 8px}
+
+/* ---------- drop-in walker ---------- */
+.peg{position:absolute;right:10px;top:52px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
+.peg:hover svg{fill:#FBB13C}
+.peg.dragging{opacity:.35}
+.peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}

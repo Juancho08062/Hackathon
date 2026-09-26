@@ -377,6 +377,14 @@ body.m3d-open .app{visibility:hidden}
 .ask-key .chk{justify-self:start}
 .tabs button{padding:10px 10px 8px}
 
+/* ---------- drop-in walker ---------- */
+.peg{position:absolute;right:10px;top:52px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
+.peg:hover svg{fill:#FBB13C}
+.peg.dragging{opacity:.35}
+.peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}
+
 </style>
 
 <div class="app">
@@ -392,6 +400,7 @@ body.m3d-open .app{visibility:hidden}
     <button type="button" class="btn" id="openAssume">Unit costs</button>
     <button type="button" class="btn" id="openImport" aria-expanded="false" aria-controls="import">Import plans</button>
     <button type="button" class="btn" id="copy">Export CSV</button>
+    <button type="button" class="btn primary" id="share" title="Copy a link to exactly this view">Share</button>
   </header>
 
   <div class="filterbar" id="controls">
@@ -417,8 +426,12 @@ body.m3d-open .app{visibility:hidden}
         <div class="maptools">
           <div class="seg" role="group" aria-label="Map extent"><button type="button" id="v-focus" aria-pressed="true">Overlaps</button><button type="button" id="v-all" aria-pressed="false">All projects</button></div>
           <div class="seg" role="group" aria-label="Basemap" id="basemaps"></div>
+          <button type="button" class="btn tog" id="bgrid" aria-pressed="true" title="Today's transmission lines from OpenStreetMap">Grid</button>
           <button type="button" class="btn tog" id="b3d" aria-pressed="false">3D</button>
         </div>
+        <button type="button" class="peg" id="peg" title="Drag onto a project to walk around it in 3D" aria-label="Drop-in walker: drag onto a project to walk around it in 3D">
+          <svg viewBox="0 0 24 40" aria-hidden="true"><circle cx="12" cy="6" r="4.6"/><path d="M5.5 13.5h13l-1.6 12h-2.4l-.9 13h-3.2l-.9-13H7.1z"/></svg>
+        </button>
         <div class="legend" id="legend"></div>
         <p class="tilenote" id="tileNote" hidden></p>
       </div>
@@ -498,6 +511,7 @@ body.m3d-open .app{visibility:hidden}
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
       <label class="m3d-q">Quality <select id="m3dQ" aria-label="3D image quality"><option value="standard">Standard</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
+      <button type="button" class="btn" id="m3dWalk" aria-pressed="false" title="Walk around at ground level">Walk</button>
       <button type="button" class="btn" id="m3dLabels" aria-pressed="true">Labels on</button>
       <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>
@@ -1443,7 +1457,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
     const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
     const reels = [];
-    for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
+    // cable reels in a row, spaced wider than their 1.04 diameter so they never touch
+    for (let i = 0; i < 4; i++) { const x = -w * 0.34 + i * 1.2; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.18 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.18); reels.push(hub); }
     g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
     const trucks = [], cabs = [], tires = [], glass = [];
     for (let i = 0; i < 3; i++) {
@@ -1471,7 +1486,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const cones = [];
     for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
     g.add(mesh(T, merge(T, cones), pbr(T, 0xf07a22)));
-    const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
+    const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-0.4, 0.12, d * 0.08); g.add(crew);
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
     g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
@@ -1719,7 +1734,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
-        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3);
+        // no tower on the plateau's edge, and none inside a substation or plant placed before this line
+        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3 && obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 0.8 * TS));
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
@@ -1765,7 +1781,10 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       if (node.userData.stacks) node.userData.stacks.forEach(st => { const w = new T.Vector3(st[0], st[1], st[2]).applyAxisAngle(sv.set(0, 1, 0), 0.35).add(v); steam.push({ at: w, big: !!st[3], s }); });
       return { anchor: v, top: gen ? s * 0.65 : s * 0.45 };
     };
-    const A = place(pair.p, opts.colorA), B = place(pair.q, opts.colorB);
+    // substations and plants first, so the other project's towers can keep off their pads
+    const isL = p => (p.parts || [p.coords]).some(c => c.length > 1);
+    let A, B;
+    if (isL(pair.p) && !isL(pair.q)) { B = place(pair.q, opts.colorB); A = place(pair.p, opts.colorA); } else { A = place(pair.p, opts.colorA); B = place(pair.q, opts.colorB); }
 
     // ---------- the closest-point link and what the tier lets them share ----------
     const va = toV(pair.ca), vb = toV(pair.cb), tierHex = new T.Color(opts.tierColor).getHex();
@@ -1798,10 +1817,32 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
-      const yd = yardGroup(T, 7, 4.6), o = perp.clone().multiplyScalar(6);
-      yd.scale.setScalar(TS); yd.position.set(mid.x + o.x, heightAt(mid.x + o.x, mid.z + o.z), mid.z + o.z); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
-      obstacles.push([yd.position.x, yd.position.z, 5 * TS]);
+      // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
+      const yd = yardGroup(T, 7, 4.6), yr = 4.4 * TS;
+      let spot = null;
+      for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
+        const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
+        const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
+        if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
+      }
+      if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
+      yd.scale.setScalar(TS); yd.position.set(spot[0], heightAt(spot[0], spot[1]), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
+    }
+    // Drop-in start: a few steps back from where the walker landed, clear of towers and pads, facing the meeting
+    // point. The spot and a line of sight toward the pair are kept free of trees, ponds and rocks.
+    let walkStart = null;
+    if (opts.walkAt) {
+      const at = toV(opts.walkAt), f0 = va.clone().lerp(vb, 0.5), away = at.clone().sub(f0); away.y = 0;
+      if (away.lengthSq() < 1e-6) away.copy(perp);
+      away.normalize();
+      const clearOf = v => obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 3 * TS);
+      walkStart = at.clone().add(away.clone().multiplyScalar(4 * TS));
+      for (let k = 0; k < 30 && !clearOf(walkStart); k++) walkStart.add(away.clone().multiplyScalar(1.5));
+      const look = f0.clone().sub(walkStart); look.y = 0;
+      const steps = Math.min(8, Math.ceil(look.length() / 4));
+      for (let k = 0; k <= steps; k++) { const v = walkStart.clone().lerp(f0, k / Math.max(1, steps) * 0.6); obstacles.push([v.x, v.z, k ? 2.5 : 4]); }
     }
     const clear = (x, z, pad) => (!dem || heightAt(x, z) > 0.12) && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
@@ -1862,7 +1903,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const tufts = scatter(tuft, pbr(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
 
     // work crews at the closest points
-    [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
+    [va, vb].forEach((v, i) => {
+      const cr = crewGroup(T, 4, 21 + i, 1.4), sg = i ? -1 : 1;
+      let off = 1.4;
+      while (off < 14 && !obstacles.every(([ox, oz, r]) => Math.hypot(v.x + perp.x * off * sg - ox, v.z + perp.z * off * sg - oz) > r)) off += 1;
+      const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
+      cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
+    });
 
     // steam sprites over stacks and cooling towers
     const puffs = [];
@@ -1873,7 +1920,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
     linearize(T, scene);
-    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
+    return { scene, sky, puffs, pulse, clouds, labels, focus, relief, demSource: dem && dem.source, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex, heightAt, toV, TS, R, obstacles, walkStart };
   }
 
   // ---------- modal and render loop ----------
@@ -1938,7 +1985,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced ? 0 : 2.6;
+      const INTRO = reduced || opts.walkAt ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
       if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
       cam.lookAt(f);
@@ -1948,6 +1995,56 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
       controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+      // Walk mode: stand on the ground where the drop-in figure landed and walk around with the keyboard.
+      // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
+      // terrain and inside the plateau.
+      const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
+      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot");
+      const setWalk = on => {
+        walk.on = on; controls.enabled = !on; controls.autoRotate = false;
+        if (on) {
+          const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
+          cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
+        } else {
+          const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
+          controls.target.copy(ahead); cam.position.y += 8;
+        }
+        if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
+        if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
+          : "Illustration of the pair: distances along the ground are to scale; terrain and towers are schematic. Drag to orbit, scroll to zoom.";
+      };
+      const typing = e => /input|select|textarea/i.test(e.target.tagName);
+      const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
+      const onKeyDown = e => { if (!walk.on || typing(e)) return; if (MOVE[e.code] || e.code === "ShiftLeft" || e.code === "ShiftRight") { walk.keys.add(e.code); e.preventDefault(); } };
+      const onKeyUp = e => walk.keys.delete(e.code);
+      const cv = renderer.domElement;
+      const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
+      const onMove = e => {
+        if (!walk.on || !walk.drag) return;
+        walk.yaw -= (e.clientX - walk.drag[0]) * 0.005; walk.pitch = Math.max(-1.1, Math.min(0.9, walk.pitch - (e.clientY - walk.drag[1]) * 0.004));
+        walk.drag = [e.clientX, e.clientY];
+      };
+      const onUp = () => { walk.drag = null; };
+      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp);
+      cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
+      if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
+      const stepWalk = dt => {
+        let fw = 0, sd = 0;
+        walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
+        const speed = (walk.keys.has("ShiftLeft") || walk.keys.has("ShiftRight") ? 14 : 5) * dt, p = cam.position;
+        const fx = Math.sin(walk.yaw), fz = Math.cos(walk.yaw);
+        let nx = p.x + (fx * fw + fz * sd) * speed, nz = p.z + (fz * fw - fx * sd) * speed;
+        const r = Math.hypot(nx, nz), lim = built.R * 1.25;
+        if (r > lim) { nx *= lim / r; nz *= lim / r; }
+        p.set(nx, built.heightAt(nx, nz) + eye, nz);
+        cam.lookAt(p.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), p.y + Math.sin(walk.pitch), p.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
+      };
+      if (built.walkStart) {
+        const w0 = built.walkStart;
+        cam.position.set(w0.x, built.heightAt(w0.x, w0.z) + eye, w0.z);
+        setWalk(true);
+      } else setWalk(false);
 
       // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
       const pmrem = new T.PMREMGenerator(renderer);
@@ -1991,8 +2088,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       size();
       const clock = new T.Clock();
       let raf;
+      let lastT = 0;
       const loop = () => {
-        const t = clock.getElapsedTime();
+        const t = clock.getElapsedTime(), dt = Math.min(0.05, t - lastT); lastT = t;
         if (INTRO && !controls.enabled) {
           const k = Math.min(1, t / INTRO), e = 1 - Math.pow(1 - k, 3);
           orbitAt(endR * (2.3 - 1.3 * e), endAz + 1.1 * (1 - e), endEl + (Math.min(1.25, endEl + 0.5) - endEl) * (1 - e)); cam.lookAt(f);
@@ -2011,7 +2109,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         });
         built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 260) c.position.x = -260; });
         built.waterTex.offset.set(t * 0.012, t * 0.007);
-        controls.update();
+        if (walk.on) stepWalk(dt); else controls.update();
         composer.render();
         placeTags(); raf = requestAnimationFrame(loop);
       };
@@ -2022,6 +2120,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       ctx = {
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
+          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp);
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
@@ -2049,11 +2148,14 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 (function (root) {
   const DEM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
   const RASTERS = {
-    light: { label: "Light", tiles: ["a", "b", "c"].map(s => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png`), attr: "© OpenStreetMap contributors © CARTO", max: 19 },
     satellite: { label: "Satellite", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], attr: "Imagery © Esri, Maxar, Earthstar Geographics", max: 19 },
     topo: { label: "Topo", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"], attr: "© Esri, HERE, Garmin, USGS", max: 19 },
   };
-  const BASEMAPS = Object.assign({ plain: { label: "Plain" } }, RASTERS);
+  // Relief is drawn here from the elevation tiles: colour by height (hypsometric tint) under a hillshade.
+  const BASEMAPS = Object.assign({ plain: { label: "Plain" }, relief: { label: "Relief" } }, RASTERS);
+  // Elevation colours for the Southeast (m): coastal plain greens, the Fall Line and Piedmont tans, mountains browns.
+  const RELIEF = ["interpolate", ["linear"], ["elevation"], -10, "#C9DEE8", 0, "#D8E8D2", 30, "#CFE2C0", 80, "#DDE3B7", 150, "#E6DDAF", 250, "#DDC89E", 400, "#CDB08A", 700, "#B8977A", 1100, "#A58E80", 1800, "#E8E4E0"];
+  const SKY = { "sky-color": "#9CC3E0", "horizon-color": "#DDE8EE", "fog-color": "#E6EDF1", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.25, "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 5, 0.8, 12, 0.2] };
   // Typical structure heights by voltage (m), drawn 2.5× taller than life, on a slim base, so they read from a
   // few kilometres up; the spacing (about 450 m) is to scale.
   const TOWER_M = kv => (kv >= 500 ? 55 : kv >= 230 ? 40 : kv >= 115 ? 28 : 18) * 2.5;
@@ -2092,6 +2194,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       shade: { type: "raster-dem", tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: "terrarium" },
     };
     for (const [k, r] of Object.entries(RASTERS)) sources["r-" + k] = { type: "raster", tiles: r.tiles, tileSize: 256, maxzoom: r.max, attribution: r.attr };
+    // today's grid from OpenStreetMap (data/grid.json, loaded on demand; missing when the page is opened as a file)
+    sources.grid = { type: "geojson", data: "data/grid.json", attribution: "Grid © OpenStreetMap contributors" };
     for (const k of ["measure", "seam", "existing", "yardring", "spokes", "links", "projects", "points", "towers", "rings", "yards", "sparks"]) sources[k] = { type: "geojson", data: fc([]) };
     const vis = v => ({ visibility: v ? "visible" : "none" });
     return {
@@ -2102,7 +2206,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         { id: "states-fill", type: "fill", source: "states", paint: { "fill-color": "#F4F4F1" } },
         { id: "counties", type: "line", source: "counties", paint: { "line-color": "#E2E4E0", "line-width": 0.6 } },
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
-        { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#5B6770" } },
+        { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
+        { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
+        // existing lines by voltage, kept quiet under the plans: grey 115, violet 161, magenta 230, teal 500 kV
+        { id: "grid", type: "line", source: "grid", layout: { "line-join": "round" }, paint: {
+          "line-color": ["step", ["get", "kv"], "#8E9AA6", 161, "#8E7CB8", 230, "#A05BA8", 500, "#0097A7"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["step", ["get", "kv"], 0.5, 230, 0.8, 500, 1.2], 12, ["step", ["get", "kv"], 1.2, 230, 1.8, 500, 2.6]],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 11, 0.6] } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
         { id: "yardring-fill", type: "fill", source: "yardring", paint: { "fill-color": "#8A5A1E", "fill-opacity": 0.025 } },
         { id: "yardring", type: "line", source: "yardring", paint: { "line-color": "#8A5A1E", "line-width": 1.2, "line-dasharray": [3, 2] } },
@@ -2150,17 +2260,17 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const zoomed = () => el.classList.toggle("gaps-all", map.getZoom() >= 9);
     map.on("zoom", zoomed); zoomed();
     map.on("error", e => { if (e && e.sourceId && e.sourceId.startsWith("r-") && ++tileErrors === 4 && cbs.tilesFailed) cbs.tilesFailed(basemap); });
-    const hit = ["links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
+    const hit = ["grid", "links", "proj", "proj-dash", "casing", "points", "rings", "sparks", "yards", "existing", "existing-pt"];
     map.on("click", e => {
       if (measuring) { mpts.push([e.lngLat.lat, e.lngLat.lng]); return drawMeasure(); }
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      if (cbs.click) cbs.click(f ? { layer: f.layer.id, id: f.properties.id } : null);
+      if (cbs.click) cbs.click(f && f.layer.id !== "grid" ? { layer: f.layer.id, id: f.properties.id } : null);
     });
     map.on("mousemove", e => {
       if (measuring) return;
       const f = map.queryRenderedFeatures(e.point, { layers: hit.filter(l => map.getLayer(l)) })[0];
-      map.getCanvas().style.cursor = f ? "pointer" : "";
-      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id } : null, e.originalEvent);
+      map.getCanvas().style.cursor = f && f.layer.id !== "grid" ? "pointer" : "";
+      if (cbs.hover) cbs.hover(f ? { layer: f.layer.id, id: f.properties.id, kv: f.properties.kv, op: f.properties.op } : null, e.originalEvent);
     });
     map.on("mouseout", () => cbs.hover && cbs.hover(null));
     // "style.load" fires once the layers exist; "load" would also wait for every basemap tile to arrive.
@@ -2192,7 +2302,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   function placeLabels() {
     placeMarkers.forEach(m => m.remove());
     placeMarkers = [];
-    if (basemap !== "plain") return;
+    if (basemap !== "plain" && basemap !== "relief") return;
     for (const [n, lat, lon] of PLACES) {
       const d = document.createElement("div"); d.className = "ml-place"; d.textContent = n;
       placeMarkers.push(new root.maplibregl.Marker({ element: d, anchor: "left", offset: [4, 0] }).setLngLat([lon, lat]).addTo(map));
@@ -2203,8 +2313,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     if (!map || !BASEMAPS[name]) return;
     basemap = name; tileErrors = 0;
     for (const k of Object.keys(RASTERS)) map.setLayoutProperty("r-" + k, "visibility", k === name ? "visible" : "none");
-    const raster = name !== "plain";
-    for (const id of ["states-fill", "counties"]) map.setLayoutProperty(id, "visibility", raster ? "none" : "visible");
+    const raster = !!RASTERS[name];
+    map.setLayoutProperty("states-fill", "visibility", name === "plain" ? "visible" : "none");
+    map.setLayoutProperty("counties", "visibility", raster ? "none" : "visible");
+    map.setLayoutProperty("relief", "visibility", name === "relief" ? "visible" : "none");
+    shade();
     map.setPaintProperty("states-line", "line-color", name === "satellite" ? "rgba(255,255,255,.7)" : colors.stateLine || "#AEB6BC");
     map.setPaintProperty("seam", "line-opacity", raster ? 0.55 : 0.9);
     placeLabels();
@@ -2213,13 +2326,22 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   function set3D(on) {
     if (!map) return;
     is3d = on;
-    try { map.setTerrain(on ? { source: "dem", exaggeration: 1.6 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
-    map.setLayoutProperty("hillshade", "visibility", on && basemap === "plain" ? "visible" : "none");
+    // The Southeast is low (sea level to a few hundred metres), so relief is exaggerated 3× to be seen.
+    try { map.setTerrain(on ? { source: "dem", exaggeration: 3 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
+    try { map.setSky(on ? SKY : null); } catch (err) { /* sky is decoration only */ }
+    shade();
     map.setLayoutProperty("towers", "visibility", on ? "visible" : "none");
     // tilt only once a fly-to in progress has landed, so the tilt doesn't cut it short
     const tilt = () => map.easeTo(on ? { pitch: 62, bearing: map.getBearing() || -18, duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
     if (map.isMoving()) map.once("moveend", tilt); else tilt();
     if (lastData) towers(lastData.projects);
+  }
+
+  // Hillshade: always on the Relief map and in 3D; lighter over imagery so it doesn't muddy the photo.
+  function shade() {
+    const on = basemap === "relief" || is3d;
+    map.setLayoutProperty("hillshade", "visibility", on ? "visible" : "none");
+    map.setPaintProperty("hillshade", "hillshade-exaggeration", RASTERS[basemap] ? 0.3 : 0.55);
   }
 
   // Theme colours for the basemap layers (light or dark).
@@ -2299,7 +2421,22 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     map.fitBounds([[w - pad, s - pad], [e + pad, n + pad]], { padding: opts.padding ?? 40, duration: opts.duration ?? 900, maxZoom: opts.maxZoom ?? 12.5, pitch: is3d ? 62 : 0, bearing: is3d ? map.getBearing() : 0 });
   }
 
-  root.SeamMap = { BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
+  // The project under a screen point (client pixels), for the drop-in figure: the nearest line or substation within
+  // `radius` pixels, and the map coordinates of that point.
+  function pick(clientX, clientY, radius = 22) {
+    if (!map) return null;
+    const r = map.getCanvas().getBoundingClientRect(), x = clientX - r.left, y = clientY - r.top;
+    if (x < 0 || y < 0 || x > r.width || y > r.height) return null;
+    const box = [[x - radius, y - radius], [x + radius, y + radius]];
+    const f = map.queryRenderedFeatures(box, { layers: ["proj", "proj-dash", "points"].filter(l => map.getLayer(l)) })
+      .filter(g => g.properties.opacity == null || g.properties.opacity > 0.25)[0];
+    const ll = map.unproject([x, y]);
+    return { id: f ? f.properties.id : null, at: [ll.lat, ll.lng] };
+  }
+
+  const setGrid = on => map && map.getLayer("grid") && map.setLayoutProperty("grid", "visibility", on ? "visible" : "none");
+
+  root.SeamMap = { setGrid, pick, BASEMAPS, init, update, fit, setBasemap, set3D, setTheme, resize: () => map && map.resize(), get3D: () => is3d, getBasemap: () => basemap, raw: () => map };
 })(this);
 
 </script>
@@ -2407,7 +2544,8 @@ const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
   tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
-  basemap: store.get("basemap", "plain"),
+  grid: true,
+  basemap: ["plain", "relief", "satellite", "topo"].includes(store.get("basemap", "plain")) ? store.get("basemap", "plain") : "plain",
 };
 const STATUS = store.get("status", {});
 const STATUSES = ["Open", "Contacted", "Coordinating", "Not pursuing"];
@@ -2515,7 +2653,7 @@ function renderMap() {
   const shown = VIEW.slice(0, state.shown), sel = state.sel, t = state.t, focus = sel || state.hover;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
   const moved = state.showMoves && optimize() ? new Set(optimize().moves.map(m => m.id)) : null;
-  const raster = state.basemap !== "plain";
+  const raster = state.basemap === "satellite" || state.basemap === "topo";
   const casing = state.basemap === "satellite" ? "rgba(255,255,255,.85)" : raster ? "rgba(20,24,28,.55)" : css("--panel");
   const phaseOp = { all: 1, building: 1, done: .45, planned: .15 };
   const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
@@ -2572,6 +2710,7 @@ function mapClick(hit) {
 }
 function mapHover(hit, ev) {
   if (!hit || !ev) return hideTip();
+  if (hit.layer === "grid") return tip(ev, `<b>Existing ${hit.kv} kV line</b>${hit.op ? "<br>" + esc(hit.op) : ""}<br><span style="opacity:.7">OpenStreetMap</span>`);
   const p = PROJECTS.find(v => v.id === hit.id) || EXIST.find(v => v.id === hit.id);
   if (p) return showTip(ev, p);
   const x = VIEW.find(v => keyOf(v) === hit.id);
@@ -2587,6 +2726,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
@@ -3219,18 +3359,58 @@ function closeBrief() { $("#brief").hidden = true; }
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
-function open3d(x) {
+function open3d(x, extra) {
   $("#m3dQ").value = quality3d();
-  Scene3D.open(x, {
+  Scene3D.open(x, Object.assign({
     title: `${short(x.p)} and ${short(x.q)}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.`,
     colorA: uColor(x.p.utility), colorB: uColor(x.q.utility), tierColor: tcol(Math.min(x.tier, 4)),
     nameA: `${lbl(x.p.utility)}: ${short(x.p)}`, nameB: `${lbl(x.q.utility)}: ${short(x.q)}`,
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`, quality: quality3d(),
-  });
+  }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
 function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
+
+// ---------- drop-in walker ----------
+// Drag the orange figure onto a project: the 3D illustration opens at that spot in walk mode, with the project's
+// pair that is worth the most (or the selected pair, if it includes the project).
+function pairFor(p) {
+  if (state.sel && state.sel.p && state.sel.q && (state.sel.p === p || state.sel.q === p)) return state.sel;
+  return (VIEW.concat(RESULT.pairs)).filter(x => x.p === p || x.q === p).sort((a, b) => b.risk.expected - a.risk.expected)[0] || null;
+}
+function setupPeg() {
+  const peg = $("#peg");
+  let ghost = null, over = null;
+  const end = () => { if (ghost) ghost.remove(); ghost = null; peg.classList.remove("dragging"); hideTip(); };
+  peg.addEventListener("pointerdown", e => {
+    e.preventDefault(); peg.setPointerCapture(e.pointerId); peg.classList.add("dragging");
+    ghost = peg.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("ghost"); document.body.appendChild(ghost);
+    move(e);
+  });
+  const move = e => {
+    if (!ghost) return;
+    ghost.style.transform = `translate(${e.clientX - 14}px, ${e.clientY - 44}px)`;
+    const hit = mapReady ? SeamMap.pick(e.clientX, e.clientY) : null;
+    over = hit && hit.id ? { p: PROJECTS.find(v => v.id === hit.id), at: hit.at } : null;
+    const x = over && over.p && pairFor(over.p);
+    ghost.classList.toggle("ok", !!x);
+    if (over && over.p) tip(e, x ? `<b>${esc(short(over.p))}</b><br>Drop to walk here in 3D` : `<b>${esc(short(over.p))}</b><br>No overlap with ${esc(lbl(state.utilB))} for this project`);
+    else if (hit) tip(e, "Drop onto a project line or substation"); else hideTip();
+  };
+  peg.addEventListener("pointermove", move);
+  peg.addEventListener("pointerup", () => {
+    const o = over; end(); over = null;
+    if (!o || !o.p) return;
+    const x = pairFor(o.p);
+    if (!x) return;
+    const ll = Engine.closest({ coords: [o.at] }, o.p)[2]; // the point on the project nearest the drop
+    if (x !== state.sel) select(x);
+    open3d(x, { walkAt: ll });
+  });
+  peg.addEventListener("pointercancel", end);
+  peg.addEventListener("click", e => { if (e.detail === 0) tip({ clientX: peg.getBoundingClientRect().left, clientY: peg.getBoundingClientRect().top }, "Drag onto a project to walk around it in 3D"); });
+}
 
 // ---------- pickers, datasets, import ----------
 function renderPickers() {
@@ -3320,6 +3500,75 @@ function saveAssume(vals) {
 }
 { const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
+
+// ---------- shareable link ----------
+// The URL hash carries what's on screen (utilities, filters, tab, selection, basemap, 3D and camera), so a link
+// pasted into an email opens the same view. It is rewritten as the view changes, without adding history entries.
+let pendingView = null, hashTimer = null;
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.toString()) return;
+  const num = (k, ok) => { const v = +h.get(k); return h.has(k) && isFinite(v) && (!ok || ok(v)) ? v : null; };
+  if (h.get("a")) state.utilA = h.get("a");
+  if (h.get("b")) state.utilB = h.get("b");
+  if (num("d") != null) state.D = num("d");
+  if (num("w") != null) state.B = num("w");
+  if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
+  if (num("h") != null) state.horizon = num("h");
+  if (h.get("past") === "0") state.past = false;
+  if (h.get("grid") === "0") state.grid = false;
+  if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
+  if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
+  const cam = (h.get("cam") || "").split(",").map(Number);
+  pendingView = { sel: h.get("sel"), d3: h.get("3d") === "1", cam: cam.length === 5 && cam.every(isFinite) ? cam : null };
+}
+function syncControls() {
+  $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
+  $("#buf").value = String(state.B);
+  for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
+  document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
+  $("#pastOn").checked = state.past;
+}
+function applyPendingView() {
+  const v = pendingView; pendingView = null;
+  if (!v) return false;
+  const m = SeamMap.raw();
+  if (v.d3) { SeamMap.set3D(true); $("#b3d").setAttribute("aria-pressed", "true"); }
+  if (v.sel) {
+    const x = RESULT.pairs.find(y => keyOf(y) === v.sel), p = !x && PROJECTS.find(q => q.id === v.sel);
+    if (x) { state.sel = VIEW.find(y => y === x) || x; if (state.tab !== "overlaps" && state.tab !== "ask") state.tab = "overlaps"; }
+    else if (p && solo()) state.sel = { p, solo: true };
+    renderMap(); renderPanel(); renderTimeline();
+  }
+  if (v.cam) { m.jumpTo({ center: [v.cam[0], v.cam[1]], zoom: v.cam[2], pitch: v.cam[3], bearing: v.cam[4] }); return true; }
+  if (state.sel) { flyTo(state.sel); return true; }
+  return false;
+}
+function writeHash() {
+  if (!mapReady) return; // until the map is up, the link being opened is still being applied
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const h = new URLSearchParams();
+    h.set("a", state.utilA); h.set("b", state.utilB);
+    if (state.D !== 40) h.set("d", state.D);
+    if (state.B) h.set("w", state.B);
+    if (state.mode !== "near") h.set("m", state.mode);
+    if (state.horizon) h.set("h", state.horizon);
+    if (!state.past) h.set("past", "0");
+    if (!state.grid) h.set("grid", "0");
+    if (state.tab !== "overlaps") h.set("tab", state.tab);
+    const x = state.sel;
+    if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
+    if (state.basemap !== "plain") h.set("map", state.basemap);
+    {
+      const m = SeamMap.raw(), c = m.getCenter();
+      if (SeamMap.get3D()) h.set("3d", "1");
+      h.set("cam", [c.lng.toFixed(4), c.lat.toFixed(4), m.getZoom().toFixed(2), Math.round(m.getPitch()), Math.round(m.getBearing())].join(","));
+    }
+    history.replaceState(null, "", "#" + h.toString().replace(/%7C/gi, "|").replace(/%2C/gi, ","));
+  }, 250);
+}
+
 // ---------- modals ----------
 function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
 function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
@@ -3332,6 +3581,7 @@ function select(x) {
   if (x && !x.moves) state.tab = "overlaps";
   renderMap(); renderPanel(); renderTimeline();
   if (changed && x) flyTo(x); else if (changed && !x) fitAll(700);
+  writeHash();
 }
 function refresh() {
   compute();
@@ -3341,6 +3591,7 @@ function refresh() {
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
+  writeHash();
 }
 function rebuild() {
   state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
@@ -3349,7 +3600,7 @@ function rebuild() {
 function setBasemap(b) {
   state.basemap = b; store.set("basemap", b);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === b));
-  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap();
+  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap(); writeHash();
 }
 function theme() {
   SeamMap.setTheme({ water: css("--water"), land: css("--land"), county: css("--grid"), stateLine: css("--ink3"), river: css("--river"), place: css("--ink2") });
@@ -3367,8 +3618,13 @@ $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
 for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
-$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
-document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#bgrid").onclick = () => { state.grid = !state.grid; $("#bgrid").setAttribute("aria-pressed", state.grid); SeamMap.setGrid(state.grid); legend(); writeHash(); };
+$("#share").onclick = () => {
+  clearTimeout(hashTimer); writeHash();
+  setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
+};
+document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
@@ -3424,7 +3680,10 @@ addEventListener("resize", () => renderTimeline());
 
 renderAssume();
 renderDatasets();
+setupPeg();
 SEAM = seamCoords();
+readHash();
+syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
   click: mapClick, hover: mapHover, recenter: () => fitAll(700),
@@ -3432,8 +3691,12 @@ SeamMap.init($("#map"), BASE, {
 }).then(() => {
   mapReady = true;
   SeamMap.setBasemap(state.basemap);
+  SeamMap.setGrid(state.grid); $("#bgrid").setAttribute("aria-pressed", state.grid);
+  document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
-  fitAll(0);
+  if (!applyPendingView()) fitAll(0);
+  SeamMap.raw().on("moveend", writeHash);
+  writeHash();
 });
 
 </script>
