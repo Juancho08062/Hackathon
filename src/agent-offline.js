@@ -66,6 +66,8 @@
   // Words that are never part of a place or project name, dropped before a free-text search.
   const FILLER = new Set("a al and around as at be between by can could de del do does el en explain explicame explica contame detalle for from give happen has have how in is it la las like los me most much my near of on or planned please que qual show tell that the to us what whats where which who why with y you your cerca sobre dame muestrame cuales cuanto cuando como donde sus para pair pares par overlap overlaps solape solapes proyecto proyectos project projects".split(" "));
 
+  const PLACE_END = new Set("are is was were will would could should that which who whose where when with without most more least likely to for and but than happen happening overlap overlaps y que son es esta estan mas con para donde cuando sin".split(" "));
+
   const ids = q => (String(q || "").toUpperCase().match(ID_RE) || []);
   const content = q => fold(q).replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter(w => w.length > 2 && !FILLER.has(w) && !/^\d+$/.test(w));
 
@@ -89,7 +91,11 @@
   function placeAfter(q) {
     const m = fold(q).match(NEAR_RE);
     if (!m) return null;
-    const rest = q.slice(q.length - m[1].length).replace(/[?.!,]+$/, "").trim();
+    let rest = q.slice(q.length - m[1].length).replace(/[?.!,]+$/, "").trim();
+    // the place ends where the rest of the question starts: "near Augusta are most likely to happen" is "Augusta"
+    const cut = rest.split(/\s+/).findIndex(w => PLACE_END.has(fold(w)));
+    if (cut === 0) return null;
+    if (cut > 0) rest = rest.split(/\s+/).slice(0, cut).join(" ");
     const words = rest.split(/\s+/).filter(w => !FILLER.has(fold(w)));
     return words.length ? words.slice(0, 4).join(" ") : null;
   }
@@ -193,7 +199,8 @@
     // Only read leftover words as project names when the question is actually about a pair. Without that guard,
     // "explain FERC Order 1920" turns into a search for projects named "ferc order".
     const named = place ? content(place) : (any(s, EXPLAIN) && overlapWord ? content(q) : []);
-    if (named.length >= 2) { input.project_query = named.join(" "); why.push("named projects"); }
+    // a place names one project area ("near Augusta"), so one word is enough; a pair named in free text needs two
+    if (named.length >= (place ? 1 : 2)) { input.project_query = named.join(" "); why.push(place ? "place" : "named projects"); }
 
     if (overlapWord) why.push(overlapWord.trim());
     // A lone filter is enough; a bare mention of a utility is not — that is too thin to assume a ranking was wanted.

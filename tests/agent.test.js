@@ -202,6 +202,10 @@ const routes = [
   ["in the 3 closest pairs", "list_overlaps", { limit: 3, sort: "distance" }],
   ["¿cuáles son los 3 pares más probables?", "list_overlaps", { limit: 3, sort: "chance" }],
   ["los tres pares más cercanos", "list_overlaps", { limit: 3 }],
+  // a place ends where the question goes on, and one word is enough to name it
+  ["Which overlaps near Augusta are most likely to happen?", "list_overlaps", { project_query: "augusta", sort: "chance" }],
+  ["overlaps near Savannah", "list_overlaps", { project_query: "savannah" }],
+  ["¿qué solapes cerca de Augusta son más probables?", "list_overlaps", { project_query: "augusta", sort: "chance" }],
 ];
 t("the offline matcher routes every question it claims to cover", () => {
   for (const [q, tool, input] of routes) {

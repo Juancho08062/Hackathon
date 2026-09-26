@@ -1,6 +1,6 @@
 # Seamline: 3-minute demo
 
-Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Set **Overlaps**, basemap **Relief**, **Grid** on, 3D off, no pair selected. Have an Anthropic API key already pasted in **Ask**. Keep the internet on (imagery, terrain, assistant). Practise the walker drag once so you know where the figure is (bottom right of the map).
+Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Set **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Ask** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
 
 ## 0:00 – The problem (20 s)
 
@@ -22,13 +22,13 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > Here's what nobody else looked at. We compared two editions of each plan: 23 of 30 DESC projects slipped, a year at the median. The last updates opened 9 shared windows and closed 3. Your reference overlap OVL_3 only exists because DESC moved Jasper–Okatie 11 months later.
 
-*Click **Overlaps**, open the pair ranked #4 (Jasper – Okatie #2 × McIntosh Unit 12).*
+*Click **Overlaps** in the rail, open the pair ranked #4 (Jasper – Okatie #2 × McIntosh Unit 12). The map flies to it.*
 
 > So Seamline turns that history into a chance. This pair is six months apart on paper, but there's a 68% chance both crews are in the field together, because DESC usually runs late. Pairs are ranked by expected savings, not by the plan's optimism.
 
 ## 1:25 – Walk the site (35 s)
 
-*Drag the orange figure from the bottom right of the map and drop it on the blue Jasper–Okatie line.*
+*With the pair still open, drag the orange figure from the right edge of the map and drop it on the blue Jasper–Okatie line. (Keep the pair open: from the full-region view the lines are too thin to hit and the figure lands on whatever is nearest.)*
 
 > Like Street View: drop the walker on any project and you're standing on the site.
 
@@ -42,19 +42,19 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 ## 2:00 – What to do about it (25 s)
 
-*Click **Optimize**.*
+*Click **Plan** in the rail (the schedule optimizer).*
 
 > Finding overlaps isn't enough. The optimizer finds 8 date moves, none over 6 months, only on projects that haven't started, that raise expected savings from $13.6 million to $16.1 million, and prints a joint proposal for both planning teams.
 
-*Click **Share**.*
+*Click **Joint brief** to show the printable proposal, close it, then **More → Share this view**.*
 
 > And any view is a link: a planner pastes it into an email and the other utility opens exactly this.
 
 ## 2:25 – Ask it (25 s)
 
-*Click **Ask**, click the suggestion "Which three date moves would save the most?" or type "Which overlaps near Augusta are most likely to happen?".*
+*Click the **Ask** button on the map, click the suggestion "Which three date moves would save the most?" or type "Which overlaps near Augusta are most likely to happen?". If time allows, type "Why is DESCP-10 not paired with IRP-19523?".*
 
-> Planners can just ask. The assistant uses Claude with tools over the same data, so answers come from the plans, and it flies the map to what it's talking about.
+> Planners can just ask, in English or Spanish. With a key it's Claude with fourteen tools over the same data; without one, or if the network drops, the common questions are still answered straight from the plans, and it says so. It flies the map to what it's talking about, opens the printable briefs, and it can tell you why a pair is *not* on the list: this one is 40.4 km apart, just past the screen.
 
 ## 2:50 – Close (10 s)
 
@@ -64,5 +64,6 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 - No imagery, terrain or grid: switch to **Plain**. Everything else works offline.
 - Walker lands in the wrong place: press **Walk** to switch to the orbit view, or close and drop it again.
-- Assistant errors: skip the Ask step and spend the time on Optimize.
+- Assistant errors: it falls back to answering without the model on its own; stick to the suggested questions. If even that fails, skip Ask and spend the time on Plan.
+- Walker lands on the wrong pair: close the 3D view, open pair #4 from Overlaps first, then drop the figure on the blue line.
 - Numbers to remember: 262 official records · 10,304 pairs · 169 overlaps · 6 of 6 reference overlaps · 23 of 30 DESC projects slipped · +9 / −3 windows · 68% (Jasper–Okatie × McIntosh 12) · $13.6M → $16.1M with 8 moves · 10,092 existing lines.
