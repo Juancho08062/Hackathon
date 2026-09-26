@@ -306,6 +306,7 @@ function renderTimeline() {
 // ---------- panel: tabs ----------
 function renderTabs() {
   document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === state.tab));
+  $("#tab-ask").classList.toggle("nudge", !store.get("askSeen", false));
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -822,8 +823,8 @@ function renderAsk(P) {
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   P.innerHTML = `<div class="ask">
     <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
-      : `<div class="msg hint"><p>Ask about the projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
-      ${CHAT.busy ? `<div class="msg tool">Thinking…</div>` : ""}</div>
+      : `<div class="msg hint"><p class="ask-hero">${SPARK}Ask about the plans</p><p>Projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
+      ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="e.g. Which three date moves would save the most?" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
@@ -834,6 +835,8 @@ function renderAsk(P) {
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
+// The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
+const SPARK = `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
   open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal" };
@@ -1099,7 +1102,7 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v;
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
-document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (b.dataset.tab === "ask") store.set("askSeen", true); if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };

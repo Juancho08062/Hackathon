@@ -146,6 +146,23 @@ svg text{font-family:var(--body)}
 .tabs button:hover{color:var(--ink)}
 .tabs button[aria-pressed=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
 .tabs .n{font-weight:400;color:var(--ink2);margin-left:2px}
+.tabs .ask-tab{display:inline-flex;align-items:center;gap:5px;margin-left:auto;padding-left:14px;border-left:1px solid var(--line)}
+.spark{width:13px;height:13px;flex:none;fill:currentColor;overflow:visible}
+.spark path{transform-box:fill-box;transform-origin:center}
+.spark .s1{animation:sparkle 2.6s ease-in-out infinite}
+.spark .s2{animation:sparkle 2.6s ease-in-out .5s infinite;opacity:.55}
+@keyframes sparkle{0%,100%{opacity:.5;transform:scale(.82)}45%{opacity:1;transform:scale(1.12)}}
+/* Runs four times and stops. Once the panel has been opened the class is dropped for good, so the nudge never
+   becomes part of the furniture. */
+.tabs .ask-tab.nudge{color:var(--ink);animation:nudge 1.9s ease-in-out 4}
+@keyframes nudge{0%,100%{background:transparent}50%{background:color-mix(in srgb,var(--blue) 12%,transparent)}}
+/* The wait is the one place motion carries information: three dots that tell you the request is still open. */
+.dots{display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle}
+.dots i{width:4px;height:4px;border-radius:50%;background:currentColor;animation:blink 1.1s ease-in-out infinite}
+.dots i:nth-child(2){animation-delay:.18s} .dots i:nth-child(3){animation-delay:.36s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.ask-hero{display:flex;align-items:center;gap:7px;margin:0 0 6px;font-weight:600;color:var(--ink)}
+.ask-hero .spark{width:17px;height:17px;color:var(--blue)}
 .panel{flex:1;overflow:auto;min-height:0;scroll-padding-top:34px}
 .ph{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .ph-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
