@@ -645,19 +645,38 @@
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
       const overlay = document.createElement("div"); overlay.className = "m3d-labels"; stage.appendChild(overlay);
       const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos, w: 0 }; });
-      tags.forEach(t => { t.w = t.el.offsetWidth || t.el.textContent.length * 7.5; }); // widths are read once, here
+      tags.forEach(t => { t.w = t.el.offsetWidth || t.el.textContent.length * 7.5; t.h = t.el.offsetHeight || 26; }); // sizes are read once, here
       const v = new T.Vector3();
       // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
       // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
       let stageW = 1, stageH = 1;
-      const placeTags = () => tags.forEach(t => {
-        v.copy(t.pos).project(cam);
-        // keep the whole label inside the view
-        const half = t.w / 2 + 8, X = Math.max(half, Math.min(stageW - half, (v.x + 1) / 2 * stageW));
-        const off = v.z > 1, tf = off ? t.tf : `translate(${X.toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
-        if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
-        if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
-      });
+      const placeTags = () => {
+        const shown = [];
+        tags.forEach(t => {
+          v.copy(t.pos).project(cam);
+          t.hide = v.z > 1;
+          // keep the whole label inside the view
+          const half = t.w / 2 + 8;
+          t.X = Math.max(half, Math.min(stageW - half, (v.x + 1) / 2 * stageW)); t.Y = (1 - v.y) / 2 * stageH;
+          if (!t.hide) shown.push(t);
+        });
+        // labels that would overlap are stacked: working up from the lowest, each one moves above any it would cover
+        shown.sort((a, b) => b.Y - a.Y);
+        shown.forEach((t, i) => {
+          for (let moved = true; moved;) {
+            moved = false;
+            for (const o of shown.slice(0, i)) {
+              if (Math.abs(t.X - o.X) < (t.w + o.w) / 2 + 4 && t.Y > o.Y - o.h - 3 && t.Y - t.h < o.Y) { t.Y = o.Y - o.h - 3; moved = true; }
+            }
+          }
+        });
+        tags.forEach(t => {
+          const tf = t.hide ? t.tf : `translate(${t.X.toFixed(1)}px, ${t.Y.toFixed(1)}px) translate(-50%, -100%)`;
+          if (t.hide !== t.off) { t.off = t.hide; t.el.style.display = t.hide ? "none" : ""; }
+          if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
+        });
+      };
+
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
