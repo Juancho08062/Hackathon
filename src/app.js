@@ -334,13 +334,16 @@ function countUp(el, key) {
   const a = from == null ? nums(to).map(() => 0) : nums(from), b = nums(to);
   if (still() || a.length !== b.length || a.every((v, i) => v === b[i])) return;
   const fmt = (tok, v) => { const dec = (tok.split(".")[1] || "").length, s = v.toFixed(dec); return tok.includes(",") || (v >= 1000 && !dec) ? Number(s).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec }) : s; };
-  const t0 = performance.now(), D = 900;
+  const at = k => { let i = 0; return to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k)); };
+  el.textContent = at(0); // paint the starting value first, so the final one never flashes
+  let t0 = null;
+  const D = 900;
   const step = now => {
     if (shown.get(key) !== to || !el.isConnected) return; // a newer value took over
-    const k = easeOut(Math.max(0, Math.min(1, (now - t0) / D))); // the first frame's time can be a little before t0
-    let i = 0;
-    el.textContent = to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k));
-    if (k < 1) requestAnimationFrame(step); else el.textContent = to;
+    if (t0 == null) t0 = now; // time the count from the first frame it is on screen
+    const k = easeOut(Math.min(1, (now - t0) / D));
+    el.textContent = k < 1 ? at(k) : to;
+    if (k < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
 }
@@ -696,8 +699,23 @@ function briefMap(x) {
 function closeBrief() { closeAnimated($("#brief"), () => { $("#brief").hidden = true; }); }
 // 3D quality: Standard, High (default) or Ultra, remembered between visits.
 const quality3d = () => { try { const q = localStorage.getItem("seamline.3dquality"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
+// Once the 3D view has finished opening, drop its open animation and hide the page behind it, so the browser only
+// draws the 3D canvas on each frame (see ".m3d.settled" in styles.css).
+function settle3d(on) {
+  const m = $("#m3d"), done = () => { m.classList.add("settled"); document.body.classList.add("m3d-open"); };
+  m.classList.remove("settled"); document.body.classList.remove("m3d-open");
+  if (!on) return;
+  if (still()) return done();
+  const box = $("#m3d .m3d-box"), end = e => {
+    if (e.animationName !== "boxIn") return;
+    box.removeEventListener("animationend", end);
+    if (!m.hidden && !m.classList.contains("closing")) done();
+  };
+  box.addEventListener("animationend", end);
+}
 function open3d(x) {
   $("#m3dQ").value = quality3d();
+  const wasOpen = !$("#m3d").hidden;
   Scene3D.open(x, {
     title: `${x.p.name} and ${x.q.name}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.${x.sav.total ? " Rough savings " + money(x.sav.total) + "." : ""}`,
@@ -706,6 +724,7 @@ function open3d(x) {
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`,
     quality: quality3d(),
   });
+  if (!wasOpen) settle3d(true);
 }
 
 // ---------- timeline ----------
@@ -908,7 +927,7 @@ $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-p
 try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
 $("#m3dQ").value = quality3d();
 $("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dquality", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
-const close3d = () => closeAnimated($("#m3d"), () => Scene3D.close());
+const close3d = () => { settle3d(false); closeAnimated($("#m3d"), () => Scene3D.close()); };
 $("#m3dClose").onclick = close3d;
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") close3d(); });
 addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) close3d(); });
