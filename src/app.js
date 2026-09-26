@@ -26,7 +26,7 @@ const store = {
 const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
-  tab: "overlaps", sort: "expected", shown: 60, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  tab: "overlaps", sort: "expected", shown: 60, askKey: false, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
   basemap: store.get("basemap", "plain"),
 };
 const STATUS = store.get("status", {});
@@ -157,9 +157,11 @@ function renderMap() {
   const projects = PROJECTS.filter(p => shownUtil(p.utility)).map(p => {
     const hi = inSel(focus, p) || (moved && moved.has(p.id));
     let op = (solo() || flagged.has(p.id) ? 1 : .28) * phaseOp[phase(p, t)];
-    if (isPast(p)) op *= .45;
+    // A passed date is encoded by the dash pattern below, not by fading the line out of sight: at .45 of an
+    // already-dimmed line it fell under the 3:1 a meaningful graphic needs.
+    if (isPast(p)) op = Math.max(op * .45, .55);
     if (focus || moved) op = hi ? 1 : Math.min(op, .18);
-    return { id: p.id, parts: Engine.partsOf(p), kv: p.kv, color: uColor(p.utility), casing, opacity: op, dash: p.loc === "low",
+    return { id: p.id, parts: Engine.partsOf(p), kv: p.kv, color: uColor(p.utility), casing, opacity: op, dash: p.loc === "low" || isPast(p),
       width: (p.kv >= 500 ? 3.4 : p.kv >= 230 ? 2.6 : p.kv >= 115 ? 1.9 : 1.4) + (hi ? 2 : 0) + (phase(p, t) === "building" ? 1.2 : 0), r: hi ? 7 : 4.5 };
   });
   const pairOp = d => focus ? (d === focus || (focus.cluster && focus.cluster.pairs.includes(d)) ? 1 : .1) : t != null ? (live(d, t) ? 1 : .08) : .75;
@@ -224,7 +226,7 @@ function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
-    (solo() ? "" : `<div class="lg-row muted">${[0, 2, 3].map(i => `<span><i class="rg" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
+    (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
 }
 
 // ---------- time scrubber ----------
@@ -252,7 +254,10 @@ function togglePlay() {
   if (playTimer) return stopPlay();
   const r = $("#tslider");
   if (state.t == null || state.t >= +r.max) { r.value = r.min; setT(+r.min); }
-  playTimer = setInterval(() => { const n = state.t + 1; if (n > +r.max) return stopPlay(); r.value = n; setT(n); }, 120);
+  // Slower under reduced motion rather than disabled: the scrubber is the control, not decoration, so it still has
+  // to advance — just without a 120 ms strobe.
+  const step = matchMedia("(prefers-reduced-motion: reduce)").matches ? 600 : 120;
+  playTimer = setInterval(() => { const n = state.t + 1; if (n > +r.max) return stopPlay(); r.value = n; setT(n); }, step);
   scrubUI();
 }
 
@@ -285,7 +290,7 @@ function renderTimeline() {
     d.bars.forEach((p, i) => {
       const y = n === 1 ? 9 : 5 + i * 9;
       G.append("rect").attr("x", X(mon(p.start))).attr("width", Math.max(3, X(mon(p.in_service)) - X(mon(p.start)))).attr("y", y).attr("height", 6)
-        .attr("fill", uColor(p.utility)).attr("fill-opacity", isPast(p) ? .3 : .9);
+        .attr("fill", uColor(p.utility)).attr("fill-opacity", isPast(p) ? .55 : .9);
     });
     if (n === 2) {
       const a = Math.max(mon(d.bars[0].start), mon(d.bars[1].start)), b = Math.min(mon(d.bars[0].in_service), mon(d.bars[1].in_service));
@@ -300,7 +305,7 @@ function renderTimeline() {
 
 // ---------- panel: tabs ----------
 function renderTabs() {
-  document.querySelectorAll(".tabs [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
+  document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === state.tab));
   $("#n-overlaps").textContent = solo() ? SOLO.length : VIEW.length;
   const both = !solo();
   $("#tab-changes").hidden = $("#tab-optimize").hidden = !both;
@@ -365,7 +370,8 @@ function renderOverlaps(P) {
   const side = (p, cls) => `<span class="pp${isPast(p) ? " past" : ""}"><i class="${cls}"></i>${esc(short(p))}${p.likely_built ? ` <em>likely built</em>` : isPast(p) ? ` <em>date passed</em>` : ""}</span>`;
   R.innerHTML = VIEW.slice(0, state.shown).map((x, i) => {
     const st = STATUS[keyOf(x)];
-    return `<div class="tr${state.hover === x ? " hov" : ""}" tabindex="0" data-i="${i}">
+    const label = `${SEV[Math.min(x.tier, 4)]}, ${km(x.km)}, ${short(x.p)} and ${short(x.q)}, ${x.risk.why === "built" ? "likely built" : pct(x.risk.chance) + " chance of a shared window"}, expected ${x.risk.expected ? money(x.risk.expected) : "no saving"}`;
+    return `<div class="tr${state.hover === x ? " hov" : ""}" tabindex="0" role="button" aria-label="${esc(label)}" data-i="${i}">
       <span class="muted">${i + 1}</span>
       <span class="dist"><b class="sev s${Math.min(x.tier, 4)}">${SEV[Math.min(x.tier, 4)]}</b><span>${km(x.km)}</span></span>
       <span class="pair">${side(x.p, "a")}${side(x.q, "b")}${st && st !== "Open" ? `<span class="status">${esc(st)}</span>` : ""}</span>
@@ -392,8 +398,8 @@ function renderSoloRows() {
   $("#thead").innerHTML = `<span>#</span><span>Type</span><span>Project</span><span>In service</span><span class="r">Cost</span>`;
   const R = $("#rows");
   if (!SOLO.length) { R.innerHTML = `<div class="empty">No projects match the filter.</div>`; return; }
-  R.innerHTML = SOLO.slice(0, 300).map((p, i) => `<div class="tr" tabindex="0" data-i="${i}"><span class="muted">${i + 1}</span><span class="dist"><span>${p.kv} kV</span><small>${esc(TYPE[p.type] || p.type)}</small></span>
-    <span class="pair"><span class="pp${isPast(p) ? " past" : ""}"><i class="a"></i>${esc(p.name)}</span></span><span class="ch"><span>${fmtD(p, "in_service")}</span></span><span class="r">${p.cost ? money(p.cost) : "–"}</span></div>`).join("");
+  R.innerHTML = SOLO.slice(0, 300).map((p, i) => `<button type="button" class="tr" data-i="${i}"><span class="muted">${i + 1}</span><span class="dist"><span>${p.kv} kV</span><small>${esc(TYPE[p.type] || p.type)}</small></span>
+    <span class="pair"><span class="pp${isPast(p) ? " past" : ""}"><i class="a"></i>${esc(p.name)}</span></span><span class="ch"><span>${fmtD(p, "in_service")}</span></span><span class="r">${p.cost ? money(p.cost) : "–"}</span></button>`).join("");
   R.querySelectorAll(".tr").forEach(el => { const x = { p: SOLO[+el.dataset.i], solo: true }; el.onclick = () => select(x); });
 }
 
@@ -594,7 +600,7 @@ function renderChanges(P) {
     for (const p of [x.p, x.q]) if (p.drift && p.drift.months) r.push(`${lbl(p.utility)} moved ${short(p)} ${Math.abs(p.drift.months)} months ${p.drift.months > 0 ? "later" : "earlier"}`);
     return r.join("; ") + (REFS[keyOf(x)] ? ` · challenge reference ${REFS[keyOf(x)]}` : "");
   };
-  const list = xs => xs.map((x, i) => `<div class="tr lite" tabindex="0" data-k="${esc(keyOf(x))}"><span class="muted">${km(x.km)}</span><span class="pair"><span class="pp"><i class="a"></i>${esc(short(x.p))}</span><span class="pp"><i class="b"></i>${esc(short(x.q))}</span><small>${esc(why(x))}</small></span></div>`).join("") || `<div class="empty">None.</div>`;
+  const list = xs => xs.map((x, i) => `<button type="button" class="tr lite" data-k="${esc(keyOf(x))}"><span class="muted">${km(x.km)}</span><span class="pair"><span class="pp"><i class="a"></i>${esc(short(x.p))}</span><span class="pp"><i class="b"></i>${esc(short(x.q))}</span><small>${esc(why(x))}</small></span></button>`).join("") || `<div class="empty">None.</div>`;
   const u = k => S[k] ? `<div class="hist"><span><b>${esc(lbl(k))}</b> · ${S[k].n} projects with a history</span>${histogram(S[k].months, k === state.utilA ? "var(--u0)" : "var(--u1)")}<small>${S[k].slipped} later, ${S[k].advanced} earlier, ${S[k].n - S[k].slipped - S[k].advanced} unchanged · months moved between the last two plans</small><small class="muted">${esc(S[k].source)}</small></div>` : "";
   P.innerHTML = `<div class="detail"><h2>How dates moved between the last two plans</h2><div class="hists">${u(state.utilA)}${u(state.utilB)}</div>
     <p class="note">Seamline replays each pair with the dates the previous plan listed. These are the shared build windows the latest updates opened and closed.</p></div>
@@ -616,9 +622,9 @@ function renderOptimize(P) {
     <div class="thead opt"><span>#</span><span>Move</span><span>Shift</span><span class="r">Adds</span></div>
     <div class="rows">${o.moves.map((m, i) => {
       const best = m.pairs.slice().sort((a, b) => (b.after - b.before) - (a.after - a.before))[0], other = best ? (best.x.p === m.project ? best.x.q : best.x.p) : null;
-      return `<div class="tr opt" tabindex="0" data-i="${i}"><span class="muted">${i + 1}</span><span class="pair"><span class="pp"><i class="${m.project.utility === state.utilA ? "a" : "b"}"></i>${esc(short(m.project))}</span>
+      return `<button type="button" class="tr opt" data-i="${i}"><span class="muted">${i + 1}</span><span class="pair"><span class="pp"><i class="${m.project.utility === state.utilA ? "a" : "b"}"></i>${esc(short(m.project))}</span>
         <small>In service ${fmtD(m.from, "in_service")} → ${fmtD(m.to, "in_service")}</small>${other ? `<small>Best effect · ${esc(short(other))}: ${pct(best.before)} → ${pct(best.after)}</small>` : ""}</span>
-        <span class="${m.months > 0 ? "amber" : "blue"}"><b>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} mo</b></span><span class="r up"><b>+${money(m.gain)}</b></span></div>`;
+        <span class="${m.months > 0 ? "amber" : "blue"}"><b>${m.months > 0 ? "+" : "−"}${Math.abs(m.months)} mo</b></span><span class="r up"><b>+${money(m.gain)}</b></span></button>`;
     }).join("")}</div>
     <p class="note pad">Planning aid: assumes each date moves once more, like past plan updates, and that the utilities move independently.</p>`;
   $("#oMax").value = state.opt.maxShift; $("#oWho").value = state.opt.who;
@@ -801,21 +807,29 @@ function saveKey(k, remember) {
   try { sessionStorage.setItem("seamline.key", k); if (remember) localStorage.setItem("seamline.key", k); else localStorage.removeItem("seamline.key"); } catch (err) { /* storage blocked: key lives for this page only */ }
 }
 const SUGGEST = ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "How reliable is the data?"];
+// The panel leads with what it can do, not with a key field. The common questions are answered from the loaded plans
+// with no model at all (agent-offline.js), so opening with "Anthropic API key" in bold reads as a paywall on a feature
+// that is already working. The key is offered at the bottom, for the open-ended questions that do need it.
 function renderAsk(P) {
   P.dataset.view = "ask";
   const has = !!apiKey();
+  const keyForm = has
+    ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
+    : state.askKey
+      ? `<label for="kIn"><b>Anthropic API key</b></label><div class="ph-row"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" class="btn sm primary" id="kSave">Use key</button></div>
+        <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
+        <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
+      : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   P.innerHTML = `<div class="ask">
-    <div class="ask-key${has ? " set" : ""}">${has ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
-      : `<label for="kIn"><b>Anthropic API key</b></label><div class="ph-row"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" class="btn sm primary" id="kSave">Use key</button></div>
-      <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
-      <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else. Without a key you can still ask the common questions &mdash; they are answered from the same data by pattern, with no model.</span>`}</div>
-    <div class="ask-log" id="askLog">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
-      : `<div class="msg hint"><p>Ask about the planned projects, overlaps, plan changes or data quality. Answers come from the same data the map and tables show.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
+      : `<div class="msg hint"><p>Ask about the projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><div class="sugs">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div></div>`}
       ${CHAT.busy ? `<div class="msg tool">Thinking…</div>` : ""}</div>
-    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="Ask about the plans…" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form></div>`;
+    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="e.g. Which three date moves would save the most?" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
+    <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
-  if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); renderAsk(P); $("#askQ").focus(); } };
-  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } renderAsk(P); };
+  if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
+  if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); state.askKey = false; renderAsk(P); $("#askQ").focus(); } };
+  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; renderAsk(P); };
   P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => sendQuestion(b.textContent));
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
@@ -913,12 +927,16 @@ function openScheduleBrief(o, narrative) {
   showBrief();
 }
 const briefNote = text => text ? `<p class="b-note"><span>Assistant summary</span>${esc(String(text).slice(0, 1200))}</p>` : "";
-function showBrief() { $("#brief").hidden = false; $("#briefClose").focus(); }
+let returnFocus = null;
+function lockApp(on) { document.body.classList.toggle("modal-open", on); }
+function showBrief() { returnFocus = document.activeElement; $("#brief").hidden = false; lockApp(true); $("#briefClose").focus(); }
 function briefMap(x) {
   const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
   const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
-  if (pr.scale() > 60000) pr.scale(60000).translate(pr.translate());
+  if (pr.scale() > 60000) pr.scale(60000)
+    .center([(x.ca[1] + x.cb[1]) / 2, (x.ca[0] + x.cb[0]) / 2])
+    .translate([W / 2, H / 2]);
   const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
   const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#F1F2EE" stroke="#B9C0C4" stroke-width=".8"/>`).join("");
   const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" stroke="#8FB6CC" stroke-width="2.5"/>` : "";
@@ -928,7 +946,7 @@ function briefMap(x) {
     <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B42318" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B42318" stroke-width="1.5"/>
     <text x="10" y="${H - 10}" font-size="10" fill="#57606A">${esc(km(x.km))} at the closest points</text></svg>`;
 }
-function closeBrief() { $("#brief").hidden = true; }
+function closeBrief() { $("#brief").hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; }
 
 // ---------- 3D illustration (three.js) ----------
 const quality3d = () => { const q = store.get("3dquality", "high"); return Scene3D.QUALITY[q] ? q : "high"; };
@@ -1034,8 +1052,8 @@ function saveAssume(vals) {
 { const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
 // ---------- modals ----------
-function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
-function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
+function openModal(id) { const m = $("#" + id); returnFocus = document.activeElement; m.hidden = false; lockApp(true); const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
+function closeModal(id) { $("#" + id).hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
 
 // ---------- selection and refresh ----------
 function select(x) {
@@ -1081,7 +1099,7 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v;
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
 $("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("satellite"); };
-document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };

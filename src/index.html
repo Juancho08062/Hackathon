@@ -12,7 +12,8 @@
 
 <div class="app">
   <header class="appbar">
-    <a class="logo" href="#" aria-label="Seamline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18 9 6l6 12 6-12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Seamline</a>
+    <h1 class="logo"><a href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18 9 6l6 12 6-12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Seamline</a></h1>
+    <p class="tagline">Where two utilities' planned work is close enough, and soon enough, to share a crew</p>
     <div class="compare" role="group" aria-label="Utilities to compare">
       <span class="sw a" aria-hidden="true"></span><select id="utilA" aria-label="First utility"></select>
       <span class="vs" aria-hidden="true">↔</span>
@@ -67,14 +68,14 @@
     </section>
 
     <aside class="side" aria-label="Results">
-      <nav class="tabs" role="tablist" aria-label="Views">
-        <button type="button" role="tab" id="tab-overlaps" aria-selected="true" data-tab="overlaps">Overlaps <span class="n" id="n-overlaps"></span></button>
-        <button type="button" role="tab" id="tab-changes" aria-selected="false" data-tab="changes">Changes <span class="n" id="n-changes"></span></button>
-        <button type="button" role="tab" id="tab-optimize" aria-selected="false" data-tab="optimize">Optimize <span class="n" id="n-optimize"></span></button>
-        <button type="button" role="tab" id="tab-checks" aria-selected="false" data-tab="checks">Checks <span class="n" id="n-checks"></span></button>
-        <button type="button" role="tab" id="tab-ask" aria-selected="false" data-tab="ask">Ask</button>
+      <nav class="tabs" role="group" aria-label="Views">
+        <button type="button" id="tab-overlaps" aria-pressed="true" data-tab="overlaps">Overlaps <span class="n" id="n-overlaps"></span></button>
+        <button type="button" id="tab-changes" aria-pressed="false" data-tab="changes">Changes <span class="n" id="n-changes"></span></button>
+        <button type="button" id="tab-optimize" aria-pressed="false" data-tab="optimize">Optimize <span class="n" id="n-optimize"></span></button>
+        <button type="button" id="tab-checks" aria-pressed="false" data-tab="checks">Checks <span class="n" id="n-checks"></span></button>
+        <button type="button" id="tab-ask" aria-pressed="false" data-tab="ask">Ask</button>
       </nav>
-      <div class="panel" id="panel" role="tabpanel"></div>
+      <div class="panel" id="panel" aria-label="Selected view" tabindex="-1"></div>
     </aside>
   </main>
 </div>

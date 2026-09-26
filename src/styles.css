@@ -5,11 +5,11 @@
    blue and orange are the two utilities, red to grey is how close a pair is, green is a shared build window,
    amber marks something to check. */
 :root{
-  --bg:#FFFFFF; --panel:#FFFFFF; --panel2:#F6F8FA; --ink:#1B1F23; --ink2:#57606A; --ink3:#8C959F;
+  --bg:#FFFFFF; --panel:#FFFFFF; --panel2:#F6F8FA; --ink:#1B1F23; --ink2:#57606A; --ink3:#6E7781;
   --line:#D0D7DE; --grid:#EAEEF2; --land:#F4F4F1; --water:#E4EBEF; --river:#8FB6CC;
   --u0:#1668A8; --u1:#C4540E;
   --hot:#B42318; --hotsoft:#FFF5F4;
-  --t0:#B42318; --t1:#C4320A; --t2:#B54708; --t3:#6E7781;
+  --t0:#8F1D14; --t1:#C2410C; --t2:#D98014; --t3:#8C99A4;
   --time:#1A7F37; --amber:#9A6700; --amberbg:#FFF8C5; --blue:#0969DA;
   --seam:#8A5A1E;
   --shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.12);
@@ -22,7 +22,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#0D1117; --panel:#0D1117; --panel2:#161B22; --ink:#E6EDF3; --ink2:#9DA7B3; --ink3:#6E7781;
+    --bg:#0D1117; --panel:#0D1117; --panel2:#161B22; --ink:#E6EDF3; --ink2:#9DA7B3; --ink3:#8B949E;
     --line:#30363D; --grid:#21262D; --land:#1A1F24; --water:#0E141A; --river:#2F5D78;
     --u0:#4C9BE0; --u1:#F0883E;
     --hot:#F85149; --hotsoft:#2A1618;
@@ -33,7 +33,7 @@
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0D1117; --panel:#0D1117; --panel2:#161B22; --ink:#E6EDF3; --ink2:#9DA7B3; --ink3:#6E7781;
+  --bg:#0D1117; --panel:#0D1117; --panel2:#161B22; --ink:#E6EDF3; --ink2:#9DA7B3; --ink3:#8B949E;
   --line:#30363D; --grid:#21262D; --land:#1A1F24; --water:#0E141A; --river:#2F5D78;
   --u0:#4C9BE0; --u1:#F0883E;
   --hot:#F85149; --hotsoft:#2A1618;
@@ -78,19 +78,23 @@ select{padding-right:4px}
 .row{display:flex;flex-wrap:wrap;gap:6px}
 
 /* ---------- app frame ---------- */
-.app{height:100vh;display:grid;grid-template-rows:auto auto minmax(0,1fr)}
-.appbar{display:flex;align-items:center;gap:12px;padding:0 12px;height:46px;border-bottom:1px solid var(--line);background:var(--panel)}
-.logo{display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;color:var(--ink);text-decoration:none;padding-right:12px;border-right:1px solid var(--line);height:24px}
-.logo svg{width:18px;height:18px}
+.app{height:100vh;display:grid;grid-template-rows:auto auto minmax(0,1fr);grid-template-columns:minmax(0,1fr)}
+.appbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;row-gap:6px;padding:4px 12px;min-height:46px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1.logo{margin:0;font-size:14px}
+.logo a{display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;color:var(--ink);text-decoration:none;padding-right:12px;border-right:1px solid var(--line);height:24px}
+/* What the product is, in the place the eye lands first. The appbar used to open with a provenance citation. */
+.tagline{font-size:12px;color:var(--ink2);white-space:nowrap;margin:0}
+.logo a svg{width:18px;height:18px}
 .compare{display:flex;align-items:center;gap:6px}
-.compare select{font-weight:500;max-width:220px}
+.compare select{flex:1 1 auto;font-weight:500;max-width:220px;min-width:0}
 .compare .sw{width:10px;height:10px;border-radius:2px;background:var(--ua)} .compare .sw.b{background:var(--ub)}
 .compare .vs{color:var(--ink3)}
-.asof{color:var(--ink2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.asof{flex:1 1 120px;color:var(--ink2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .filterbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--panel2)}
 .filterbar.off>*:not(.summary){opacity:.45;pointer-events:none}
-.summary{color:var(--ink2);font-size:12px}
-.summary b{color:var(--ink);font-weight:600}
+.summary{display:flex;align-items:baseline;gap:16px;color:var(--ink2);font-size:12px;flex-wrap:wrap}
+.summary b{color:var(--ink);font-weight:600;font-size:19px;line-height:1}
+.summary .lead b{font-size:25px;color:var(--time)}
 .work{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,560px);min-height:0}
 .left{display:grid;grid-template-rows:minmax(0,1fr) 238px;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
 .side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
@@ -105,8 +109,10 @@ select{padding-right:4px}
 .lg-row span{display:inline-flex;align-items:center;gap:5px}
 .ln{display:inline-block;width:20px;height:3px;border-radius:2px}
 .ln.dash{background:repeating-linear-gradient(90deg,var(--ink2) 0 5px,transparent 5px 8px)}
-.ln.fade{background:var(--ink2);opacity:.3}
+.ln.fade{background:repeating-linear-gradient(90deg,var(--ink2) 0 3px,transparent 3px 6px);opacity:1}
 .rg{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid}
+/* A second, non-colour channel for the tier, so the ramp survives greyscale and colour blindness. */
+.rg.t2{border-style:dashed} .rg.t3{border-style:dotted}
 .sq{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--seam);border:1.5px solid var(--ink2)}
 .tilenote{position:absolute;top:48px;right:10px;z-index:2;max-width:320px;margin:0;padding:6px 10px;font-size:12px;background:var(--amberbg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm)}
 .ml-place{font:500 11px var(--body);color:var(--ml-place,#57606A);text-shadow:0 0 3px var(--land),0 0 3px var(--land);pointer-events:none;white-space:nowrap}
@@ -138,9 +144,9 @@ svg text{font-family:var(--body)}
 .tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
 .tabs button{font:inherit;font-size:13px;border:0;border-bottom:2px solid transparent;background:none;color:var(--ink2);padding:10px 12px 8px;cursor:pointer;white-space:nowrap}
 .tabs button:hover{color:var(--ink)}
-.tabs button[aria-selected=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+.tabs button[aria-pressed=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
 .tabs .n{font-weight:400;color:var(--ink2);margin-left:2px}
-.panel{flex:1;overflow:auto;min-height:0}
+.panel{flex:1;overflow:auto;min-height:0;scroll-padding-top:34px}
 .ph{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .ph-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ph-row input[type=search]{width:230px}
@@ -271,6 +277,8 @@ svg text{font-family:var(--body)}
 .b-memo dt{font-weight:600;color:#57606A;text-transform:uppercase;font-size:11px;letter-spacing:.08em;padding-top:2px}
 .b-memo dd{margin:0;font-weight:500}
 .b-lede{font-size:14px;margin:0 0 14px}
+/* Measure: the tables and the KPI grid need the full 704px, the prose does not. */
+.b-lede,.b-note,.b-yard,.b-foot,.brief ol,.brief ul{max-width:68ch}
 .b-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:center;margin-bottom:6px}
 .b-map{display:block;width:100%;height:auto;border:1px solid #D0D7DE}
 .b-kpis{display:grid;gap:10px}
@@ -299,9 +307,13 @@ svg text{font-family:var(--body)}
   body>*:not(#brief){display:none!important}
   .brief-wrap{position:static;background:none;padding:0}
   .brief-bar{display:none}
-  .brief{box-shadow:none;width:100%;padding:0;font-size:10.5px;line-height:1.35}
+  .brief{box-shadow:none;width:100%;padding:0;font-size:10pt;line-height:1.35}
+  .b-tab,.b-grid,.b-yard,.b-note{break-inside:avoid}
+  .b-tab tr{break-inside:avoid}
+  .brief h4{break-after:avoid}
+  .brief p,.brief li{orphans:3;widows:3}
   .b-lede{font-size:11.5px;margin-bottom:6px}
-  .b-map{max-height:135px;width:auto;max-width:100%}
+  .b-map{height:135px;width:auto;max-width:100%}
   .b-kpis b{font-size:18px}
   .brief h4{font-size:11px;margin:8px 0 2px}
   .b-tab{font-size:10.5px} .b-tab td{padding:3px 8px 3px 0}
@@ -330,15 +342,21 @@ svg text{font-family:var(--body)}
 .m3d-tag.big{font-size:13px}
 .m3d-tag.small{font-size:11px;font-weight:500}
 body.m3d-open .app{visibility:hidden}
+/* While a dialog is open the app behind it is neither tabbable nor readable, which is what aria-modal already
+   promises. Same mechanism the 3D view uses. */
+body.modal-open .app{visibility:hidden}
 
-/* ---------- small screens: stack map, timeline and panel ---------- */
-@media (max-width:1000px){
+/* ---------- small screens: stack map, timeline and panel ----------
+   The breakpoint sits above the appbar's natural width on purpose: below about 1180px the map, the timeline and
+   the panel each get too little room to read, and a projector at 1024px lands squarely in that range. */
+@media (max-width:1180px){
   .app{height:auto;min-height:100vh}
   .work{grid-template-columns:1fr}
   .left{grid-template-rows:62vh 220px;border-right:0}
   .side{border-top:1px solid var(--line)}
   .panel{overflow:visible}
   .asof{display:none}
+  .tagline{display:none}
 }
 @media (max-width:640px){
   .appbar{flex-wrap:wrap;height:auto;padding:8px 12px;gap:8px}
@@ -355,7 +373,7 @@ body.m3d-open .app{visibility:hidden}
 
 /* ---------- assistant ---------- */
 .ask{display:flex;flex-direction:column;height:100%;min-height:420px}
-.ask-key{display:grid;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.ask-key{display:grid;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--panel2)}
 .ask-key.set{display:flex;justify-content:space-between;align-items:center;font-size:12px}
 .ask-key input{flex:1;min-width:0}
 .ask-log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
