@@ -41,6 +41,7 @@
   const SMALLEST = ["smallest", "cheapest", "shortest", "lowest voltage", "mas pequeno", "mas barato", "mas corto", "menor voltaje"];
   const EARLIEST = ["earliest", "first to be built", "built first", "soonest", "mas pronto", "primero en construirse", "se construye primero", "mas temprano"];
   const LATEST = ["latest", "last to be built", "furthest out", "mas tarde", "ultimo en construirse", "mas lejano"];
+  const COMPARE = ["compare", "versus", " vs ", "difference between", "side by side", "compara", "comparar", "frente a", "diferencia entre", "contra"];
   const EXPLAIN = ["explain", "tell me about", "describe", "detail", "explica", "explicame", "contame", "detalle", "detalles de"];
   // Anchored on a word boundary: a plain substring search for "in the " also fires inside "explain the".
   const NEAR_RE = /\b(?:near|nearby|around|close to|cerca de|alrededor de|en las cercanias de)\s+(.+)$/;
@@ -91,6 +92,10 @@
 
     const pair = q.toUpperCase().match(PAIR_RE);
     if (pair) return plan("get_overlap", { key: `${pair[1]}|${pair[2]}` }, "pair key");
+
+    // "Compare A and B" is a question about the relationship between two projects, not about either one.
+    const named = ids(q);
+    if (named.length >= 2 && any(s, COMPARE)) return plan("compare_projects", { project_ids: named.slice(0, 5) }, ["compare", "two ids"]);
 
     if (any(s, CHECKS)) return plan("get_data_checks", {}, "data quality");
     if (any(s, CHANGES)) return plan("get_plan_changes", {}, "plan changes");
@@ -169,6 +174,7 @@
       expected: "expected savings",
       ifHold: "if dates hold",
       ref: "in the challenge's reference table",
+      flagged: "flagged as pair",
       noProject: "No project matches that.",
       projects: n => `${n} matching ${n === 1 ? "project" : "projects"}:`,
       inService: "in service",
@@ -200,6 +206,7 @@
       expected: "ahorro esperado",
       ifHold: "si las fechas se mantienen",
       ref: "está en la tabla de referencia del reto",
+      flagged: "marcado como par",
       noProject: "Ningún proyecto coincide con eso.",
       projects: n => `${n} ${n === 1 ? "proyecto coincide" : "proyectos coinciden"}:`,
       inService: "entra en servicio",
@@ -304,7 +311,21 @@
     return out.join("\n");
   }
 
+  function renderCompare(r, L, lang) {
+    const out = [];
+    (r.projects || []).forEach(p => out.push(`- ${renderProjectLine(p, L)}`));
+    out.push("");
+    (r.between || []).forEach(b => {
+      out.push(`**${b.projects}** — ${b.distance_km} km, ${tier(b.tier, lang)} · ${b.windows}`);
+      out.push(b.flagged_pair
+        ? `  - ${L.flagged} \`${b.flagged_pair}\` · ${L.expected} **${money(b.expected_savings_usd)}**`
+        : `  - ${b.why_not_flagged}`);
+    });
+    return out.join("\n");
+  }
+
   const RENDER = {
+    compare_projects: renderCompare,
     list_overlaps: renderPairs,
     get_overlap: renderOverlap,
     get_project: renderProject,

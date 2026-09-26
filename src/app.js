@@ -671,7 +671,7 @@ How Seamline measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
+The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
   { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
@@ -695,6 +695,8 @@ const TOOLS = [
   { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
   { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
   { name: "show_on_map", description: "Select a pair or a project in Seamline so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
+  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Seamline flagged them as a coordination pair. Use this for any question of the form 'compare A and B' — reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
+    project_ids: { type: "array", items: { type: "string" }, description: "Two to five project ids, e.g. ['DESC-11', 'IRP-20277']" } }, required: ["project_ids"] } },
   { name: "why_not", description: "Why two specific projects are NOT flagged as an opportunity: too far apart, the same utility, a location that could not be established, or one of them already likely built. Most pairs do not overlap, so use this whenever the user asks about a pair that is missing from the list rather than guessing at the reason.", input_schema: { type: "object", properties: {
     project_id_a: { type: "string", description: "A project id, e.g. DESC-12" },
     project_id_b: { type: "string", description: "The other project id, e.g. IRP-20277" } }, required: ["project_id_a", "project_id_b"] } },
@@ -705,6 +707,30 @@ const TOOLS = [
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing the proposal. The only text in the brief you write." },
     max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" } } } },
 ];
+// The shape of the loaded data, handed to the model with the system prompt. Without it every turn starts blind: the
+// model has to spend a tool call discovering how many projects there are, which utilities they belong to and what the
+// comparison found, before it can answer anything. With it, a one-line question gets a one-turn answer, and the model
+// knows what it is allowed to claim — that Georgia publishes no costs, and how many pairs were rejected.
+function dataDigest() {
+  const tiers = TIERS.slice(0, 4).map((t, k) => `${t.label}: ${RESULT.pairs.filter(x => x.tier === k).length}`).join(", ");
+  const priced = PROJECTS.filter(p => p.cost);
+  const dates = PROJECTS.map(p => p.in_service).filter(Boolean).sort();
+  const top = RESULT.pairs.slice(0, 5).map(x =>
+    `  ${keyOf(x)} — ${x.km.toFixed(1)} km, ${TIERS[Math.min(x.tier, 4)].label}, ${x.sameWindow ? "same window on paper" : `${Math.round(x.gap)} mo apart`}, expected ${Engine.fmtMoney(x.risk.expected)}`).join("\n");
+  const lines = [
+    `As of ${TODAY}. Comparing ${utilities().map(u => `${lblLong(u)} (${u}, ${PROJECTS.filter(p => p.utility === u).length} projects)`).join(" against ")}.`,
+    `In-service dates run ${dates[0]} to ${dates[dates.length - 1]}. ${priced.length} of ${PROJECTS.length} projects publish a cost; the rest are redacted in their filing, so no figure may be attributed to them.`,
+    `Filters in effect: within ${state.D} km, window buffer ±${state.B} months, match rule "${state.mode}".`,
+    `${RESULT.checked.toLocaleString("en-US")} pairs checked, ${RESULT.pairs.length} flagged. By tier: ${tiers}. ${RESULT.pairs.filter(x => x.sameWindow).length} share a build window on paper.`,
+    `Total expected savings ${Engine.fmtMoney(RESULT.pairs.reduce((a, x) => a + x.risk.expected, 0))}, or ${Engine.fmtMoney(RESULT.pairs.reduce((a, x) => a + x.sav.total, 0))} if every date holds.`,
+    `${borderline().length} further pairs fall just outside the ${state.D} km screen and are deliberately excluded from every ranking and total.`,
+    "",
+    "The five strongest pairs right now, so you can answer without a tool call when the question is about them:",
+    top,
+  ];
+  return lines.join("\n");
+}
+
 const projOut = p => ({ id: p.id, utility: p.utility, name: p.name, kv: p.kv, type: TYPE[p.type] || p.type, construction: `${p.start} to ${p.in_service}`, start_published: !!p.start_published,
   in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built,
   cost_usd: p.cost || null, cost_note: p.cost ? undefined : "not published in this utility's filing",
@@ -785,6 +811,32 @@ function runTool(name, i) {
     if (!p) throw new Error("Give a pair key or a project id.");
     SeamMap.fit(p.coords, { padKm: 6 });
     return { shown: p.name };
+  }
+  if (name === "compare_projects") {
+    const ids = (Array.isArray(i.project_ids) ? i.project_ids : []).map(v => String(v || "").toUpperCase()).slice(0, 5);
+    if (ids.length < 2) throw new Error("Give at least two project ids.");
+    const ps = ids.map(id => {
+      const p = PROJECTS.find(v => v.id === id);
+      if (!p) throw new Error(`No project with id ${id}. Use search_projects to find its id.`);
+      return p;
+    });
+    // Every unordered pair among them, since "compare A and B" is really a question about the relationship.
+    const between = [];
+    for (let a = 0; a < ps.length; a++) for (let b = a + 1; b < ps.length; b++) {
+      const p = ps[a], q = ps[b], km = Engine.closest(p, q)[0], ov = Engine.windowOverlap(p, q);
+      const flagged = RESULT.pairs.find(x => (x.p === p && x.q === q) || (x.p === q && x.q === p));
+      between.push({
+        projects: `${p.id} and ${q.id}`,
+        same_utility: p.utility === q.utility,
+        distance_km: +km.toFixed(2),
+        tier: km <= state.D ? TIERS[Math.min(Engine.tierOf(km), 4)].label : `beyond the ${state.D} km screen`,
+        windows: ov > 0 ? `${Math.round(ov)} months shared` : `${Math.round(-ov)} months apart`,
+        flagged_pair: flagged ? keyOf(flagged) : null,
+        expected_savings_usd: flagged ? Math.round(flagged.risk.expected) : null,
+        why_not_flagged: flagged ? null : runTool("why_not", { project_id_a: p.id, project_id_b: q.id }).explanation,
+      });
+    }
+    return { projects: ps.map(p => Object.assign(projOut(p), { description: p.desc || null, plan_drift: p.drift || null })), between };
   }
   if (name === "why_not") {
     const p = PROJECTS.find(v => v.id === String(i.project_id_a).toUpperCase()), q = PROJECTS.find(v => v.id === String(i.project_id_b).toUpperCase());
@@ -1081,7 +1133,10 @@ async function sendQuestion(q) {
   CHAT.messages.push({ role: "user", content: q });
   try {
     const answerIn = askLang() === "es" ? "Answer in Spanish." : "Answer in English.";
-    const r = await SeamAgent.ask({ apiKey: apiKey(), system: `${SYSTEM}\n\n${answerIn}`, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
+    // The digest goes after the prompt and before the conversation, so the stable part of the request stays stable and
+    // only changes when the data or the filters do.
+    const system = `${SYSTEM}\n\n## What is loaded right now\n\n${dataDigest()}\n\n${answerIn}`;
+    const r = await SeamAgent.ask({ apiKey: apiKey(), system, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
       onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
     finish(r.text + (r.truncated ? "\n\n(The answer was cut short.)" : ""));
   } catch (err) {
