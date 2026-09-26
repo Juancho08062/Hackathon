@@ -160,3 +160,10 @@ select{font-weight:500;min-width:0}
 .maphint{padding:8px 14px;border-top:1px solid var(--line)}
 @media (max-width:900px){.import-grid,.fields{grid-template-columns:1fr}#openImport{margin-left:0}}
 .compare select{flex:1 1 180px;min-width:0}
+.bm select{padding:3px 8px;font-size:13px;font-family:var(--body);font-weight:400}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mapfoot{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:center;padding:0 14px}
+.mapfoot:has(.attr:empty):has(.tilenote[hidden]){display:none}
+.attr{font-size:11px;color:var(--ink3);margin-left:auto;padding:4px 0}
+.tilenote{color:var(--hot);margin:6px 0}
+#map image{image-rendering:auto}
