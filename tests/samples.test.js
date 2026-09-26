@@ -20,11 +20,11 @@ const file = name => {
   return { name, text: async () => buf.toString("utf8"), arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) };
 };
 // Same steps as importParsed in src/app.js.
-async function load(names) {
+async function load(names, extra = {}) {
   const out = [];
   for (const r of await F.read(names.map(file))) {
     if (r.error) throw new Error(`${r.name}: ${r.error}`);
-    const d = { utility: r.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ") };
+    const d = Object.assign({ utility: r.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ") }, extra);
     out.push(r.rows ? I.parseRows(r.rows, d) : r.geojson ? I.parseGeoJSON(r.geojson, d) : I.parsePlan(r.text, r.name, d));
   }
   return out;
@@ -37,7 +37,7 @@ function nearest(projects) {
 }
 
 const EXPECT = [
-  // file, utility, projects loaded, rows skipped, nearest built-in project must be within this many km
+  // file, utility, projects loaded, rows skipped, nearest built-in project must be within this many km, import panel defaults
   ["lowcountry-power.csv", "Lowcountry Power Cooperative", 5, 0, 1],
   ["aiken-edgefield-electric.tsv", "Aiken-Edgefield Electric Cooperative", 4, 0, 5],
   ["ogeechee-transmission.json", "Ogeechee Transmission Cooperative", 4, 0, 5],
@@ -46,12 +46,13 @@ const EXPECT = [
   ["savannah-river-transmission.kml", "Savannah River Transmission Co.", 3, 0, 5],
   ["piedmont-lakes-electric.kmz", "Piedmont Lakes Electric", 3, 0, 5],
   ["tri-county-grid-shapefile.zip", "Tri-County Grid Cooperative", 5, 0, 5],
+  ["edisto-electric-survey.gpx", "Edisto Electric Cooperative", 3, 0, 1, { utility: "Edisto Electric Cooperative", in_service: "2029-06-30", start: "2028-01-01" }],
 ];
 
 let n = 0;
 (async () => {
-  for (const [name, utility, count, skipped, maxKm] of EXPECT) {
-    const [res] = await load([name]);
+  for (const [name, utility, count, skipped, maxKm, extra] of EXPECT) {
+    const [res] = await load([name], extra);
     assert.strictEqual(res.projects.length, count, `${name}: loaded ${res.projects.length}, errors: ${res.errors.join("; ")}`);
     assert.strictEqual(res.errors.length, skipped, `${name}: ${res.errors.join("; ")}`);
     assert(res.projects.every(p => p.utility === utility), `${name}: utility ${res.projects[0].utility}`);
@@ -81,8 +82,15 @@ let n = 0;
   assert.strictEqual(kml.projects.find(p => /Vogtle/.test(p.name)).kv, 500);
   n++; console.log("ok - KML: attributes read from the HTML table in each description");
 
+  const [bare] = await load(["edisto-electric-survey.gpx"]);
+  assert.strictEqual(bare.projects.length, 0); assert.match(bare.errors[0], /default in-service date/);
+  const [gpx] = await load(["edisto-electric-survey.gpx"], { in_service: "2029" });
+  assert(gpx.projects.every(p => p.in_service === "2029-06-01" && !p.start_published));
+  assert.strictEqual(gpx.projects.find(p => /Route/.test(p.name)).coords.length, 5);
+  n++; console.log("ok - GPX: needs a default in-service date, then loads the route and waypoints");
+
   // Loading every sample together gives eight utilities, each with overlaps against DESC or Georgia.
-  const all = (await load(EXPECT.map(e => e[0]))).flatMap(r => r.projects);
+  const all = (await Promise.all(EXPECT.map(e => load([e[0]], e[5])))).flat().flatMap(r => r.projects);
   const withBuiltin = builtin.concat(all);
   for (const [, utility] of EXPECT) {
     const hits = ["DESC", "GPC"].map(u => E.findOverlaps(withBuiltin, { utilA: utility, utilB: u, maxKm: 40, bufferMonths: 0, mode: "near" }).pairs.length);

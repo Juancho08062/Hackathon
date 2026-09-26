@@ -236,6 +236,8 @@ select{font-weight:500;min-width:0}
         <div class="fields">
           <div><label for="impUtil">Utility name <span class="note">(used when the file has no utility column)</span></label><input id="impUtil" type="text" placeholder="e.g. Santee Cooper" autocomplete="off"></div>
           <div><label for="impSrc">Source link <span class="note">(optional)</span></label><input id="impSrc" type="url" placeholder="https://… plan PDF or data page" autocomplete="off"></div>
+          <div><label for="impIsd">Default in-service date <span class="note">(for rows without one, like GPX)</span></label><input id="impIsd" type="text" placeholder="e.g. 2029 or 2029-06-30" autocomplete="off"></div>
+          <div><label for="impStart">Default construction start <span class="note">(optional)</span></label><input id="impStart" type="text" placeholder="estimated if blank" autocomplete="off"></div>
         </div>
         <label class="drop" id="drop" for="file">
           <input id="file" type="file" multiple>
@@ -543,12 +545,12 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       coords = [[lat, lon]].concat(lat2 != null && lon2 != null ? [[lat2, lon2]] : []);
     }
     if (coords.some(([a, b]) => Math.abs(a) > 90 || Math.abs(b) > 180)) return { error: "coordinates out of range" };
-    const isd = toDate(pick(row, "in_service"));
-    if (!isd) return { error: "no in-service date" };
+    const isd = toDate(pick(row, "in_service")) || toDate(defaults.in_service);
+    if (!isd) return { error: "no in-service date (add a column, or set a default in-service date above)" };
     const kv = num(pick(row, "kv")) || 115;
     const type = toType(pick(row, "type") || name, coords.length > 1);
     const kmv = num(pick(row, "km")), miles = num(pick(row, "miles")) ?? (kmv ? kmv / 1.609 : null);
-    const st = toDate(pick(row, "start"));
+    const st = toDate(pick(row, "start")) || toDate(defaults.start);
     return {
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),
@@ -1656,7 +1658,7 @@ function importParsed(input, filename) {
   const id = "ds-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   // Without a utility column or a typed name, fall back to the file name so the rows still load.
   const fromName = filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
-  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), batch: id };
+  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), in_service: $("#impIsd").value.trim(), start: $("#impStart").value.trim(), batch: id };
   try {
     if (input.error) throw new Error(input.error);
     const res = input.rows ? Ingest.parseRows(input.rows, defaults)

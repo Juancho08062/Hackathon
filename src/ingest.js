@@ -96,12 +96,12 @@
       coords = [[lat, lon]].concat(lat2 != null && lon2 != null ? [[lat2, lon2]] : []);
     }
     if (coords.some(([a, b]) => Math.abs(a) > 90 || Math.abs(b) > 180)) return { error: "coordinates out of range" };
-    const isd = toDate(pick(row, "in_service"));
-    if (!isd) return { error: "no in-service date" };
+    const isd = toDate(pick(row, "in_service")) || toDate(defaults.in_service);
+    if (!isd) return { error: "no in-service date (add a column, or set a default in-service date above)" };
     const kv = num(pick(row, "kv")) || 115;
     const type = toType(pick(row, "type") || name, coords.length > 1);
     const kmv = num(pick(row, "km")), miles = num(pick(row, "miles")) ?? (kmv ? kmv / 1.609 : null);
-    const st = toDate(pick(row, "start"));
+    const st = toDate(pick(row, "start")) || toDate(defaults.start);
     return {
       project: {
         id: `${String(utility).replace(/\W+/g, "")}-${defaults.batch}-${i}`, utility: String(utility).trim(), owner: String(utility).trim(),

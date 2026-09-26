@@ -315,7 +315,7 @@ function importParsed(input, filename) {
   const id = "ds-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   // Without a utility column or a typed name, fall back to the file name so the rows still load.
   const fromName = filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
-  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), batch: id };
+  const defaults = { utility: $("#impUtil").value.trim() || fromName, source: $("#impSrc").value.trim(), in_service: $("#impIsd").value.trim(), start: $("#impStart").value.trim(), batch: id };
   try {
     if (input.error) throw new Error(input.error);
     const res = input.rows ? Ingest.parseRows(input.rows, defaults)
