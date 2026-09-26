@@ -321,4 +321,19 @@ t("3D tag voltage is the project's own kv, and flags a title that disagrees", ()
   assert.deepStrictEqual(projects.filter(p => E.kvOf(p).titleKv).map(p => p.name), [rp.name]);
 });
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
+// Geo's mini map is clipped to its frame, so most state outlines fall outside it; each of those used to be drawn as
+// d="null", one console error per state on every render of the chat. The map is built the way app.js builds it.
+t("a clipped mini map draws no null path data", () => {
+  const d3 = require("../vendor/d3.min.js");
+  const states = require("../data/basemap.json").states.map(v => v.g);
+  const p = projects.find(v => v.id === "DESCP-31"), q = projects.find(v => v.id === "IRP-20793");
+  const feat = v => ({ type: "MultiLineString", coordinates: E.partsOf(v).filter(c => c.length > 1).map(c => c.map(w => [w[1], w[0]])) });
+  const pr = d3.geoMercator().fitExtent([[26, 22], [294, 140]], { type: "FeatureCollection", features: [p, q].map(v => ({ type: "Feature", geometry: feat(v) })) });
+  pr.clipExtent([[-4, -4], [324, 152]]);
+  const path = d3.geoPath(pr);
+  assert(states.some(g => path(g) == null), "the frame should leave some states out, or this test proves nothing");
+  const ds = E.svgPaths(path, states);
+  assert(ds.length > 0 && ds.length < states.length);
+  assert(ds.every(d => typeof d === "string" && d.length && !/null|NaN/.test(d)));
+});
 console.log(`\n${n} tests passed`);
