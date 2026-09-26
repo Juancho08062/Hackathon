@@ -320,6 +320,86 @@ function drawYards(focus) {
     .on("mouseleave", hideTip).on("click", (ev, d) => { if (d.c) select({ cluster: d.c }); });
 }
 
+// ---------- motion ----------
+// Modeled on the Bellows Digital site's motion: long soft ease-outs, staggered entrances, scroll reveals, a pointer
+// spotlight and pressable buttons. Everything is skipped when the system asks for reduced motion.
+const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+// Count the numbers inside a stat from what they showed before to what they show now ("~$3.2M" to "~$4.0M").
+const shown = new Map();
+function countUp(el, key) {
+  const to = el.textContent, from = shown.get(key);
+  shown.set(key, to);
+  const nums = s => (s.match(/\d[\d,]*(?:\.\d+)?/g) || []).map(v => parseFloat(v.replace(/,/g, "")));
+  const a = from == null ? nums(to).map(() => 0) : nums(from), b = nums(to);
+  if (still() || a.length !== b.length || a.every((v, i) => v === b[i])) return;
+  const fmt = (tok, v) => { const dec = (tok.split(".")[1] || "").length, s = v.toFixed(dec); return tok.includes(",") || (v >= 1000 && !dec) ? Number(s).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec }) : s; };
+  const t0 = performance.now(), D = 900;
+  const step = now => {
+    if (shown.get(key) !== to || !el.isConnected) return; // a newer value took over
+    const k = easeOut(Math.min(1, (now - t0) / D));
+    let i = 0;
+    el.textContent = to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k));
+    if (k < 1) requestAnimationFrame(step); else el.textContent = to;
+  };
+  requestAnimationFrame(step);
+}
+// Rows cascade in only when the set of rows changes, not on hover or selection.
+let lastRows = "";
+function cascade(list, key) {
+  if (key === lastRows) return; lastRows = key;
+  if (still()) return;
+  [...list.children].slice(0, 14).forEach((el, i) => { el.style.setProperty("--i", i); el.classList.add("enter"); el.addEventListener("animationend", () => el.classList.remove("enter"), { once: true }); });
+}
+function enterDetail() {
+  const d = $("#detail .detail");
+  if (!d || still()) return;
+  [...d.children].forEach((c, i) => c.style.setProperty("--i", Math.min(i, 8)));
+  d.classList.add("enter");
+}
+// Glide the map to a pair's meeting point, or to a cluster's yard and its sites.
+function flyTo(x) {
+  if (x.solo || !zoomBehavior) return;
+  const pts = x.cluster ? [x.cluster.yard.at, ...x.cluster.yard.spokes] : [x.ca, x.cb];
+  const pad = x.cluster ? 6 : Math.max(6, x.km * 0.6); // km of breathing room around the points
+  const xy = pts.map(c => proj([c[1], c[0]])), c0 = pts[0], kmPx = Math.abs(proj([c0[1] + pad / (111.32 * Math.cos(c0[0] * Math.PI / 180)), c0[0]])[0] - xy[0][0]);
+  const x0 = Math.min(...xy.map(p => p[0])) - kmPx, x1 = Math.max(...xy.map(p => p[0])) + kmPx, y0 = Math.min(...xy.map(p => p[1])) - kmPx, y1 = Math.max(...xy.map(p => p[1])) + kmPx;
+  const k = Math.max(1, Math.min(8, 0.85 * Math.min(MW / (x1 - x0), MH / (y1 - y0))));
+  const t = d3.zoomIdentity.translate(MW / 2 - k * (x0 + x1) / 2, MH / 2 - k * (y0 + y1) / 2).scale(k);
+  d3.select("#map").transition().duration(still() ? 0 : 1100).ease(d3.easeCubicInOut).call(zoomBehavior.transform, t);
+}
+// Play a closing animation, then hide.
+function closeAnimated(el, done) {
+  if (still() || el.hidden) return done();
+  el.classList.add("closing");
+  setTimeout(() => { el.classList.remove("closing"); done(); }, 300);
+}
+function setupMotion() {
+  const bar = document.createElement("div"); bar.className = "progress"; bar.setAttribute("aria-hidden", "true"); document.body.prepend(bar);
+  const onScroll = () => { const h = document.documentElement.scrollHeight - innerHeight; document.documentElement.style.setProperty("--sp", h > 0 ? (scrollY / h).toFixed(4) : 0); };
+  addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  const h1 = $(".hero h1");
+  h1.setAttribute("aria-label", h1.textContent);
+  h1.innerHTML = `<span class="mask" aria-hidden="true">${[...h1.textContent].map((c, i) => `<span class="ch" style="--i:${i}">${esc(c)}</span>`).join("")}</span>`;
+  const hero = $(".hero");
+  if (matchMedia("(hover: hover)").matches) {
+    hero.addEventListener("pointermove", e => { const r = hero.getBoundingClientRect(); hero.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%"); hero.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%"); });
+    document.querySelectorAll(".btn.primary").forEach(b => {
+      b.addEventListener("pointermove", e => { if (still()) return; const r = b.getBoundingClientRect(); b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.18}px, ${(e.clientY - r.top - r.height / 2) * 0.3}px)`; });
+      b.addEventListener("pointerleave", () => { b.style.transform = ""; });
+    });
+  }
+  const top = [hero, $(".bar"), $("#stats"), $("#tiers"), ...document.querySelectorAll(".main>.card")];
+  top.forEach((el, i) => { el.classList.add("rise"); el.style.setProperty("--i", i); });
+  const later = [$(".card:has(#tl)"), $("#assume"), $(".foot")].filter(Boolean);
+  if ("IntersectionObserver" in window) {
+    later.forEach(el => el.classList.add("reveal"));
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); } }), { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+    later.forEach(el => io.observe(el));
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => top.forEach(el => el.classList.add("in"))));
+}
+
 function renderStats() {
   if (solo()) {
     const ps = PROJECTS.filter(p => p.utility === state.utilA), costs = ps.map(Engine.estCost);
@@ -331,6 +411,7 @@ function renderStats() {
       [ps.length ? `${Math.min(...years)}–${Math.max(...years)}` : "–", `in-service years`],
       [ps.length ? "~" + money(costs.reduce((t, c) => t + c.v, 0)) : "–", `total cost, listed or estimated`],
     ].map(([b, t]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join("");
+    $("#stats").querySelectorAll("b").forEach((b, i) => countUp(b, "stat" + i));
     return;
   }
   const nA = PROJECTS.filter(p => p.utility === state.utilA).length, nB = PROJECTS.filter(p => p.utility === state.utilB).length;
@@ -343,6 +424,7 @@ function renderStats() {
     [`${both.length}`, `of those are built in the same window`],
     [total ? "~" + money(total) : "–", "rough savings if the listed pairs coordinate"],
   ].map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
+  $("#stats").querySelectorAll("b").forEach((b, i) => countUp(b, "stat" + i));
 }
 function renderTiers() {
   $("#tiers").hidden = solo();
@@ -352,6 +434,7 @@ function renderTiers() {
     const on = state.tiers.has(i);
     return `<button type="button" class="tier" aria-pressed="${on}" data-t="${i}" style="--c:var(${t.tok})"><b>${n}</b><span class="tb"><span class="tl">${t.label}</span><span class="tm">${t.means}</span><span class="tn">${nt} in the same build window</span></span></button>`;
   }).join("");
+  $("#tiers").querySelectorAll(".tier b").forEach((b, i) => countUp(b, "tier" + i));
   $("#tiers").querySelectorAll(".tier").forEach(b => b.onclick = () => {
     const i = +b.dataset.t;
     if (state.tiers.has(i) && state.tiers.size > 2) state.tiers.delete(i); else state.tiers.add(i);
@@ -401,6 +484,7 @@ function renderSoloList() {
     <div class="rank">${i + 1}</div>
     <div class="pn"><div class="tierline"><span class="tchip">${esc(TYPE[p.type] || p.type)}</span><span class="kmv">${p.kv} kV</span>${p.cost ? `<span class="chip save">${money(p.cost)}</span>` : ""}</div>
       ${pn(p, "a")}</div></div>`).join("") + (SOLO.length > 200 ? `<div class="empty">Showing the first 200 of ${SOLO.length}.</div>` : "");
+  cascade(L, "solo|" + SOLO.slice(0, 14).map(p => p.id).join());
   L.querySelectorAll(".pair").forEach(el => {
     const x = { p: SOLO[+el.dataset.i], solo: true };
     el.onclick = () => select(x);
@@ -420,6 +504,7 @@ function renderList() {
     <div class="rank">${i + 1}</div>
     <div class="pn"><div class="tierline"><span class="tchip">${TIERS[x.tier].short}</span><span class="kmv">${km(x.km)}</span>${x.sameWindow ? `<span class="chip time">${x.ov > 0 ? Math.round(x.ov) + " mo same window" : "within buffer"}</span>` : `<span class="chip">${Math.round(x.gap)} mo apart</span>`}${x.sav.total ? `<span class="chip save">~${money(x.sav.total)}</span>` : ""}</div>
       ${pn(x.p, "a")}<br>${pn(x.q, "b")}</div></div>`).join("") + (VIEW.length > 60 ? `<div class="empty">Showing the top 60 of ${VIEW.length}.</div>` : "");
+  cascade(L, VIEW.slice(0, 14).map(x => x.p.id + "|" + x.q.id).join());
   L.querySelectorAll(".pair").forEach(el => {
     const x = VIEW[+el.dataset.i];
     el.onclick = () => select(x);
@@ -608,7 +693,7 @@ function briefMap(x) {
     ${x.tier <= 3 ? (() => { const y = P(pairYard(x).at); return `<rect x="${y[0] - 5}" y="${y[1] - 5}" width="10" height="10" fill="#9A6B2F" stroke="#fff" stroke-width="1.5"/>`; })() : ""}
     <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points${x.tier <= 3 ? " · square: shared yard" : ""}</text></svg>`;
 }
-function closeBrief() { $("#brief").hidden = true; }
+function closeBrief() { closeAnimated($("#brief"), () => { $("#brief").hidden = true; }); }
 // 3D quality: Standard, High (default) or Ultra, remembered between visits.
 const quality3d = () => { try { const q = localStorage.getItem("seamline.3dq"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
 function open3d(x) {
@@ -775,7 +860,12 @@ try { const a = JSON.parse(localStorage.getItem("seamline.assume") || "null"); i
 $("#asmReset").onclick = () => saveAssume({});
 renderAssume();
 
-function select(x) { if (!x || !state.wi || state.wi.key !== (x.p && x.q ? x.p.id + "|" + x.q.id : "")) state.wi = null; state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline(); }
+function select(x) {
+  if (!x || !state.wi || state.wi.key !== (x.p && x.q ? x.p.id + "|" + x.q.id : "")) state.wi = null;
+  const changed = x !== state.sel;
+  state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline();
+  if (changed && x) { enterDetail(); flyTo(x); } else if (changed && zoomBehavior) d3.select("#map").transition().duration(still() ? 0 : 900).ease(d3.easeCubicInOut).call(zoomBehavior.transform, d3.zoomIdentity);
+}
 function refresh() {
   $("#distv").textContent = `${state.D} km (${Math.round(state.D / 1.609)} mi)`;
   $("#bufv").textContent = `±${state.B} mo`;
@@ -818,9 +908,10 @@ $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-p
 try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
 $("#m3dQ").value = quality3d();
 $("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dq", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
-$("#m3dClose").onclick = () => Scene3D.close();
-$("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
-addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) Scene3D.close(); });
+const close3d = () => closeAnimated($("#m3d"), () => Scene3D.close());
+$("#m3dClose").onclick = close3d;
+$("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") close3d(); });
+addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) close3d(); });
 $("#zin").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1.6);
 $("#zout").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.6);
 $("#zreset").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.transform, d3.zoomIdentity);
@@ -851,4 +942,5 @@ const redraw = () => { drawMap(); legend(); refresh(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 renderDatasets();
+setupMotion();
 rebuild();

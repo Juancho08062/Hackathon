@@ -384,4 +384,62 @@ svg text{font-family:var(--body)}
   .m3d-head h2{font-size:18px}
 }
 @media (max-width:520px){.tiers,.stats{grid-template-columns:minmax(0,1fr)}.hero-facts li{flex:1 1 40%}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ---------- motion ----------
+   One easing for everything that settles (a long, soft ease-out), one with a small overshoot for things that pop.
+   Only opacity and transform animate, so it stays at 60 fps. */
+:root{--ease:cubic-bezier(.22,1,.36,1);--ease-pop:cubic-bezier(.34,1.56,.64,1)}
+.progress{position:fixed;z-index:40;top:0;left:0;width:100%;height:3px;transform-origin:0 50%;transform:scaleX(var(--sp,0));background:linear-gradient(90deg,var(--seam),#FF5C7F);pointer-events:none}
+/* page load: sections rise in one after another */
+.rise{opacity:0;transform:translateY(16px)}
+.rise.in{opacity:1;transform:none;transition:opacity .7s var(--ease) calc(var(--i,0) * 80ms),transform .9s var(--ease) calc(var(--i,0) * 80ms)}
+/* the title's letters slide up out of a mask */
+.hero h1 .ch{display:inline-block;transform:translateY(105%);transition:transform .9s var(--ease) calc(120ms + var(--i) * 45ms)}
+.hero h1 .mask{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.06em}
+.hero.in h1 .ch{transform:none}
+/* a soft light follows the pointer across the header */
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(460px circle at var(--mx,78%) var(--my,20%),rgba(127,211,234,.16),transparent 62%)}
+.hero-facts li{transition:transform .45s var(--ease),background .3s,border-color .3s}
+.hero-facts li:hover{transform:translateY(-3px);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+/* sections further down fade up when they scroll into view */
+.reveal{opacity:0;transform:translateY(28px)}
+.reveal.visible{opacity:1;transform:none;transition:opacity .9s var(--ease),transform 1s var(--ease)}
+/* buttons press in; the main ones lean toward the pointer */
+.btn{transition:border-color .15s,background .15s,transform .35s var(--ease),box-shadow .35s var(--ease)}
+.btn:active{transform:scale(.96);transition-duration:.12s}
+.btn.primary:hover{box-shadow:0 8px 20px -8px var(--hot)}
+.stat{transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+.stat:hover{transform:translateY(-3px);box-shadow:0 14px 30px -18px rgba(0,0,0,.45)}
+.stat b{font-variant-numeric:tabular-nums}
+/* tier filters: a pressed card lifts and its color bar grows; an off card sinks back */
+.tier{transition:opacity .4s var(--ease),border-color .3s,transform .45s var(--ease),box-shadow .45s var(--ease)}
+.tier:hover{transform:translateY(-3px);box-shadow:0 14px 30px -18px var(--c)}
+.tier::before{transition:width .45s var(--ease),background .3s}
+.tier[aria-pressed=true]:hover::before{width:7px}
+.tier[aria-pressed=false]{transform:scale(.98)}
+.tier b{transition:transform .5s var(--ease-pop)}
+.tier[aria-pressed=true] b{transform:none}
+.tier[aria-pressed=false] b{transform:scale(.9)}
+/* list rows cascade in when the list changes; the open pair slides in */
+.pair{transition:background .2s,transform .35s var(--ease)}
+.pair:hover{transform:translateX(3px)}
+.pair.enter{animation:rowIn .6s var(--ease) both;animation-delay:calc(var(--i,0) * 35ms)}
+@keyframes rowIn{from{opacity:0;transform:translateX(14px)}}
+.detail.enter{animation:panelIn .6s var(--ease) both}
+.detail.enter>*{animation:rowIn .6s var(--ease) both;animation-delay:calc(var(--i,0) * 50ms)}
+@keyframes panelIn{from{opacity:0;transform:translateY(-10px)}}
+.cl{transition:transform .35s var(--ease),border-color .2s,background .2s}
+.cl:hover{transform:translateX(3px)}
+/* 3D view and brief open like a card lifting toward you, and settle away when closed */
+.m3d:not([hidden]),.brief-wrap:not([hidden]){animation:fadeIn .35s ease both}
+.m3d:not([hidden]) .m3d-box,.brief-wrap:not([hidden]) .brief{animation:boxIn .7s var(--ease) both}
+.m3d.closing,.brief-wrap.closing{animation:fadeOut .3s ease both}
+.m3d.closing .m3d-box,.brief-wrap.closing .brief{animation:boxOut .3s var(--ease) both}
+@keyframes fadeIn{from{opacity:0}} @keyframes fadeOut{to{opacity:0}}
+@keyframes boxIn{from{opacity:0;transform:translateY(24px) scale(.95)}}
+@keyframes boxOut{to{opacity:0;transform:translateY(12px) scale(.97)}}
+.m3d-tag{transition:opacity .3s}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .rise,.reveal{opacity:1;transform:none}
+  .hero h1 .ch{transform:none}
+}
