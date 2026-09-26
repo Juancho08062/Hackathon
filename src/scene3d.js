@@ -12,6 +12,10 @@
   };
 
   let ctx = null, last = null, walkCtl = null;
+  // Extension points for add-on files (loaded after this one) to plug in without editing it:
+  //   hooks.vehicle(T, bag, kind, x, y, z, rot, k, put) returns true when it built that kind itself;
+  //   hooks.setupRender({ T, renderer, scene, cam, composer, Q, built }) runs once per open, before the first frame.
+  const hooks = { vehicle: null, setupRender: null };
   // Two looks. Detailed (the default) is the stylized scene with full models, ambient occlusion and SMAA.
   // Ultra-realistic adds texture maps, galvanized steel and bare aluminum wires, loblolly pines, denser ground
   // cover, finer terrain and a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass
@@ -169,6 +173,7 @@
   // Real proportions in meters (x forward, y up, origin at ground under the middle), then placed with a matrix.
   // Kinds: pickup, flatbed (with a cable reel), bucket truck, all-terrain crane, excavator.
   function vehicle(T, B, kind, x, y, z, rot, k) {
+    if (hooks.vehicle && hooks.vehicle(T, B, kind, x, y, z, rot, k, put)) return;
     const P = {}, box = (key, w, h, d, px, py, pz) => put(P, key, boxAt(T, w, h, d, px, py, pz));
     const wheel = (px, pz, r, w) => { put(P, "tire", cylZ(T, r, r, w, 18, px, r, pz)); put(P, "rim", cylZ(T, r * 0.58, r * 0.58, w + 0.02, 12, px, r, pz)); };
     const cabAt = (cx, w, h, d, y0, color) => {
@@ -1073,6 +1078,7 @@
       const fxaa = Q.smaa ? null : new T.ShaderPass(T.FXAAShader), smaa = Q.smaa ? new T.SMAAPass(1, 1) : null;
       composer.addPass(fxaa || smaa);
 
+      if (hooks.setupRender) hooks.setupRender({ T, renderer, scene: built.scene, cam, composer, Q, built });
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
         stageW = w; stageH = h;
@@ -1139,5 +1145,5 @@
   const reopen = quality => { if (last && !document.getElementById("m3d").hidden) open(last.pair, Object.assign({}, last.opts, { quality })); };
   // Escape in the page first stops walking, then closes the view.
   const isWalking = () => !!(walkCtl && walkCtl.on()), stopWalking = () => walkCtl && walkCtl.off();
-  root.Scene3D = { open, close, reopen, QUALITY, qualityKey, isWalking, stopWalking };
+  root.Scene3D = { open, close, reopen, QUALITY, qualityKey, isWalking, stopWalking, hooks };
 })(this);
