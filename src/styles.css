@@ -399,7 +399,7 @@ body.m3d-open .app{visibility:hidden}
 .tabs button{padding:10px 10px 8px}
 
 /* ---------- drop-in walker ---------- */
-.peg{position:absolute;right:10px;bottom:44px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg{position:absolute;right:10px;top:52px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
 .peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
 .peg:hover svg{fill:#FBB13C}
 .peg.in-ctrl{position:static;width:29px;height:40px;padding:4px 6px;border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.1);border:0}

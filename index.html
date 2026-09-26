@@ -408,7 +408,7 @@ body.m3d-open .app{visibility:hidden}
 .tabs button{padding:10px 10px 8px}
 
 /* ---------- drop-in walker ---------- */
-.peg{position:absolute;right:10px;bottom:44px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
+.peg{position:absolute;right:10px;top:52px;z-index:3;width:34px;height:52px;padding:4px 5px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:grab;touch-action:none}
 .peg svg{width:100%;height:100%;fill:#F59E0B;stroke:#9A5B00;stroke-width:1.2}
 .peg:hover svg{fill:#FBB13C}
 .peg.in-ctrl{position:static;width:29px;height:40px;padding:4px 6px;border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.1);border:0}
@@ -1988,40 +1988,38 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
       const overlay = document.createElement("div"); overlay.className = "m3d-labels"; stage.appendChild(overlay);
       const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos, w: 0 }; });
-            const v = new T.Vector3();
+      tags.forEach(t => { t.w = t.el.offsetWidth || t.el.textContent.length * 7.5; t.h = t.el.offsetHeight || 26; }); // sizes are read once, here
+      const v = new T.Vector3();
       // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
       // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
       let stageW = 1, stageH = 1;
-      // Tags that would cover each other are stacked: the one lower on screen keeps its spot, the others move up
-      // just clear of it. Tag sizes are measured once (and on resize), not per frame.
-      const measureTags = () => tags.forEach(t => { t.w = t.el.offsetWidth; t.h = t.el.offsetHeight; });
       const placeTags = () => {
         const shown = [];
         tags.forEach(t => {
           v.copy(t.pos).project(cam);
+          t.hide = v.z > 1;
           // keep the whole label inside the view
-          const half = (t.w || 0) / 2 + 8;
-          t.off2 = v.z > 1; t.x = Math.max(half, Math.min(stageW - half, (v.x + 1) / 2 * stageW)); t.y = (1 - v.y) / 2 * stageH;
-          if (!t.off2) shown.push(t);
+          const half = t.w / 2 + 8;
+          t.X = Math.max(half, Math.min(stageW - half, (v.x + 1) / 2 * stageW)); t.Y = (1 - v.y) / 2 * stageH;
+          if (!t.hide) shown.push(t);
         });
-        shown.sort((a, b) => b.y - a.y);
-        const placed = [];
-        for (const t of shown) {
-          let y = t.y;
-          for (let guard = 0; guard < 8; guard++) {
-            const hit = placed.find(p => Math.abs(p.x - t.x) < (p.w + t.w) / 2 + 4 && y > p.y - p.h - 4 && y - t.h < p.y + 4);
-            if (!hit) break;
-            y = hit.y - hit.h - 6;
+        // labels that would overlap are stacked: working up from the lowest, each one moves above any it would cover
+        shown.sort((a, b) => b.Y - a.Y);
+        shown.forEach((t, i) => {
+          for (let moved = true; moved;) {
+            moved = false;
+            for (const o of shown.slice(0, i)) {
+              if (Math.abs(t.X - o.X) < (t.w + o.w) / 2 + 4 && t.Y > o.Y - o.h - 3 && t.Y - t.h < o.Y) { t.Y = o.Y - o.h - 3; moved = true; }
+            }
           }
-          placed.push({ x: t.x, y, w: t.w || 0, h: t.h || 0 });
-          t.y = y;
-        }
+        });
         tags.forEach(t => {
-          const off = t.off2, tf = off ? t.tf : `translate(${t.x.toFixed(1)}px, ${t.y.toFixed(1)}px) translate(-50%, -100%)`;
-          if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
+          const tf = t.hide ? t.tf : `translate(${t.X.toFixed(1)}px, ${t.Y.toFixed(1)}px) translate(-50%, -100%)`;
+          if (t.hide !== t.off) { t.off = t.hide; t.el.style.display = t.hide ? "none" : ""; }
           if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
         });
       };
+
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
@@ -2043,7 +2041,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       // W/A/S/D or the arrow keys move, dragging looks around, Shift runs. The camera stays at eye height over the
       // terrain and inside the plateau.
       const eye = 0.85 * Math.min(1.6, built.TS), walk = { on: false, yaw: 0, pitch: -0.05, keys: new Set(), drag: null };
-      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot");
+      const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
       const setWalk = on => {
         walk.on = on; controls.enabled = !on; controls.autoRotate = false;
         if (on) {
@@ -2055,7 +2053,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         }
         if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
         if (foot) foot.textContent = on ? "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run. Orbit returns to the overview."
-          : "Illustration of the pair: distances along the ground are to scale; terrain and towers are schematic. Drag to orbit, scroll to zoom.";
+          : orbitNote;
       };
       const typing = e => /input|select|textarea/i.test(e.target.tagName);
       const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
@@ -2120,7 +2118,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
-        stageW = w; stageH = h; measureTags();
+        stageW = w; stageH = h;
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
