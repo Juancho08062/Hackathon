@@ -352,7 +352,7 @@ svg text{font-family:var(--body)}
   .brief h4{break-after:avoid}
   .brief p,.brief li{orphans:3;widows:3}
   .b-lede{font-size:11.5px;margin-bottom:6px}
-  .b-map{height:135px;width:auto;max-width:100%}
+  .b-map{height:155px;width:auto;max-width:100%}
   .b-kpis b{font-size:18px}
   .brief h4{font-size:11px;margin:8px 0 2px}
   .b-tab{font-size:10.5px} .b-tab td{padding:3px 8px 3px 0}

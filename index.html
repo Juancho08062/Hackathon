@@ -361,7 +361,7 @@ svg text{font-family:var(--body)}
   .brief h4{break-after:avoid}
   .brief p,.brief li{orphans:3;widows:3}
   .b-lede{font-size:11.5px;margin-bottom:6px}
-  .b-map{height:135px;width:auto;max-width:100%}
+  .b-map{height:155px;width:auto;max-width:100%}
   .b-kpis b{font-size:18px}
   .brief h4{font-size:11px;margin:8px 0 2px}
   .b-tab{font-size:10.5px} .b-tab td{padding:3px 8px 3px 0}
@@ -6024,20 +6024,45 @@ const briefNote = text => text ? `<p class="b-note"><span>Summary by Geo</span>$
 let returnFocus = null;
 function lockApp(on) { document.body.classList.toggle("modal-open", on); }
 function showBrief() { returnFocus = document.activeElement; $("#brief").hidden = false; lockApp(true); $("#briefClose").focus(); }
+// The brief's locator map: Esri topographic tiles (towns, roads, rivers and relief) fetched at twice the drawn size so
+// they print sharp, with the two routes, the closest points, a legend, a scale bar and a north arrow on top. The
+// plain state outlines and the river seam are drawn underneath, so the map still reads when the tiles can't load.
 function briefMap(x) {
-  const W = 300, H = 210, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
+  const W = 520, H = 300, feat = p => Engine.isLine(p) ? { type: "MultiLineString", coordinates: Engine.partsOf(p).filter(c => c.length > 1).map(c => c.map(v => [v[1], v[0]])) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
   const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
-  const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
+  const pr = d3.geoMercator().fitExtent([[60, 60], [W - 60, H - 60]], box);
   // very close pairs would zoom in past street level; cap the zoom and keep the pair centered
   if (pr.scale() > 60000) { const [[x0, y0], [x1, y1]] = d3.geoBounds(box); pr.scale(60000).center([(x0 + x1) / 2, (y0 + y1) / 2]).translate([W / 2, H / 2]); }
-  const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
+  const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]), sc = pr.scale(), f1 = v => +v.toFixed(1);
+  // tiles: the zoom whose pixels are half an SVG unit, and every tile that touches the frame
+  const z = Math.max(3, Math.min(17, Math.ceil(Math.log2(sc * 2 * 2 * Math.PI / 256)))), n = 2 ** z, ts = sc * 2 * Math.PI / n;
+  const tx = lon => (lon + 180) / 360 * n, ty = lat => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n; };
+  const [lo0, la0] = pr.invert([0, 0]), [lo1, la1] = pr.invert([W, H]), tiles = [];
+  for (let j = Math.floor(ty(la0)); j <= Math.floor(ty(la1)); j++) for (let i = Math.floor(tx(lo0)); i <= Math.floor(tx(lo1)); i++) {
+    const [px, py] = pr([i / n * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * j / n))) * 180 / Math.PI]);
+    tiles.push(`<image href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${j}/${i}" x="${f1(px)}" y="${f1(py)}" width="${f1(ts) + 0.4}" height="${f1(ts) + 0.4}" preserveAspectRatio="none" onerror="this.remove()"/>`);
+  }
   const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#F1F2EE" stroke="#B9C0C4" stroke-width=".8"/>`).join("");
   const seam = SEAM ? `<path d="${path({ type: "LineString", coordinates: SEAM })}" fill="none" stroke="#8FB6CC" stroke-width="2.5"/>` : "";
-  const one = (p, c) => Engine.isLine(p) ? `<path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>` : `<circle cx="${P(p.coords[0])[0]}" cy="${P(p.coords[0])[1]}" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
-  const [a, b] = [P(x.ca), P(x.cb)];
-  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map"><rect width="${W}" height="${H}" fill="#E4EBEF"/>${st}${seam}${one(x.p, "#1668A8")}${one(x.q, "#C4540E")}
-    <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B42318" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B42318" stroke-width="1.5"/>
-    <text x="10" y="${H - 10}" font-size="10" fill="#57606A">${esc(km(x.km))} at the closest points</text></svg>`;
+  // each route over a white casing so it reads on the busy topo sheet
+  const one = (p, c) => Engine.isLine(p) ? `<path d="${path(feat(p))}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<circle cx="${f1(P(p.coords[0])[0])}" cy="${f1(P(p.coords[0])[1])}" r="7" fill="${c}" stroke="#fff" stroke-width="2.5"/>`;
+  const [a, b] = [P(x.ca), P(x.cb)], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  // scale bar: ground meters per SVG unit at the map's middle latitude
+  const mPer = 6371008.8 * Math.cos(pr.invert([W / 2, H / 2])[1] * Math.PI / 180) / sc;
+  const nice = (unit, max) => [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200].filter(v => v * unit / mPer <= max).pop() || 0.05;
+  const kmV = nice(1000, 110), miV = nice(1609.344, 110), kmW = kmV * 1000 / mPer, miW = miV * 1609.344 / mPer;
+  const bar = (y, w, t) => `<rect x="14" y="${y}" width="${f1(w)}" height="4" fill="#1F2328"/><rect x="${f1(14 + w / 2)}" y="${y}" width="${f1(w / 2)}" height="4" fill="#fff" stroke="#1F2328" stroke-width=".8"/><text x="${f1(20 + w)}" y="${y + 6}" font-size="12.5" fill="#1F2328">${t}</text>`;
+  const lg = [[lbl(x.p.utility), "#1668A8"], [lbl(x.q.utility), "#C4540E"]];
+  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map of the two projects"><rect width="${W}" height="${H}" fill="#E4EBEF"/>${st}${seam}<g>${tiles.join("")}</g>${one(x.p, "#1668A8")}${one(x.q, "#C4540E")}
+    <line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#fff" stroke-width="4"/><line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#B42318" stroke-width="2" stroke-dasharray="4 3"/>
+    <circle cx="${f1(m[0])}" cy="${f1(m[1])}" r="10" fill="none" stroke="#fff" stroke-width="4"/><circle cx="${f1(m[0])}" cy="${f1(m[1])}" r="10" fill="none" stroke="#B42318" stroke-width="2"/>
+    <g font-size="13" fill="#1F2328"><rect x="8" y="8" width="214" height="72" rx="3" fill="#fff" fill-opacity=".92" stroke="#D0D7DE"/>
+      ${lg.map(([t, c], i) => `<line x1="16" y1="${24 + i * 19}" x2="38" y2="${24 + i * 19}" stroke="${c}" stroke-width="5" stroke-linecap="round"/><text x="46" y="${28.5 + i * 19}">${esc(t)}</text>`).join("")}
+      <circle cx="27" cy="62" r="6" fill="none" stroke="#B42318" stroke-width="2.2"/><text x="46" y="66.5">Closest points, ${esc(km(x.km))} apart</text></g>
+    <rect x="8" y="${H - 48}" width="${f1(Math.max(kmW, miW) + 70)}" height="40" rx="3" fill="#fff" fill-opacity=".92" stroke="#D0D7DE"/>${bar(H - 40, kmW, kmV + " km")}${bar(H - 24, miW, miV + " mi")}
+    <g transform="translate(${W - 26},28)"><circle r="17" fill="#fff" fill-opacity=".92" stroke="#D0D7DE"/><path d="M0,-3 L5.5,11 L0,7.5 L-5.5,11 Z" fill="#1F2328"/><text y="-5" text-anchor="middle" font-size="10" font-weight="700" fill="#1F2328">N</text></g>
+    <text x="${W - 6}" y="${H - 6}" text-anchor="end" font-size="9.5" fill="#57606A" paint-order="stroke" stroke="#fff" stroke-width="2.5">Basemap © Esri, HERE, Garmin, USGS</text></svg>`;
 }
 function closeBrief() { $("#brief").hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; }
 
