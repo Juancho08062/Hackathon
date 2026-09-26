@@ -44,7 +44,8 @@
    "months": 16,
    "from_cost": 12475000,
    "to_cost": 15775885
-  }
+  },
+  "past_in_service": true
  },
  {
   "id": "DESC-02",
@@ -67,7 +68,8 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 2"
+  "page": "item 2",
+  "past_in_service": true
  },
  {
   "id": "DESC-03",
@@ -106,7 +108,8 @@
    "months": 2,
    "from_cost": 23685000,
    "to_cost": 19418000
-  }
+  },
+  "past_in_service": true
  },
  {
   "id": "DESC-04",
@@ -145,7 +148,8 @@
    "months": 0,
    "from_cost": 1100000,
    "to_cost": 1238443
-  }
+  },
+  "past_in_service": true
  },
  {
   "id": "DESC-05",
@@ -188,7 +192,8 @@
    "months": 6,
    "from_cost": 8750000,
    "to_cost": 13040765
-  }
+  },
+  "past_in_service": true
  },
  {
   "id": "DESC-06",
@@ -215,7 +220,8 @@
   ],
   "loc": "med",
   "source": "https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf",
-  "page": "item 6"
+  "page": "item 6",
+  "past_in_service": true
  },
  {
   "id": "DESC-07",
@@ -258,7 +264,8 @@
    "months": 0,
    "from_cost": 17520000,
    "to_cost": 15948620
-  }
+  },
+  "past_in_service": true
  },
  {
   "id": "DESC-08",
@@ -2514,7 +2521,8 @@
   ],
   "loc": "med",
   "source": "https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf",
-  "page": ""
+  "page": "",
+  "past_in_service": true
  },
  {
   "id": "GA-18",
@@ -2550,7 +2558,8 @@
     "start": "2025-06-01"
    }
   ],
-  "project_start": "2025-06-01"
+  "project_start": "2025-06-01",
+  "past_in_service": true
  },
  {
   "id": "GA-19",
@@ -2591,6 +2600,7 @@
     "note": "Dresden Substation (w163891152)"
    }
   ],
+  "past_in_service": true,
   "drift": {
    "plans": "GA ITS ten-year plan 2023 to 2024",
    "months": 0,
@@ -2627,7 +2637,8 @@
     "start": "2023-02-01"
    }
   ],
-  "project_start": "2023-02-01"
+  "project_start": "2023-02-01",
+  "past_in_service": true
  },
  {
   "id": "GA-21",
@@ -2664,6 +2675,7 @@
    }
   ],
   "project_start": "2023-06-01",
+  "past_in_service": true,
   "drift": {
    "plans": "GA ITS ten-year plan 2023 to 2024",
    "months": 0,
@@ -2707,6 +2719,7 @@
    }
   ],
   "project_start": "2023-01-01",
+  "past_in_service": true,
   "drift": {
    "plans": "GA ITS ten-year plan 2023 to 2024",
    "months": 12,
@@ -3834,7 +3847,12 @@
   ],
   "project_start": "2021-09-01",
   "past_in_service": true,
-  "plan_change": "Project delayed from 2024 to 2025"
+  "plan_change": "Project delayed from 2024 to 2025",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 12,
+   "note": "Project delayed from 2024 to 2025"
+  }
  },
  {
   "id": "IRP-18153",
@@ -3873,7 +3891,12 @@
   ],
   "project_start": "2023-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20590",
@@ -3912,7 +3935,12 @@
   ],
   "project_start": "2023-12-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-11821",
@@ -3957,7 +3985,12 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-13787",
@@ -3996,7 +4029,12 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20464",
@@ -4031,7 +4069,12 @@
   ],
   "project_start": "2023-11-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-19631",
@@ -4066,7 +4109,12 @@
   ],
   "project_start": "2023-11-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20067",
@@ -4111,7 +4159,12 @@
   ],
   "project_start": "2023-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20431",
@@ -4191,7 +4244,12 @@
   ],
   "project_start": "2021-12-01",
   "past_in_service": true,
-  "plan_change": "Project delayed from 2024 to 2025"
+  "plan_change": "Project delayed from 2024 to 2025",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 12,
+   "note": "Project delayed from 2024 to 2025"
+  }
  },
  {
   "id": "IRP-20326",
@@ -4226,7 +4284,12 @@
   ],
   "project_start": "2023-08-04",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20175",
@@ -4265,7 +4328,12 @@
   ],
   "project_start": "2023-07-31",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20010",
@@ -4310,7 +4378,12 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-17075",
@@ -4390,7 +4463,12 @@
   ],
   "project_start": "2025-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20491",
@@ -4425,7 +4503,12 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-16007",
@@ -4470,7 +4553,12 @@
   ],
   "project_start": "2022-09-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-19618",
@@ -4513,7 +4601,12 @@
   ],
   "project_start": "2023-10-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-21139",
@@ -4622,7 +4715,12 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-19598",
@@ -4667,7 +4765,12 @@
   ],
   "project_start": "2024-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20270",
@@ -4712,7 +4815,12 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20271",
@@ -4755,7 +4863,12 @@
   ],
   "project_start": "2025-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20300",
@@ -4790,7 +4903,12 @@
   ],
   "project_start": "2024-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20066",
@@ -4835,7 +4953,12 @@
   ],
   "project_start": "2025-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-19966",
@@ -4870,7 +4993,12 @@
   ],
   "project_start": "2023-06-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20277",
@@ -4915,7 +5043,12 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20489",
@@ -4950,7 +5083,12 @@
   ],
   "project_start": "2024-01-01",
   "past_in_service": true,
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-17900",
@@ -5146,7 +5284,12 @@
    }
   ],
   "project_start": "2024-01-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-19601",
@@ -5302,7 +5445,12 @@
    }
   ],
   "project_start": "2027-01-03",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20778",
@@ -5384,7 +5532,12 @@
    }
   ],
   "project_start": "2021-04-06",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-10143",
@@ -5422,7 +5575,12 @@
    }
   ],
   "project_start": "2026-10-15",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-10481",
@@ -5460,7 +5618,12 @@
    }
   ],
   "project_start": "2024-06-01",
-  "plan_change": "Project advanced from 2029 to 2027"
+  "plan_change": "Project advanced from 2029 to 2027",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -24,
+   "note": "Project advanced from 2029 to 2027"
+  }
  },
  {
   "id": "IRP-19248",
@@ -5504,7 +5667,12 @@
    }
   ],
   "project_start": "2022-02-15",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20785",
@@ -5592,7 +5760,12 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-17977",
@@ -5636,7 +5809,12 @@
    }
   ],
   "project_start": "2024-08-01",
-  "plan_change": "Delayed from 2026 to 2027"
+  "plan_change": "Delayed from 2026 to 2027",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 12,
+   "note": "Delayed from 2026 to 2027"
+  }
  },
  {
   "id": "IRP-19997",
@@ -5828,7 +6006,12 @@
    }
   ],
   "project_start": "2024-01-01",
-  "plan_change": "Project delayed from 2025 to 2028"
+  "plan_change": "Project delayed from 2025 to 2028",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 36,
+   "note": "Project delayed from 2025 to 2028"
+  }
  },
  {
   "id": "IRP-19630",
@@ -5862,7 +6045,12 @@
    }
   ],
   "project_start": "2027-06-01",
-  "plan_change": "Project advanced from 2029 to 2028"
+  "plan_change": "Project advanced from 2029 to 2028",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -12,
+   "note": "Project advanced from 2029 to 2028"
+  }
  },
  {
   "id": "IRP-20482",
@@ -5900,7 +6088,12 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "Project advanced from 2031 to 2028"
+  "plan_change": "Project advanced from 2031 to 2028",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -36,
+   "note": "Project advanced from 2031 to 2028"
+  }
  },
  {
   "id": "IRP-20656",
@@ -6016,7 +6209,12 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "No Changes"
+  "plan_change": "No Changes",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Changes"
+  }
  },
  {
   "id": "IRP-20768",
@@ -6094,7 +6292,12 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-21062",
@@ -6374,7 +6577,12 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-21140",
@@ -6578,7 +6786,12 @@
    }
   ],
   "project_start": "2024-12-31",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20346",
@@ -6622,7 +6835,12 @@
    }
   ],
   "project_start": "2026-01-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-17706",
@@ -7142,7 +7360,12 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "Project advanced from 2031 to 2030"
+  "plan_change": "Project advanced from 2031 to 2030",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -12,
+   "note": "Project advanced from 2031 to 2030"
+  }
  },
  {
   "id": "IRP-12120",
@@ -7262,7 +7485,12 @@
    }
   ],
   "project_start": "2028-06-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20428",
@@ -7310,7 +7538,12 @@
    }
   ],
   "project_start": "2023-12-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20375",
@@ -7502,7 +7735,12 @@
    }
   ],
   "project_start": "2026-06-02",
-  "plan_change": "Project delayed from 2029 to 2030"
+  "plan_change": "Project delayed from 2029 to 2030",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 12,
+   "note": "Project delayed from 2029 to 2030"
+  }
  },
  {
   "id": "IRP-19995",
@@ -7540,7 +7778,12 @@
    }
   ],
   "project_start": "2025-12-31",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-18848",
@@ -7574,7 +7817,12 @@
    }
   ],
   "project_start": "2023-06-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-20690",
@@ -7662,7 +7910,12 @@
    }
   ],
   "project_start": "2028-01-01",
-  "plan_change": "No Change"
+  "plan_change": "No Change",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 0,
+   "note": "No Change"
+  }
  },
  {
   "id": "IRP-10811",
@@ -8098,7 +8351,12 @@
    }
   ],
   "project_start": "2025-08-01",
-  "plan_change": "Project delayed from 2031 to 2033"
+  "plan_change": "Project delayed from 2031 to 2033",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": 24,
+   "note": "Project delayed from 2031 to 2033"
+  }
  },
  {
   "id": "IRP-10487",
@@ -8509,7 +8767,12 @@
    }
   ],
   "project_start": "2025-06-01",
-  "plan_change": "Project advanced from 2031 to 2028"
+  "plan_change": "Project advanced from 2031 to 2028",
+  "drift": {
+   "plans": "GA ITS ten-year plan 2023 to 2024",
+   "months": -36,
+   "note": "Project advanced from 2031 to 2028"
+  }
  },
  {
   "id": "IRP-20266",

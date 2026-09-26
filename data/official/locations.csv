@@ -23,7 +23,6 @@ saint george,desc,St George,33.199388,-80.592009,osm_substation,high,Saint Georg
 sumter,desc,Sumter,33.897661,-80.323976,osm_substation,high,Sumter Substation (w185032893)
 thurmond,desc,Thurmond,33.660127,-82.195931,reference,high,Projects_Overlaps.xlsx
 batesburg,desc,Batesburg,33.913487,-81.564435,osm_substation,high,Batesburg Substation (w178951280)
-dawson,desc,Dawson Sub,31.757592,-84.430385,osm_substation,low,Dawson Substation (w682330140)
 urquhart,desc,Urquhart,33.43287,-81.911081,osm_substation,medium,"Urquhart Substation (r14317637); 2 candidates, nearest the zone"
 toolebeck,desc,Toolebeck,33.534632,-81.669327,osm_substation,high,Toolebeck Substation (w1073259467)
 williams,desc,Williams,33.016814,-79.928513,osm_plant,medium,"Williams Station (r20086234); 2 candidates, nearest the zone"

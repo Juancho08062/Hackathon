@@ -11,7 +11,7 @@
     fence: 0x46525c, ridge: 0x4f6b55, water: 0x24505c, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let ctx = null, last = null;
+  let ctx = null, last = null, walkCtl = null;
   // Two looks. Detailed (the default) is the stylized scene with full models, ambient occlusion and SMAA.
   // Ultra-realistic adds texture maps, galvanized steel and bare aluminum wires, loblolly pines, denser ground
   // cover, finer terrain and a wider occlusion kernel. dpr caps the pixel ratio; seg and tex set terrain and grass
@@ -574,7 +574,7 @@
         return (m[o] * (1 - fx) + m[o + 1] * fx) * (1 - fy) + (m[o + W] * (1 - fx) + m[o + W + 1] * fx) * fy;
       };
       return { at, source: "AWS Terrain Tiles (SRTM, USGS)" };
-    }).catch(() => null);
+    }).catch(() => { demCache.delete(key); return null; }); // try again next time instead of caching the failure
     demCache.set(key, p);
     return p;
   }
@@ -908,8 +908,10 @@
   }
 
   // ---------- modal and render loop ----------
+  let openSeq = 0;
   function open(pair, opts) {
     last = { pair, opts };
+    const token = ++openSeq; // a later open (another pair, or a quality change) wins over this one if it loads first
     const modal = document.getElementById("m3d");
     modal.hidden = false;
     document.getElementById("m3dTitle").textContent = opts.title;
@@ -918,7 +920,7 @@
     msg.textContent = "Loading 3D…"; msg.hidden = false;
     document.getElementById("m3dClose").focus();
     Promise.all([ensureThree(QUALITY[qualityKey(opts.quality)]), loadDEM(pair)]).then(([q, dem]) => {
-      if (modal.hidden) return;
+      if (modal.hidden || token !== openSeq) return;
       close(true);
       const T = root.THREE, renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       const Q = Object.assign({ aniso: renderer.capabilities.getMaxAnisotropy() }, q), built = build(pair, opts, Q, dem);
@@ -996,11 +998,11 @@
       const walkBtn = document.getElementById("m3dWalk"), foot = document.querySelector("#m3d .m3d-foot"), orbitNote = foot ? foot.textContent : ""; // the terrain note set above
       const setWalk = on => {
         const was = walk.on;
-        walk.on = on; controls.enabled = !on && !(INTRO && !was); controls.autoRotate = false;
+        walk.on = on; walk.keys.clear(); controls.enabled = !on && !(INTRO && !was); controls.autoRotate = false;
         if (on) {
           const d = f.clone().sub(cam.position); walk.yaw = Math.atan2(d.x, d.z);
           cam.position.y = built.heightAt(cam.position.x, cam.position.z) + eye;
-        } else if (was) { // leaving walk mode: orbit around the spot ahead; opening in orbit keeps the pair in view
+        } else if (was) { // leaving walk: orbit around the spot ahead; opening straight into orbit keeps the overview target
           const ahead = new T.Vector3(Math.sin(walk.yaw), 0, Math.cos(walk.yaw)).multiplyScalar(12).add(cam.position);
           controls.target.copy(ahead); cam.position.y += 8;
         }
@@ -1012,6 +1014,7 @@
       const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyA: [0, 1], ArrowLeft: [0, 1], KeyD: [0, -1], ArrowRight: [0, -1] };
       const onKeyDown = e => { if (!walk.on || typing(e)) return; if (MOVE[e.code] || e.code === "ShiftLeft" || e.code === "ShiftRight") { walk.keys.add(e.code); e.preventDefault(); } };
       const onKeyUp = e => walk.keys.delete(e.code);
+      const onBlur = () => walk.keys.clear(); // a key released while the window is in the background never sends keyup
       const cv = renderer.domElement;
       const onDown = e => { if (walk.on) { walk.drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } };
       const onMove = e => {
@@ -1020,9 +1023,10 @@
         walk.drag = [e.clientX, e.clientY];
       };
       const onUp = () => { walk.drag = null; };
-      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp);
+      addEventListener("keydown", onKeyDown); addEventListener("keyup", onKeyUp); addEventListener("blur", onBlur);
       cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); cv.addEventListener("pointerup", onUp);
       if (walkBtn) walkBtn.onclick = () => setWalk(!walk.on);
+      walkCtl = { on: () => walk.on, off: () => setWalk(false) };
       const stepWalk = dt => {
         let fw = 0, sd = 0;
         walk.keys.forEach(k => { if (MOVE[k]) { fw += MOVE[k][0]; sd += MOVE[k][1]; } });
@@ -1116,21 +1120,24 @@
       ctx = {
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
-          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp);
+          removeEventListener("keydown", onKeyDown); removeEventListener("keyup", onKeyUp); removeEventListener("blur", onBlur);
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment, ...built.K.texs].forEach(x => x && x.dispose());
           composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
           if (ssao) ssao.dispose(); if (smaa) { smaa.edgesRT.dispose(); smaa.weightsRT.dispose(); smaa.areaTexture.dispose(); smaa.searchTexture.dispose(); }
-          renderer.dispose();
+          renderer.dispose(); renderer.forceContextLoss(); // browsers cap live WebGL contexts; free this one now
         },
       };
     }).catch(err => { msg.hidden = false; msg.textContent = root.THREE ? "The 3D view couldn't be drawn: " + err.message : "The 3D view needs an internet connection to load three.js. " + err.message; });
   }
   function close(keepOpen) {
     if (ctx) { ctx.stop(); ctx = null; }
+    walkCtl = null;
     if (!keepOpen) { document.getElementById("m3d").hidden = true; document.getElementById("m3dStage").innerHTML = ""; }
   }
   // Re-open the current pair at a new quality setting.
   const reopen = quality => { if (last && !document.getElementById("m3d").hidden) open(last.pair, Object.assign({}, last.opts, { quality })); };
-  root.Scene3D = { open, close, reopen, QUALITY, qualityKey };
+  // Escape in the page first stops walking, then closes the view.
+  const isWalking = () => !!(walkCtl && walkCtl.on()), stopWalking = () => walkCtl && walkCtl.off();
+  root.Scene3D = { open, close, reopen, QUALITY, qualityKey, isWalking, stopWalking };
 })(this);

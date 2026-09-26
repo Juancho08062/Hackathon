@@ -208,7 +208,9 @@ class Locator:
             return min((haversine((p["lat"], p["lon"]), c) for c in near), default=0)
         # A match far from the rest of its planning zone is a namesake, not the project.
         allc = sorted(self._candidates(k, state), key=dist)
-        c = [p for p in allc if dist(p) <= FAR_KM]
+        # Without a zone centre to check against (DESC lists no zones), a match in the other state is a namesake:
+        # DESC's "Dawson" is not the Dawson substation in southwest Georgia.
+        c = [p for p in allc if dist(p) <= FAR_KM and (near or p["state"] == state)]
         if allc and not c:
             self.rejected.append(dict(endpoint=endpoint, zone=zone, candidate=allc[0]["name"], km=round(dist(allc[0]))))
         if c:

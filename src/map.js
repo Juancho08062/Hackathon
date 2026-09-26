@@ -213,9 +213,14 @@
     document.documentElement.style.setProperty("--ml-place", c.place);
   }
 
+  let towerKey = null;
   function towers(projects) {
     const src = map.getSource("towers");
     if (!src) return;
+    // thousands of extrusions: rebuilt only when what is drawn changes, not on every hover
+    const key = is3d ? projects.filter(p => p.opacity >= 0.3).map(p => p.id + p.color + (p.kv || "")).join("|") : "";
+    if (key === towerKey) return;
+    towerKey = key;
     if (!is3d) return src.setData(fc([]));
     const out = [];
     for (const p of projects) {

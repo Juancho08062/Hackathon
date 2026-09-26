@@ -63,7 +63,7 @@
 
   function toType(v, hasLine) {
     const s = String(v || "").toLowerCase();
-    if (/gen|plant|unit|combined|solar|battery|bess/.test(s)) return "generation";
+    if (/\b(generation|generating|generator|plant|unit \d+|combined[- ]cycle|solar|battery|bess)\b/.test(s)) return "generation";
     if (/sub|station|transformer|bank|switch|bus|breaker|capacitor|reactor/.test(s)) return "substation";
     if (/rebuild|reconductor|upgrade|replace|convert|uprate|move/.test(s)) return "rebuild";
     if (/new|construct|line|build/.test(s)) return "new_line";
@@ -90,7 +90,11 @@
     }
     if ((m = s.match(/(spring|summer|fall|autumn|winter)\s+(\d{4})/i))) { const mo = { spring: "04", summer: "07", fall: "10", autumn: "10", winter: "01" }[m[1].toLowerCase()]; return { iso: `${m[2]}-${mo}-01`, precision: "season" }; }
     if (/^\d+([/-]\d+)+$/.test(s)) return null; // numeric dates that failed the checks above aren't guessed at
-    const d = new Date(s); return isNaN(d) ? null : { iso: d.toISOString().slice(0, 10), precision: "day" };
+    // a bare number from a spreadsheet exported as CSV is an Excel serial day (45000 = 2023-03-15)
+    if (/^\d{5}(\.\d+)?$/.test(s)) { const n = +s; if (n > 1 && n < 80000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(n) * 864e5); return { iso: d.toISOString().slice(0, 10), precision: "day" }; } return null; }
+    const d = new Date(s);
+    if (isNaN(d) || d.getUTCFullYear() < 1900 || d.getUTCFullYear() > 2100) return null;
+    return { iso: d.toISOString().slice(0, 10), precision: "day" };
   }
   const num = v => { const n = parseFloat(String(v ?? "").replace(/[$,\s]/g, "").replace(/(\d)k$/i, "$1e3").replace(/(\d)m$/i, "$1e6")); return isFinite(n) ? n : null; };
   // KML descriptions can be HTML or {"@type": "html", value}; keep readable text only.
@@ -111,7 +115,8 @@
       if (lat == null || lon == null) return { error: "no latitude/longitude" };
       coords = [[lat, lon]].concat(lat2 != null && lon2 != null ? [[lat2, lon2]] : []);
     }
-    if (coords.some(([a, b]) => Math.abs(a) > 90 || Math.abs(b) > 180)) return { error: "coordinates out of range" };
+    if (!coords.length) return { error: "no coordinates in its geometry" };
+    if (coords.some(([a, b]) => !isFinite(a) || !isFinite(b) || Math.abs(a) > 90 || Math.abs(b) > 180)) return { error: "coordinates out of range" };
     const rawIsd = pick(row, "in_service"), rawStart = pick(row, "start");
     if (rawIsd && !toDate(rawIsd)) return { error: `in-service date "${rawIsd}" isn't a real date` };
     if (rawStart && !toDate(rawStart)) return { error: `start date "${rawStart}" isn't a real date` };
