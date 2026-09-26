@@ -311,7 +311,7 @@ for oid, r in official.items():
              in_service=end.isoformat(), start=start.isoformat(),
              date_precision="day", cost=(int(r["cost"]) if not gpc and r.get("cost") else None),
              coords=coords, loc=lvl, source=IRP_PDF if gpc else DESC_PDF,
-             page=f"PDF p.{r['pdf_page']}, TEAMS {r['teams']}, zone {r['zone']}" if gpc else f"project {r['item']} of 44, ID {r['project_id']}",
+             page=f"PDF p.{r['pdf_page']}, TEAMS {r['teams']}, zone {r['zone']}" if gpc else f"project {r['item']} of {max(int(q['item']) for q in official.values() if q['id'].startswith('DESCP'))}, ID {r['project_id']}",
              located=[dict(name=e, method=x[2], confidence=x[3], note=x[4]) if x else dict(name=e, method="not found")
                       for e, x in zip(endpoints(r["name"]), pts)])
     if pub:
@@ -351,6 +351,12 @@ for eid, oids in SAME.items():
                       months=m, from_cost=int(r["cost"]) if r.get("cost") else None, to_cost=o.get("cost"))
     desc_slips.append(m)
 
+by_id = {o["id"]: o for o in out}  # again: the official projects were appended after the first index was built
+desc_pages = max((int(p["item"]) for p in official.values() if p["id"].startswith("DESCP")), default=0)
+for o in out:  # every project, not only the official ones, is flagged when its in-service date has passed
+    if not o.get("existing") and o.get("in_service") and o["in_service"] < TODAY.isoformat():
+        o["past_in_service"] = True
+
 CHANGE = re.compile(r"(delayed|advanced) from (20\d\d) to (20\d\d)", re.I)
 gpc_slips, gpc_unparsed = [], []
 for oid, r in official.items():
@@ -368,7 +374,8 @@ for oid, r in official.items():
         continue
     gpc_slips.append(v)
     tgt = by_id.get(oid) or next((o for o in out if any(x["id"] == oid for x in o.get("official") or [])), None)
-    if tgt is not None:
+    # an entry that stands for two official records keeps the larger move
+    if tgt is not None and (not tgt.get("drift") or abs(v) > abs(tgt["drift"]["months"])):
         tgt["drift"] = dict(plans="GA ITS ten-year plan 2023 to 2024", months=v, note=note)
 
 likely_built = []
@@ -383,12 +390,15 @@ def dist(v):
                 median=v[len(v) // 2])
 
 placed = [o for o in out if o["id"].startswith(("IRP-", "DESCP-"))]
+# Georgia's Augusta (215) and Savannah (219) planning zones face South Carolina across the river
+border_missing = [u for u in unplaced if official.get(u["id"], {}).get("zone") in ("215", "219")]
+border_note = "none in the Augusta or Savannah zones" if not border_missing else f"{len(border_missing)} in the Augusta or Savannah zones"
 past = [o for o in out if not o.get("existing") and o.get("in_service", "9") < TODAY.isoformat()]
 dup_ids = [p["id"] for p in official.values() if p["id"].count("-") > 1]
 checks = [
     dict(id="rows", title="Every project in both PDFs was read",
-         result=f"DESC {sum(1 for i in official if i.startswith('DESCP'))} of 44; Georgia {sum(1 for i in official if i.startswith('IRP'))} rows from Table 2",
-         status="pass"),
+         result=f"DESC {sum(1 for i in official if i.startswith('DESCP'))} of {desc_pages} pages; Georgia {sum(1 for i in official if i.startswith('IRP'))} rows from Table 2",
+         status="pass" if sum(1 for i in official if i.startswith('DESCP')) == desc_pages else "warn"),
     dict(id="detail", title="Each Georgia row has its detail page (start date, description, miles)",
          result=f"{sum(1 for p in official.values() if p.get('start'))} of {sum(1 for i in official if i.startswith('IRP'))} matched by TEAMS number",
          status="warn", records=[dict(id=p["id"], name=p["name"]) for p in official.values() if p["id"].startswith("IRP") and not p.get("start")]),
@@ -405,7 +415,7 @@ checks = [
          result=f"{len(dropped_span)} end point(s) dropped because the line would be far longer than the plan says",
          status="fixed" if dropped_span else "pass", records=dropped_span),
     dict(id="placed", title="Every official project is on the map",
-         result=f"{len(placed) + sum(len(v) for v in SAME.values())} of {len(official)} placed; {len(unplaced)} not found (none in the Augusta or Savannah zones)",
+         result=f"{len(placed) + sum(len(v) for v in SAME.values())} of {len(official)} placed; {len(unplaced)} not found ({border_note})",
          status="warn", records=unplaced),
     dict(id="past", title="In-service dates are still ahead",
          result=f"{len(past)} projects list a date before {TODAY.isoformat()}; {len(likely_built)} are gone from DESC's newer list, so likely built",
