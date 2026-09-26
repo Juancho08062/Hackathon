@@ -6,14 +6,19 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 [hidden]{display:none!important}
+
+/* ---------- tokens ---------- */
 :root{
-  --bg:#EEF2F1; --panel:#F8FAF9; --ink:#15232A; --ink2:#4A5B62; --ink3:#7C8C92;
-  --line:#CDD7D6; --grid:#DDE5E4; --land:#E4EAE8; --land2:#F3F6F5; --water:#EEF2F1;
-  --u0:#0E6F8C; --u0soft:rgba(14,111,140,.14);
-  --u1:#B4560F; --u1soft:rgba(180,86,15,.14);
-  --hot:#B0183D; --hotsoft:rgba(176,24,61,.12);
+  --bg:#EDF1F0; --panel:#FFFFFF; --panel2:#F6F8F8; --ink:#13222A; --ink2:#4A5B62; --ink3:#7C8C92;
+  --line:#D6DFDE; --grid:#E4EAE9; --land:#E4EAE8; --land2:#F3F6F5; --water:#EDF1F0;
+  --u0:#0E6F8C; --u0soft:rgba(14,111,140,.12);
+  --u1:#B4560F; --u1soft:rgba(180,86,15,.12);
+  --hot:#B0183D; --hotsoft:rgba(176,24,61,.08);
   --near:#6B4FB8; --time:#2F7A4E;
   --t0:#B0183D; --t1:#B25E09; --t2:#6B4FB8; --t3:#3F6E7D;
+  --onhot:#fff; --hero1:#0C1F27; --hero2:#163847;
+  --shadow:0 1px 2px rgba(16,34,42,.06),0 4px 16px rgba(16,34,42,.06);
+  --r:10px; --r-sm:7px;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -21,188 +26,256 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#0E1518; --panel:#141D21; --ink:#E2EBEA; --ink2:#A7B6B8; --ink3:#72838A;
-    --line:#26343A; --grid:#1B272C; --land:#1A252A; --land2:#131C20; --water:#0E1518;
-    --u0:#3CB4D6; --u0soft:rgba(60,180,214,.16);
-    --u1:#F0913F; --u1soft:rgba(240,145,63,.16);
-    --hot:#FF5C7F; --hotsoft:rgba(255,92,127,.14);
+    --bg:#0B1215; --panel:#121B1F; --panel2:#0F171A; --ink:#E2EBEA; --ink2:#A7B6B8; --ink3:#72838A;
+    --line:#223036; --grid:#1A262B; --land:#1A252A; --land2:#131C20; --water:#0E1518;
+    --u0:#3CB4D6; --u0soft:rgba(60,180,214,.14);
+    --u1:#F0913F; --u1soft:rgba(240,145,63,.14);
+    --hot:#FF5C7F; --hotsoft:rgba(255,92,127,.1);
     --near:#A48CF0; --time:#5CC58A;
     --t0:#FF5C7F; --t1:#F2A54A; --t2:#A48CF0; --t3:#7FB3C2;
+    --onhot:#1B0A10; --hero1:#0A181E; --hero2:#12303C;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0E1518; --panel:#141D21; --ink:#E2EBEA; --ink2:#A7B6B8; --ink3:#72838A;
-  --line:#26343A; --grid:#1B272C; --land:#1A252A; --land2:#131C20; --water:#0E1518;
-  --u0:#3CB4D6; --u0soft:rgba(60,180,214,.16);
-  --u1:#F0913F; --u1soft:rgba(240,145,63,.16);
-  --hot:#FF5C7F; --hotsoft:rgba(255,92,127,.14);
+  --bg:#0B1215; --panel:#121B1F; --panel2:#0F171A; --ink:#E2EBEA; --ink2:#A7B6B8; --ink3:#72838A;
+  --line:#223036; --grid:#1A262B; --land:#1A252A; --land2:#131C20; --water:#0E1518;
+  --u0:#3CB4D6; --u0soft:rgba(60,180,214,.14);
+  --u1:#F0913F; --u1soft:rgba(240,145,63,.14);
+  --hot:#FF5C7F; --hotsoft:rgba(255,92,127,.1);
   --near:#A48CF0; --time:#5CC58A;
   --t0:#FF5C7F; --t1:#F2A54A; --t2:#A48CF0; --t3:#7FB3C2;
+  --onhot:#1B0A10; --hero1:#0A181E; --hero2:#12303C;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
 }
-*{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;padding-inline:20px;padding-block:18px 40px}
-.wrap{max-width:1380px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
-h1{font-family:var(--display);font-weight:700;font-size:40px;letter-spacing:.01em;line-height:1;margin:0;text-wrap:balance}
 
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2)}
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;padding:20px 20px 48px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+h1,h2,h3{font-family:var(--display);letter-spacing:.01em}
+a{color:var(--u0)}
+.note{font-size:12px;color:var(--ink2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+button:focus-visible,input:focus-visible,select:focus-visible,.pair:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+
+/* ---------- controls ---------- */
+.btn{font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);height:34px;padding:0 14px;border-radius:var(--r-sm);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--ink3);background:var(--panel2)}
+.btn.primary{background:var(--hot);color:var(--onhot);border-color:var(--hot)}
+.btn.primary:hover{filter:brightness(1.08);background:var(--hot)}
+.seg{display:inline-flex;padding:3px;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm)}
+.seg button{font:inherit;font-size:13px;font-weight:500;border:0;background:transparent;color:var(--ink2);padding:5px 12px;border-radius:5px;cursor:pointer;transition:background .15s,color .15s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(16,34,42,.14)}
+select,input[type=text],input[type=url],input[type=search],textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:0 12px;height:36px;max-width:100%}
+textarea{height:auto;padding:8px 12px}
+select{font-weight:500;min-width:0;cursor:pointer}
+select:hover,input:hover{border-color:var(--ink3)}
+input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px 32px;padding:26px 28px;border-radius:14px;color:#EAF2F3;
+  background:
+    radial-gradient(120% 140% at 100% 0%,rgba(255,92,127,.18),transparent 55%),
+    radial-gradient(80% 120% at 0% 100%,rgba(60,180,214,.2),transparent 60%),
+    linear-gradient(135deg,var(--hero1),var(--hero2));
+  box-shadow:var(--shadow)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:28px 28px;
+  mask-image:linear-gradient(90deg,transparent,#000 60%)}
+.brand{position:relative;display:flex;align-items:center;gap:18px;min-width:0;flex:1 1 520px}
+.mark{flex:none;width:58px;height:58px;padding:8px;border-radius:14px;color:#7FD3EA;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.hero h1{font-weight:700;font-size:44px;line-height:1;margin:0;letter-spacing:.02em}
+.tag{margin:8px 0 0;color:rgba(234,242,243,.78);max-width:70ch;text-wrap:pretty;font-size:14px}
+.hero-facts{position:relative;list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.hero-facts li{display:grid;padding:8px 14px;border-radius:var(--r-sm);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(234,242,243,.72)}
+.hero-facts b{font-family:var(--display);font-size:20px;font-weight:600;color:#fff;line-height:1.1}
+
+/* ---------- compare bar ---------- */
+.bar{display:grid;gap:14px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.compare{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding-bottom:14px;border-bottom:1px solid var(--grid)}
+.compare label,.compare .vs{font-family:var(--display);font-size:22px;font-weight:600}
+.compare .vs{color:var(--ink3);font-weight:500}
+.compare select{flex:1 1 200px;min-width:0;height:40px;font-size:15px}
+#openImport{margin-left:auto;height:40px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 32px;align-items:flex-end;transition:opacity .2s}
+.controls.off{opacity:.4}
+.ctl{display:grid;gap:2px;min-width:190px;flex:1 1 190px;max-width:300px}
+.ctl label,.ctl-group .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);display:flex;justify-content:space-between;gap:8px}
+.ctl output{font-family:var(--mono);color:var(--ink);letter-spacing:0;text-transform:none;font-size:12px;font-weight:500}
+.ctl-group{display:grid;gap:6px}
+
+/* ---------- stats and tiers ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);display:grid;gap:2px}
+.stat b{font-family:var(--display);font-size:34px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--ink2)}
+.stat:last-child b{color:var(--time)}
+.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tier{font:inherit;text-align:left;cursor:pointer;color:var(--ink);display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);position:relative;overflow:hidden;transition:opacity .15s,border-color .15s,transform .15s}
+.tier::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c)}
+.tier:hover{border-color:var(--c);transform:translateY(-1px)}
+.tier[aria-pressed=false]{opacity:.45}
+.tier[aria-pressed=false]::before{background:var(--line)}
+.tier b{font-family:var(--display);font-size:34px;font-weight:600;line-height:1;color:var(--c);font-variant-numeric:tabular-nums;min-width:1.1em}
+.tier .tb{display:grid;gap:2px}
+.tier .tl{font-weight:600;font-size:13px}
+.tier .tm{font-size:12px;color:var(--ink2);line-height:1.4}
+.tier .tn{font-family:var(--mono);font-size:11px;color:var(--time);margin-top:2px}
+
+/* ---------- cards ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.card>h2{font-weight:600;font-size:21px;margin:0;padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.card h2 em{font-family:var(--body);font-style:normal;font-size:12px;color:var(--ink3);font-weight:400;letter-spacing:0}
+.card h2 .seg button{font-family:var(--body)}
+
+/* ---------- map ---------- */
+#map{display:block;width:100%;height:auto;background:var(--water);touch-action:none;cursor:grab}
+#map:active{cursor:grabbing}
+#map path,#map line{vector-effect:non-scaling-stroke}
+#map image{image-rendering:auto}
+.bm select{height:32px;padding:0 8px;font-size:13px;font-weight:400}
+.zm{display:inline-flex;gap:4px;margin-left:auto}
+.zm .btn{height:32px;padding:0 10px;font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink2);padding:8px 16px;border-bottom:1px solid var(--grid);background:var(--panel2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{width:18px;height:4px;border-radius:2px;display:inline-block}
 .sw.dash{background:none!important;border-top:2px dashed var(--ink3);height:0}
-.controls{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
-.ctl{display:grid;gap:2px;min-width:180px;flex:1 1 180px;max-width:280px}
-.ctl label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);display:flex;justify-content:space-between}
-.ctl output{font-family:var(--mono);color:var(--ink);letter-spacing:0;text-transform:none;font-size:12px}
-input[type=range]{width:100%;accent-color:var(--hot)}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}
-.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--ink2);padding:6px 12px;cursor:pointer}
-.seg button+button{border-left:1px solid var(--line)}
-.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
-.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:5px;cursor:pointer}
-.btn:hover{border-color:var(--ink3)}
-button:focus-visible,input:focus-visible,.pair:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.stat{background:var(--panel);padding:10px 14px}
-.stat b{display:block;font-family:var(--display);font-size:28px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
-.stat span{font-size:12px;color:var(--ink2)}
-.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.card h2{font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:.02em;margin:0;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
-.card h2 em{font-family:var(--body);font-style:normal;font-size:12px;color:var(--ink3);font-weight:400}
-#map{display:block;width:100%;height:auto;background:var(--water)}
-.list{max-height:640px;overflow:auto}
-.pair{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 14px;border-bottom:1px solid var(--grid);cursor:pointer}
-.pair:hover{background:var(--hotsoft)}
-.pair.sel{background:var(--hotsoft);box-shadow:inset 3px 0 0 var(--hot)}
-.score{font-family:var(--display);font-size:24px;font-weight:700;color:var(--hot);line-height:1;font-variant-numeric:tabular-nums}
-.score small{display:block;font-family:var(--body);font-size:10px;color:var(--ink3);font-weight:400;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
-.pn{font-size:13px;line-height:1.35}
-.pn .a{color:var(--u0)} .pn .b{color:var(--u1)}
-.pn i{font-style:normal;color:var(--ink3)}
-.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
-.chip{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
-.chip.near{color:var(--near);border-color:currentColor}
-.chip.time{color:var(--time);border-color:currentColor}
-.detail{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;gap:10px}
-.detail h3{margin:0;font-family:var(--display);font-size:18px;font-weight:600}
-.proj{display:grid;gap:2px;padding-left:10px;border-left:3px solid var(--c)}
-.proj .t{font-weight:600}
-.proj .m{font-family:var(--mono);font-size:12px;color:var(--ink2)}
-.proj a{color:var(--ink2);font-size:12px}
-.advice{background:var(--hotsoft);padding:8px 10px;border-radius:4px;font-size:13px;border-left:3px solid var(--c)}
-.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.tier{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:6px}
-.tier b{font-family:var(--display);font-size:30px;line-height:1;color:var(--c);font-variant-numeric:tabular-nums;min-width:1.2em}
-.tier div{display:grid;gap:1px}
-.tier .tl{font-weight:600;font-size:13px}.tier .tm{font-size:12px;color:var(--ink2)}.tier .tn{font-family:var(--mono);font-size:11px;color:var(--time)}
-.rank{font-family:var(--display);font-size:22px;font-weight:600;color:var(--ink3);line-height:1.1;text-align:right;font-variant-numeric:tabular-nums}
-.pair{border-left:3px solid var(--c)}
-.tierline{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-bottom:3px}
-.tchip{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
-.kmv{font-family:var(--mono);font-size:12px;font-weight:500}
-.chip.save{color:var(--ink);border-color:var(--ink3)}
-.imp{width:100%;border-collapse:collapse;font-size:13px}
-.imp td{padding:5px 0;border-bottom:1px solid var(--grid);vertical-align:top}
-.imp td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap;padding-left:10px}
-.imp small{display:block;color:var(--ink2);font-size:11px}
-.imp .tot td{font-weight:600;border-bottom:0}
-.zm{display:inline-flex;gap:4px;margin-left:auto}.zm .btn{padding:3px 9px;font-family:var(--body);font-weight:400}
-#map{touch-action:none;cursor:grab}
-#map path,#map line{vector-effect:non-scaling-stroke}
-.advice ul{margin:4px 0 0;padding-left:18px}
-.empty{padding:24px 14px;color:var(--ink2)}
-#tl{display:block;width:100%}
-.tlwrap{overflow-x:auto}
-.foot{font-size:12px;color:var(--ink2);display:grid;gap:6px;max-width:100ch}
-.foot a{color:var(--ink2)}
-.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:6px 8px;border-radius:4px;max-width:280px;z-index:9;line-height:1.35}
-.tip b{font-weight:600}
-svg text{font-family:var(--body)}
-.upload{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.note{font-size:12px;color:var(--ink2)}
-@media (max-width:900px){.tiers{grid-template-columns:repeat(2,minmax(0,1fr))}.main{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.list{max-height:none}h1{font-size:32px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-/* ---- v4 layout ---- */
-.tag{margin:6px 0 0;color:var(--ink2);max-width:66ch;text-wrap:pretty}
-.bar{display:grid;gap:12px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
-.bar .controls{padding:0;border:0;background:none;border-radius:0}
-.compare{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding-bottom:12px;border-bottom:1px solid var(--grid)}
-.compare label,.compare .vs{font-family:var(--display);font-size:20px;font-weight:600}
-.compare .vs{color:var(--ink3);font-weight:500}
-select,input[type=text],input[type=url],input[type=search],textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:6px 10px;max-width:100%}
-select{font-weight:500;min-width:0}
-#openImport{margin-left:auto}
-.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.btn.primary:hover{opacity:.9}
-.ctl-group{display:grid;gap:4px}
-.ctl-group .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
-.import{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}
-.import-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px}
-.import h2{font-family:var(--display);font-size:22px;font-weight:600;margin:0 0 4px}
-.import h3{font-family:var(--display);font-size:16px;font-weight:600;margin:12px 0 6px;letter-spacing:.02em}
-.import h3:first-child{margin-top:0}
-.import code{font-family:var(--mono);font-size:12px}
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.fields div{display:grid;gap:4px}.fields label{font-size:12px;font-weight:500}
-.drop{display:block;border:2px dashed var(--line);border-radius:6px;padding:26px 16px;text-align:center;color:var(--ink2);cursor:pointer;transition:border-color .15s,background .15s}
-.drop:hover,.drop.over{border-color:var(--u0);background:var(--u0soft);color:var(--ink)}
-.drop input{position:absolute;width:1px;height:1px;opacity:0}
-.drop:focus-within{outline:2px solid var(--hot);outline-offset:2px}
-.drop .fmts{display:block;margin-top:6px;font:500 11px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;color:var(--ink3)}
-.report p{margin:8px 0 0;font-size:13px}.report .ok{color:var(--time)}.report .warn{color:var(--hot)}
-.import pre{font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:8px;overflow-x:auto;margin:0 0 8px;white-space:pre}
-.import textarea{width:100%;font-family:var(--mono);font-size:12px;margin-top:8px}
-.row{display:flex;flex-wrap:wrap;gap:8px}
-.datasets{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.datasets li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:5px;font-size:13px}
-.tier{font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
-.tier[aria-pressed=false]{opacity:.45;border-top-color:var(--line)}
-.tier:hover{border-color:var(--ink3)}
-.tier .tb{display:grid;gap:1px}
-.search{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
-.search input{flex:1;min-width:0}
-.msg{display:block;padding:0 14px}
-.msg:empty{display:none}
-.dh{display:flex;justify-content:space-between;align-items:center}
-.detail h3{font-family:var(--display);font-size:18px;font-weight:600;margin:0 0 6px}
-.maphint{padding:8px 14px;border-top:1px solid var(--line)}
-@media (max-width:900px){.import-grid,.fields{grid-template-columns:1fr}#openImport{margin-left:0}}
-.compare select{flex:1 1 180px;min-width:0}
-.bm select{padding:3px 8px;font-size:13px;font-family:var(--body);font-weight:400}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.mapfoot{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:center;padding:0 14px}
+.mapfoot{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:center;padding:0 16px}
 .mapfoot:has(.attr:empty):has(.tilenote[hidden]){display:none}
 .attr{font-size:11px;color:var(--ink3);margin-left:auto;padding:4px 0}
 .tilenote{color:var(--hot);margin:6px 0}
-#map image{image-rendering:auto}
-/* ---- 3D view ---- */
-.m3d{position:fixed;inset:0;z-index:20;background:rgba(10,18,22,.72);display:grid;place-items:center;padding:16px}
-.m3d-box{width:min(1180px,100%);max-height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.m3d-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 16px;padding:12px 16px;border-bottom:1px solid var(--line)}
-.m3d-head>div{flex:1 1 300px;min-width:0}
-.m3d-head h2{margin:0;font-family:var(--display);font-size:22px;font-weight:600;text-wrap:balance}
-.m3d-head p{margin:2px 0 0}
-.m3d-stage{position:relative;height:min(64vh,620px);background:#aebfcc}
+.maphint{padding:9px 16px;border-top:1px solid var(--line);background:var(--panel2)}
+
+/* ---------- list ---------- */
+.search{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.search input{flex:1;min-width:0}
+.msg{display:block;padding:0 16px}
+.msg:empty{display:none}
+.list{max-height:660px;overflow:auto;scrollbar-width:thin}
+.pair{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:12px 16px 12px 13px;border-bottom:1px solid var(--grid);border-left:3px solid var(--c);cursor:pointer;transition:background .12s}
+.pair:hover{background:var(--panel2)}
+.pair.sel{background:var(--hotsoft)}
+.rank{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums}
+.pair.sel .rank{background:var(--c);border-color:var(--c);color:#fff}
+.pn{font-size:13px;line-height:1.4;min-width:0}
+.pn .a{color:var(--u0);font-weight:500} .pn .b{color:var(--u1);font-weight:500}
+.pn i{font-style:normal;color:var(--ink3)}
+.tierline{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-bottom:4px}
+.tchip{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--c)}
+.kmv{font-family:var(--mono);font-size:12px;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.chip{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap;background:var(--panel)}
+.chip.near{color:var(--near);border-color:currentColor}
+.chip.time{color:var(--time);border-color:currentColor}
+.chip.save{color:var(--ink);border-color:var(--ink3);font-weight:500}
+.empty{padding:28px 16px;color:var(--ink2);text-align:center}
+
+/* ---------- detail ---------- */
+.detail{padding:14px 16px;border-bottom:1px solid var(--line);display:grid;gap:12px;background:linear-gradient(var(--hotsoft),transparent 140px)}
+.dh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.detail h3{font-size:19px;font-weight:600;margin:0 0 6px}
+.dh h3{margin:0}
+.proj{display:grid;gap:3px;padding:10px 12px;border-left:3px solid var(--c);background:var(--panel);border-radius:0 var(--r-sm) var(--r-sm) 0;box-shadow:inset 0 0 0 1px var(--grid)}
+.proj .t{font-weight:600}
+.proj .m{font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.proj a{color:var(--ink2);font-size:12px}
+.advice{background:var(--panel);padding:10px 12px;border-radius:var(--r-sm);font-size:13px;border-left:3px solid var(--c);box-shadow:inset 0 0 0 1px var(--grid)}
+.advice ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.imp{width:100%;border-collapse:collapse;font-size:13px}
+.imp td{padding:6px 0;border-bottom:1px solid var(--grid);vertical-align:top}
+.imp td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap;padding-left:10px}
+.imp small{display:block;color:var(--ink2);font-size:11px}
+.imp .tot td{font-weight:600;border-bottom:0;color:var(--time);padding-top:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ---------- timeline and footer ---------- */
+#tl{display:block;width:100%}
+.tlwrap{overflow-x:auto;padding:4px 4px 8px}
+svg text{font-family:var(--body)}
+.foot{font-size:12px;color:var(--ink2);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 24px;padding:16px 4px 0;border-top:1px solid var(--line)}
+.foot b{display:block;color:var(--ink);font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.02em;margin-bottom:2px}
+.foot a{color:var(--ink2)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:7px 10px;border-radius:var(--r-sm);max-width:280px;z-index:9;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.tip b{font-weight:600}
+
+/* ---------- import ---------- */
+.import{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.import-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px}
+.import h2{font-size:24px;font-weight:600;margin:0 0 4px}
+.import h3{font-size:16px;font-weight:600;margin:14px 0 6px;letter-spacing:.02em}
+.import h3:first-child{margin-top:0}
+.import code{font-family:var(--mono);font-size:12px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.fields div{display:grid;gap:4px}
+.fields label{font-size:12px;font-weight:500}
+.drop{display:block;border:2px dashed var(--line);border-radius:var(--r);padding:30px 16px;text-align:center;color:var(--ink2);cursor:pointer;background:var(--panel2);transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--u0);background:var(--u0soft);color:var(--ink)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop:focus-within{outline:2px solid var(--hot);outline-offset:2px}
+.drop .fmts{display:block;margin-top:6px;font:500 11px/1.4 var(--mono);letter-spacing:.04em;color:var(--ink3)}
+.report p{margin:8px 0 0;font-size:13px}
+.report .ok{color:var(--time)} .report .warn{color:var(--hot)}
+.import pre{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;overflow-x:auto;margin:0 0 8px;white-space:pre}
+.import textarea{width:100%;font-family:var(--mono);font-size:12px;margin-top:8px}
+.datasets{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.datasets li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:var(--panel2);border:1px solid var(--grid);border-radius:var(--r-sm);font-size:13px}
+.upload{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ---------- 3D view ---------- */
+.m3d{position:fixed;inset:0;z-index:20;background:rgba(6,12,15,.78);backdrop-filter:blur(4px);display:grid;place-items:center;padding:16px}
+.m3d-box{position:relative;width:min(1280px,100%);max-height:100%;border-radius:14px;overflow:hidden;background:#0C161B;box-shadow:0 24px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08)}
+.m3d-stage{position:relative;height:min(78vh,760px);background:#9fb4c4}
 .m3d-stage canvas{display:block;width:100%;height:100%}
-.m3d-msg{position:absolute;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--ink);background:var(--panel);padding:10px 14px;border-radius:6px;max-width:80%}
-.m3d-box{position:relative}
-.m3d-foot{margin:0;padding:8px 16px}
+.m3d-head{position:absolute;z-index:2;inset:0 0 auto 0;display:flex;align-items:flex-start;gap:16px;padding:16px 18px 40px;color:#fff;pointer-events:none;
+  background:linear-gradient(rgba(6,14,18,.78),rgba(6,14,18,.4) 60%,transparent)}
+.m3d-head>div{flex:1 1 auto;min-width:0}
+.m3d-head h2{margin:0;font-size:24px;font-weight:600;text-wrap:balance;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.m3d-head p{margin:3px 0 0;color:rgba(255,255,255,.82)}
+.m3d-head .btn{pointer-events:auto;flex:none;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25);backdrop-filter:blur(6px)}
+.m3d-head .btn:hover{background:rgba(255,255,255,.22)}
+.m3d-msg{position:absolute;z-index:3;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(6,14,18,.8);padding:10px 16px;border-radius:var(--r-sm);max-width:80%}
+.m3d-foot{position:absolute;z-index:2;left:14px;bottom:14px;margin:0;max-width:calc(100% - 28px);padding:6px 12px;border-radius:999px;background:rgba(6,14,18,.62);color:rgba(255,255,255,.85);backdrop-filter:blur(6px);font-size:12px}
 .m3d-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.m3d-tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;color:#fff;background:rgba(21,35,42,.85);border-left:4px solid var(--c);padding:3px 8px;border-radius:2px}
-.m3d-tag.big{font-size:14px;padding:4px 10px}
+.m3d-tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;color:#fff;background:rgba(8,18,24,.72);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.14);border-left:4px solid var(--c);padding:4px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.m3d-tag.big{font-size:14px;padding:5px 12px}
 .m3d-tag.small{font-size:11px;font-weight:500}
-.controls.off{opacity:.45}
+
+/* ---------- responsive ---------- */
+@media (max-width:1000px){.foot{grid-template-columns:1fr}}
+@media (max-width:900px){
+  body{padding:16px 16px 40px}
+  .tiers,.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .main,.import-grid,.fields{grid-template-columns:minmax(0,1fr)}
+  .list{max-height:none}
+  .hero{padding:20px}
+  .hero h1{font-size:34px}
+  .mark{width:48px;height:48px}
+  #openImport{margin-left:0}
+  .m3d-head h2{font-size:18px}
+}
+@media (max-width:520px){.tiers,.stats{grid-template-columns:minmax(0,1fr)}.hero-facts li{flex:1 1 40%}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 </style>
 
 <div class="wrap">
-  <header>
-    <div>
-      <h1>Seamline</h1>
-      <p class="tag">Finds where two utilities' planned construction comes within 40 km, ranks each match by how close it is and whether it's built in the same window, and estimates what coordinating would save.</p>
+  <header class="hero">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 42 16 8h2l7 34M11.5 30h11M13 22h8M14.5 14h5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M27 42 32 16h2l5 26M29 32h8M30.5 24h5" fill="none" stroke="#F2A54A" stroke-width="2.4" stroke-linejoin="round"/><path d="M3 10q11 6 22 0t20 1" fill="none" stroke="#FF5C7F" stroke-width="2" stroke-dasharray="3 3"/></svg>
+      <div>
+        <h1>Seamline</h1>
+        <p class="tag">Finds where two utilities' planned construction comes within 40 km, ranks each match by how close it is and whether it's built in the same window, and estimates what coordinating would save.</p>
+      </div>
     </div>
-    <div class="legend" id="legend"></div>
+    <ul class="hero-facts" aria-label="About">
+      <li><b>40 km</b> closest-point test</li>
+      <li><b>4 tiers</b> of what can be shared</li>
+      <li><b>FERC 1920</b> interregional planning</li>
+    </ul>
   </header>
 
   <section class="bar" aria-label="What to compare">
@@ -266,6 +339,7 @@ select{font-weight:500;min-width:0}
         <label class="bm"><span class="sr">Map style</span><select id="basemap" aria-label="Map style"></select></label>
         <span class="zm"><button type="button" class="btn" id="zin" aria-label="Zoom in">+</button><button type="button" class="btn" id="zout" aria-label="Zoom out">−</button><button type="button" class="btn" id="zreset">Reset</button></span>
       </h2>
+      <div class="legend" id="legend"></div>
       <svg id="map" role="img" aria-label="Map of planned projects. Drag to pan, scroll or use the buttons to zoom."></svg>
       <div class="mapfoot"><p class="note tilenote" id="tileNote" hidden>Map tiles didn't load. This preview blocks outside images, so open <code>index.html</code> from the repo in a browser to see Streets, Satellite and Terrain. The Plain map always works.</p><span class="attr" id="attr"></span></div>
       <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km.</div>
@@ -295,12 +369,11 @@ select{font-weight:500;min-width:0}
   <div class="m3d-box">
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
-      <span class="seg" id="m3dStyle" role="group" aria-label="3D style"><button type="button" data-style="realistic" aria-pressed="true">Realistic</button><button type="button" data-style="stylized" aria-pressed="false">Stylized</button></span>
-      <button type="button" class="btn" id="m3dClose">Close</button>
+      <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>
     <div class="m3d-stage" id="m3dStage"></div>
     <p class="m3d-msg" id="m3dMsg" hidden></p>
-    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible. Stylized is lighter if Realistic runs slowly.</p>
+    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible.</p>
   </div>
 </div>
 
@@ -773,29 +846,26 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 
 </script>
 <script>
-// Seamline 3D: a stylized scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
+// Seamline 3D: a realistic scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
 // the closest-point link, and the shared zone the tier allows (corridor, laydown yard or staging yard).
 // three.js loads on first use. Horizontal positions are to scale; heights are exaggerated so towers read.
-// Two looks: Stylized (flat-shaded, light) and Realistic (PBR materials, physical sky, HDR bloom, ACES tone mapping, FXAA).
+// Rendering: PBR materials, a physical sky that also lights the scene, soft shadows, HDR bloom, ACES tone mapping and FXAA.
 (function (root) {
   const PAL = {
-    skyTop: 0x3f6488, horizon: 0xcfdbe3, fog: 0xbccbd5, sun: 0xfff1d6,
+    fog: 0xa9bccb, sun: 0xfff1d6,
     grass: 0x5f8058, grassDark: 0x3f5c47, grassDry: 0x93a06c, rock: 0x4a5560, lowland: 0x62806f,
     steel: 0xaebfcc, steelDark: 0x5c6f80, porcelain: 0xe2d6bd, gravel: 0x9d9b90, concrete: 0xb9b7ac,
-    fence: 0x46525c, snow: 0xf2f6f8, mountain: 0x6c8196, water: 0x3f7d8f, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
+    fence: 0x46525c, ridge: 0x4f6b55, water: 0x24505c, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let ctx = null, REAL = false;
-  const ensureThree = real => root.Libs.need("THREE", "OrbitControls", ...(real ? ["ThreeExtras"] : []));
-  const STYLE_KEY = "seamline.3dstyle";
-  const getStyle = () => { try { return localStorage.getItem(STYLE_KEY) === "stylized" ? "stylized" : "realistic"; } catch (err) { return "realistic"; } };
+  let ctx = null;
+  const ensureThree = () => root.Libs.need("THREE", "OrbitControls", "ThreeExtras");
 
   // ---------- helpers ----------
-  // Material helper. Stylized: flat-shaded Phong. Realistic: smooth PBR, with rough/metal hints (shiny Phong maps to low roughness).
-  const phong = (T, color, extra = {}) => {
-    const { shininess, specular, rough, metal, ...rest } = extra;
-    if (!REAL) return new T.MeshPhongMaterial(Object.assign({ color, flatShading: true, shininess: shininess ?? 8 }, specular != null ? { specular } : {}, rest));
-    return new T.MeshStandardMaterial(Object.assign({ color, roughness: rough ?? (shininess >= 40 ? 0.35 : 0.85), metalness: metal ?? 0 }, rest, { flatShading: false }));
+  // PBR material helper. `rough` and `metal` set roughness and metalness; `shininess` of 40 or more means a glossy surface.
+  const pbr = (T, color, extra = {}) => {
+    const { shininess, rough, metal, ...rest } = extra;
+    return new T.MeshStandardMaterial(Object.assign({ color, roughness: rough ?? (shininess >= 40 ? 0.35 : 0.85), metalness: metal ?? 0 }, rest));
   };
   const STEEL = { metal: 0.65, rough: 0.38 };
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -864,13 +934,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
 
   function substationGroup(T, s, color) {
-    const g = new T.Group(), steel = phong(T, PAL.steel, STEEL), dark = phong(T, PAL.steelDark, STEEL);
-    const pad = mesh(T, new T.BoxGeometry(s, 0.16, s * 0.8), phong(T, PAL.gravel), false); pad.position.y = 0.08; g.add(pad);
+    const g = new T.Group(), steel = pbr(T, PAL.steel, STEEL), dark = pbr(T, PAL.steelDark, STEEL);
+    const pad = mesh(T, new T.BoxGeometry(s, 0.16, s * 0.8), pbr(T, PAL.gravel), false); pad.position.y = 0.08; g.add(pad);
     // fence
     const f = [], hw = s * 0.52, hd = s * 0.42;
     for (let i = 0; i <= 12; i++) { const t = -1 + i / 6; if (Math.abs(t) <= 1) { f.push(boxAt(T, 0.05, 0.6, 0.05, t * hw, 0.4, hd), boxAt(T, 0.05, 0.6, 0.05, t * hw, 0.4, -hd), boxAt(T, 0.05, 0.6, 0.05, hw, 0.4, t * hd), boxAt(T, 0.05, 0.6, 0.05, -hw, 0.4, t * hd)); } }
     for (const y of [0.35, 0.68]) f.push(boxAt(T, hw * 2, 0.03, 0.03, 0, y, hd), boxAt(T, hw * 2, 0.03, 0.03, 0, y, -hd), boxAt(T, 0.03, 0.03, hd * 2, hw, y, 0), boxAt(T, 0.03, 0.03, hd * 2, -hw, y, 0));
-    g.add(mesh(T, merge(T, f), phong(T, PAL.fence)));
+    g.add(mesh(T, merge(T, f), pbr(T, PAL.fence)));
     // transformers with radiator fins and porcelain bushings
     const tank = [], bush = [];
     for (const x of [-s * 0.2, s * 0.2]) {
@@ -882,11 +952,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const c = cylAt(T, s * 0.025, s * 0.025, s * 0.12, 10, 0, 0, 0); c.rotateZ(Math.PI / 2); c.translate(x, 0.16 + s * 0.2, -s * 0.24); tank.push(c);
       tank.push(boxAt(T, 0.04, s * 0.05, 0.04, x - s * 0.04, 0.16 + s * 0.16, -s * 0.24), boxAt(T, 0.04, s * 0.05, 0.04, x + s * 0.04, 0.16 + s * 0.16, -s * 0.24));
     }
-    g.add(mesh(T, merge(T, tank), phong(T, 0x6d7f8e)));
+    g.add(mesh(T, merge(T, tank), pbr(T, 0x6d7f8e)));
     const curb = [];
     for (const x of [-s * 0.2, s * 0.2]) curb.push(boxAt(T, s * 0.22, 0.06, 0.05, x, 0.19, -s * 0.28), boxAt(T, s * 0.22, 0.06, 0.05, x, 0.19, -s * 0.08), boxAt(T, 0.05, 0.06, s * 0.2, x - s * 0.11, 0.19, -s * 0.18), boxAt(T, 0.05, 0.06, s * 0.2, x + s * 0.11, 0.19, -s * 0.18));
-    g.add(mesh(T, merge(T, curb), phong(T, PAL.concrete)));
-    g.add(mesh(T, merge(T, bush), phong(T, PAL.porcelain, { shininess: 40 })));
+    g.add(mesh(T, merge(T, curb), pbr(T, PAL.concrete)));
+    g.add(mesh(T, merge(T, bush), pbr(T, PAL.porcelain, { shininess: 40 })));
     // lattice gantries and bus
     const gan = [], V = (x, y, z) => new T.Vector3(x, y, z), gh = s * 0.42, gz = s * 0.14;
     for (const x of [-s * 0.38, 0, s * 0.38]) for (const z of [gz - 0.2, gz + 0.2]) {
@@ -897,7 +967,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     g.add(mesh(T, merge(T, gan), steel));
     const bus = [];
     for (const dz of [-0.28, 0, 0.28]) bus.push(boxAt(T, s * 0.78, 0.05, 0.05, 0, gh * 0.78, gz + dz));
-    g.add(mesh(T, merge(T, bus), new T.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.25, flatShading: true })));
+    g.add(mesh(T, merge(T, bus), pbr(T, color, { emissive: color, emissiveIntensity: 0.25 })));
     // disconnect switches on porcelain post insulators under the bus, and lightning masts at the corners
     const post = [], blade = [], mast = [];
     for (let i = 0; i < 5; i++) for (const dz of [-0.28, 0, 0.28]) {
@@ -906,7 +976,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       blade.push(boxAt(T, 0.34, 0.025, 0.025, x + 0.15, 0.2 + s * 0.12, gz + dz));
     }
     for (const [x, z] of [[-s * 0.46, -s * 0.36], [s * 0.46, s * 0.36]]) mast.push(cylAt(T, 0.03, 0.09, s * 0.75, 6, x, s * 0.375, z));
-    g.add(mesh(T, merge(T, post), phong(T, PAL.porcelain, { shininess: 40 })));
+    g.add(mesh(T, merge(T, post), pbr(T, PAL.porcelain, { shininess: 40 })));
     g.add(mesh(T, merge(T, blade), steel));
     g.add(mesh(T, merge(T, mast), dark));
     // breakers
@@ -914,18 +984,18 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     for (let i = 0; i < 6; i++) brk.push(cylAt(T, 0.09, 0.09, s * 0.12, 8, -s * 0.3 + i * s * 0.12, 0.16 + s * 0.06, s * 0.3));
     for (let i = 0; i < 6; i++) brk.push(boxAt(T, 0.16, s * 0.05, 0.14, -s * 0.3 + i * s * 0.12, 0.16 + s * 0.025, s * 0.3 - 0.16));
     g.add(mesh(T, merge(T, brk), dark));
-    const gate = mesh(T, new T.BoxGeometry(0.8, 0.5, 0.03), phong(T, 0xd9a441)); gate.position.set(s * 0.1, 0.36, hd); g.add(gate);
+    const gate = mesh(T, new T.BoxGeometry(0.8, 0.5, 0.03), pbr(T, 0xd9a441)); gate.position.set(s * 0.1, 0.36, hd); g.add(gate);
     // control house
-    const house = mesh(T, new T.BoxGeometry(s * 0.2, s * 0.12, s * 0.14), phong(T, PAL.concrete)); house.position.set(-s * 0.36, 0.16 + s * 0.06, -s * 0.3); g.add(house);
-    const roof = mesh(T, new T.BoxGeometry(s * 0.22, 0.08, s * 0.16), phong(T, color)); roof.position.set(-s * 0.36, 0.2 + s * 0.12, -s * 0.3); g.add(roof);
+    const house = mesh(T, new T.BoxGeometry(s * 0.2, s * 0.12, s * 0.14), pbr(T, PAL.concrete)); house.position.set(-s * 0.36, 0.16 + s * 0.06, -s * 0.3); g.add(house);
+    const roof = mesh(T, new T.BoxGeometry(s * 0.22, 0.08, s * 0.16), pbr(T, color)); roof.position.set(-s * 0.36, 0.2 + s * 0.12, -s * 0.3); g.add(roof);
     return g;
   }
 
   function plantGroup(T, s, color) {
-    const g = new T.Group(), steel = phong(T, PAL.steel, STEEL), dark = phong(T, PAL.steelDark, STEEL);
-    const pad = mesh(T, new T.BoxGeometry(s * 1.2, 0.16, s * 0.9), phong(T, PAL.concrete), false); pad.position.y = 0.08; g.add(pad);
+    const g = new T.Group(), steel = pbr(T, PAL.steel, STEEL), dark = pbr(T, PAL.steelDark, STEEL);
+    const pad = mesh(T, new T.BoxGeometry(s * 1.2, 0.16, s * 0.9), pbr(T, PAL.concrete), false); pad.position.y = 0.08; g.add(pad);
     const hall = mesh(T, new T.BoxGeometry(s * 0.5, s * 0.22, s * 0.3), dark); hall.position.set(-s * 0.2, s * 0.11 + 0.16, s * 0.08); g.add(hall);
-    const stripe = mesh(T, new T.BoxGeometry(s * 0.51, s * 0.035, s * 0.31), phong(T, color, { emissive: color, emissiveIntensity: 0.15 })); stripe.position.set(-s * 0.2, s * 0.19 + 0.16, s * 0.08); g.add(stripe);
+    const stripe = mesh(T, new T.BoxGeometry(s * 0.51, s * 0.035, s * 0.31), pbr(T, color, { emissive: color, emissiveIntensity: 0.15 })); stripe.position.set(-s * 0.2, s * 0.19 + 0.16, s * 0.08); g.add(stripe);
     const hr = [], stacks = [];
     for (const x of [s * 0.12, s * 0.3]) {
       hr.push(boxAt(T, s * 0.12, s * 0.28, s * 0.24, x, s * 0.14 + 0.16, s * 0.02));
@@ -935,11 +1005,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     g.add(mesh(T, merge(T, hr), steel));
     const bands = [];
     for (const x of [s * 0.12, s * 0.3]) bands.push(cylAt(T, s * 0.039, s * 0.039, s * 0.05, 10, x, s * 0.54 + 0.16, -s * 0.16));
-    g.add(mesh(T, merge(T, bands), phong(T, color)));
+    g.add(mesh(T, merge(T, bands), pbr(T, color)));
     // hyperbolic cooling tower
     const prof = [];
     for (let i = 0; i <= 10; i++) { const t = i / 10; prof.push(new T.Vector2(s * (0.1 + 0.07 * Math.pow(2 * t - 1.2, 2)), t * s * 0.46)); }
-    const ct = mesh(T, new T.LatheGeometry(prof, 18), phong(T, 0xd3d9dc, { side: T.DoubleSide })); ct.position.set(-s * 0.32, 0.16, -s * 0.24); g.add(ct);
+    const ct = mesh(T, new T.LatheGeometry(prof, 18), pbr(T, 0xd3d9dc, { side: T.DoubleSide })); ct.position.set(-s * 0.32, 0.16, -s * 0.24); g.add(ct);
     stacks.push([-s * 0.32, s * 0.46 + 0.16, -s * 0.24, 1]);
     // pipe rack along the front, like the reference art
     const pipes = [];
@@ -948,17 +1018,17 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     g.add(mesh(T, merge(T, pipes), steel));
     const tanks = [];
     for (const x of [s * 0.44, s * 0.52]) tanks.push(cylAt(T, s * 0.05, s * 0.05, s * 0.12, 12, x, s * 0.06 + 0.16, s * 0.16));
-    g.add(mesh(T, merge(T, tanks), phong(T, 0xdde2e4)));
+    g.add(mesh(T, merge(T, tanks), pbr(T, 0xdde2e4)));
     g.userData.stacks = stacks;
     return g;
   }
 
   function yardGroup(T, w, d) {
     const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
-    const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), phong(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
+    const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
     const reels = [];
     for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
-    g.add(mesh(T, merge(T, reels), phong(T, 0x8a6440)));
+    g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
     const trucks = [], cabs = [], tires = [], glass = [];
     for (let i = 0; i < 3; i++) {
       const x = -w * 0.34 + i * 1.6, z = d * 0.26;
@@ -973,22 +1043,22 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     cabs.push(boxAt(T, 0.42, 0.42, 0.55, bx + 0.78, 0.47, bz)); glass.push(boxAt(T, 0.02, 0.16, 0.45, bx + 1.0, 0.58, bz));
     wheels(T, tires, bx + 0.2, bz, 1.5, 0.56);
     const boom = [beam(T, V(bx - 0.3, 0.6, bz), V(bx + 0.4, 1.9, bz), 0.1), beam(T, V(bx + 0.4, 1.9, bz), V(bx + 1.1, 2.3, bz), 0.08), boxAt(T, 0.3, 0.3, 0.3, bx + 1.2, 2.3, bz)];
-    g.add(mesh(T, merge(T, trucks), phong(T, 0x39434b)));
-    g.add(mesh(T, merge(T, cabs), phong(T, 0xe6e0d0)));
-    g.add(mesh(T, merge(T, tires), phong(T, 0x1d2226)));
-    g.add(mesh(T, merge(T, glass), phong(T, 0x7fa9c4, { shininess: 90 })));
-    g.add(mesh(T, merge(T, boom), phong(T, 0xe6e0d0)));
+    g.add(mesh(T, merge(T, trucks), pbr(T, 0x39434b)));
+    g.add(mesh(T, merge(T, cabs), pbr(T, 0xe6e0d0)));
+    g.add(mesh(T, merge(T, tires), pbr(T, 0x1d2226)));
+    g.add(mesh(T, merge(T, glass), pbr(T, 0x7fa9c4, { shininess: 90 })));
+    g.add(mesh(T, merge(T, boom), pbr(T, 0xe6e0d0)));
     // site office trailer, portable toilets, cones
-    const off = mesh(T, new T.BoxGeometry(1.8, 0.6, 0.7), phong(T, 0xf0ede4)); off.position.set(-w * 0.32, 0.42, -d * 0.4 + 0.1); g.add(off);
-    const offWin = mesh(T, merge(T, [boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 - 0.5, 0.5, -d * 0.4 + 0.46), boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 + 0.4, 0.5, -d * 0.4 + 0.46)]), phong(T, 0x7fa9c4)); g.add(offWin);
-    g.add(mesh(T, merge(T, [boxAt(T, 0.25, 0.5, 0.25, w * 0.44, 0.37, -d * 0.4), boxAt(T, 0.25, 0.5, 0.25, w * 0.44 - 0.32, 0.37, -d * 0.4)]), phong(T, 0x3d7fb8)));
+    const off = mesh(T, new T.BoxGeometry(1.8, 0.6, 0.7), pbr(T, 0xf0ede4)); off.position.set(-w * 0.32, 0.42, -d * 0.4 + 0.1); g.add(off);
+    const offWin = mesh(T, merge(T, [boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 - 0.5, 0.5, -d * 0.4 + 0.46), boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 + 0.4, 0.5, -d * 0.4 + 0.46)]), pbr(T, 0x7fa9c4)); g.add(offWin);
+    g.add(mesh(T, merge(T, [boxAt(T, 0.25, 0.5, 0.25, w * 0.44, 0.37, -d * 0.4), boxAt(T, 0.25, 0.5, 0.25, w * 0.44 - 0.32, 0.37, -d * 0.4)]), pbr(T, 0x3d7fb8)));
     const cones = [];
     for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
-    g.add(mesh(T, merge(T, cones), phong(T, 0xf07a22)));
+    g.add(mesh(T, merge(T, cones), pbr(T, 0xf07a22)));
     const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
-    g.add(mesh(T, merge(T, steel), phong(T, 0x7b8a96)));
+    g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
     // crawler crane with a lattice boom
     const cr = [], cx = w * 0.34, cz = d * 0.1;
     cr.push(boxAt(T, 1.1, 0.3, 0.9, cx, 0.3, cz), boxAt(T, 0.8, 0.55, 0.7, cx, 0.72, cz));
@@ -996,7 +1066,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     for (const dz of [-0.14, 0.14]) for (const dy of [-0.1, 0.1]) cr.push(beam(T, b0.clone().add(V(0, dy, dz)), b1.clone().add(V(0, dy, dz)), 0.05));
     for (let i = 0; i < 8; i++) { const a = b0.clone().lerp(b1, i / 8), c = b0.clone().lerp(b1, (i + 1) / 8); cr.push(beam(T, a.clone().add(V(0, 0, -0.14)), c.clone().add(V(0, 0, 0.14)), 0.03)); }
     cr.push(beam(T, b1, V(b1.x, 2.0, cz), 0.02));
-    g.add(mesh(T, merge(T, cr), phong(T, PAL.crane)));
+    g.add(mesh(T, merge(T, cr), pbr(T, PAL.crane)));
     return g;
   }
 
@@ -1011,13 +1081,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const ht = new T.SphereGeometry(0.068, 6, 3, 0, Math.PI * 2, 0, Math.PI / 2); ht.translate(x, 0.48, z); hat.push(ht, cylAt(T, 0.085, 0.085, 0.01, 8, x, 0.48, z));
     }
     const g = new T.Group();
-    g.add(mesh(T, merge(T, legs), phong(T, 0x2c3a52)), mesh(T, merge(T, vest), phong(T, 0xf2c230, { emissive: 0x6b5200, emissiveIntensity: 0.3 })),
-      mesh(T, merge(T, head), phong(T, 0xc99a74)), mesh(T, merge(T, hat), phong(T, 0xffffff, { shininess: 50 })));
+    g.add(mesh(T, merge(T, legs), pbr(T, 0x2c3a52)), mesh(T, merge(T, vest), pbr(T, 0xf2c230, { emissive: 0x6b5200, emissiveIntensity: 0.3 })),
+      mesh(T, merge(T, head), pbr(T, 0xc99a74)), mesh(T, merge(T, hat), pbr(T, 0xffffff, { shininess: 50 })));
     return g;
   }
   const wheels = (T, list, x, z, len, wid) => { for (const dx of [-len / 2 + 0.15, len / 2 - 0.15]) for (const dz of [-wid / 2, wid / 2]) { const w = cylAt(T, 0.13, 0.13, 0.08, 10, 0, 0, 0); w.rotateX(Math.PI / 2); w.translate(x + dx, 0.13, z + dz); list.push(w); } };
 
-  // Tiling normal map for ripples on ponds (realistic mode): a few summed sine waves, converted to normals.
+  // Tiling normal map for ripples on ponds: a few summed sine waves, converted to normals.
   function waterNormals(T) {
     const N = 128, c = document.createElement("canvas"); c.width = c.height = N;
     const x = c.getContext("2d"), img = x.createImageData(N, N), TAU = Math.PI * 2;
@@ -1030,7 +1100,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(5, 5);
     return t;
   }
-  // Colors in this file are written as sRGB hex. The realistic pipeline works in linear light, so convert every
+  // Colors in this file are written as sRGB hex. The renderer works in linear light, so convert every
   // material, light, vertex and instance color once after the scene is built.
   function linearize(T, scene) {
     const seen = new Set(), c = new T.Color();
@@ -1060,8 +1130,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
 
   // ---------- build ----------
-  function build(pair, opts, real) {
-    REAL = real;
+  function build(pair, opts) {
     const T = root.THREE, rnd = rng(7);
     const c0 = [(pair.ca[0] + pair.cb[0]) / 2, (pair.ca[1] + pair.cb[1]) / 2];
     const KX = 111.32 * Math.cos(c0[0] * Math.PI / 180), KY = 110.57;
@@ -1079,27 +1148,17 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const toV = ([lat, lon]) => { const x = (lon - c0[1]) * KX * S, z = -(lat - c0[0]) * KY * S; return new T.Vector3(x, heightAt(x, z), z); };
 
     const scene = new T.Scene();
-    scene.fog = new T.FogExp2(REAL ? 0xa9bccb : PAL.fog, REAL ? 0.0036 : 0.0075);
-    const sunDir = new T.Vector3(0.55, REAL ? 0.52 : 0.75, 0.35).normalize();
+    scene.fog = new T.FogExp2(PAL.fog, 0.0036);
+    const sunDir = new T.Vector3(0.55, 0.52, 0.35).normalize();
 
-    // sky: a physical (Preetham) sky in realistic mode, else a gradient dome with a warm glow around the sun
-    let sky = null;
-    if (REAL) {
-      sky = new T.Sky(); sky.scale.setScalar(3000);
-      const u = sky.material.uniforms;
-      u.turbidity.value = 5.5; u.rayleigh.value = 1.4; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.82; u.sunPosition.value.copy(sunDir);
-      scene.add(sky);
-    } else scene.add(new T.Mesh(new T.SphereGeometry(R * 9, 32, 16), new T.ShaderMaterial({
-      side: T.BackSide, depthWrite: false,
-      uniforms: { top: { value: new T.Color(PAL.skyTop) }, horizon: { value: new T.Color(PAL.horizon) }, sunC: { value: new T.Color(PAL.sun) }, sunDir: { value: sunDir } },
-      vertexShader: "varying vec3 vd; void main(){ vd = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-      fragmentShader: "uniform vec3 top; uniform vec3 horizon; uniform vec3 sunC; uniform vec3 sunDir; varying vec3 vd;" +
-        "void main(){ float h = max(vd.y, 0.0); vec3 c = mix(horizon, top, pow(h, 0.55)); float s = max(dot(vd, sunDir), 0.0);" +
-        "c += sunC * (pow(s, 400.0) * 1.2 + pow(s, 12.0) * 0.25); gl_FragColor = vec4(c, 1.0); }",
-    })));
+    // physical (Preetham) sky; a copy of it also becomes the environment light
+    const sky = new T.Sky(); sky.scale.setScalar(3000);
+    const u = sky.material.uniforms;
+    u.turbidity.value = 4.5; u.rayleigh.value = 2; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.82; u.sunPosition.value.copy(sunDir);
+    scene.add(sky);
 
-    scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, REAL ? 0.2 : 0.75));
-    const sun = new T.DirectionalLight(PAL.sun, REAL ? 2.6 : 0.95);
+    scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, 0.2));
+    const sun = new T.DirectionalLight(PAL.sun, 2.6);
     sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
     const sc = sun.shadow.camera; sc.left = sc.bottom = -R * 1.4; sc.right = sc.top = R * 1.4; sc.near = 1; sc.far = R * 5;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
@@ -1120,20 +1179,21 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
     // speckled grass texture, multiplied over the vertex colors
-    const GS = REAL ? 256 : 128, gc = document.createElement("canvas"); gc.width = gc.height = GS;
+    const GS = 256, gc = document.createElement("canvas"); gc.width = gc.height = GS;
     const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
-    for (let i = 0; i < (REAL ? 9000 : 2600); i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
-    if (REAL) { // grass blades and a few bare patches
+    for (let i = 0; i < 9000; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    // grass blades and a few bare patches
+    {
       for (let i = 0; i < 2200; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
       for (let i = 0; i < 14; i++) { gx.fillStyle = "rgba(205,190,160,0.18)"; gx.beginPath(); gx.arc(gr() * GS, gr() * GS, 6 + gr() * 18, 0, 7); gx.fill(); }
     }
-    const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(REAL ? 26 : 34, REAL ? 26 : 34);
-    if (REAL) { groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = 4; }
-    const ground = new T.Mesh(gGeo, phong(T, 0xffffff, REAL ? { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 } : { vertexColors: true, shininess: 2, map: groundTex })); ground.receiveShadow = true; scene.add(ground);
+    const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(26, 26);
+    groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = 4;
+    const ground = new T.Mesh(gGeo, pbr(T, 0xffffff, { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 })); ground.receiveShadow = true; scene.add(ground);
 
     // basalt columns around the cliff
     const colGeo = new T.CylinderGeometry(1, 1, 1, 6); colGeo.translate(0, 0.5, 0);
-    const NC = 340, cols3 = new T.InstancedMesh(colGeo, phong(T, 0xffffff), NC), mtx = new T.Matrix4(), q = new T.Quaternion(), sv = new T.Vector3(), pv = new T.Vector3();
+    const NC = 340, cols3 = new T.InstancedMesh(colGeo, pbr(T, 0xffffff), NC), mtx = new T.Matrix4(), q = new T.Quaternion(), sv = new T.Vector3(), pv = new T.Vector3();
     for (let i = 0; i < NC; i++) {
       const a = i / NC * Math.PI * 2 + rnd() * 0.02, rr = edge(a) - 1.2 + rnd() * 2.6, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
       const top = heightAt(Math.cos(a) * (edge(a) - 1.5), Math.sin(a) * (edge(a) - 1.5)) - 0.2 - (rr > edge(a) ? rnd() * 5 : rnd() * 0.8), rad = 0.9 + rnd() * 0.7;
@@ -1142,29 +1202,23 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
     cols3.castShadow = true; cols3.receiveShadow = true; scene.add(cols3);
 
-    // lowland, distant snowcapped mountains, clouds
-    const low = new T.Mesh(new T.PlaneGeometry(R * 20, R * 20), phong(T, PAL.lowland)); low.rotation.x = -Math.PI / 2; low.position.y = LOW - 0.3; scene.add(low);
-    if (REAL) {
-      // realistic: low forested ridges fading into haze, so the physical sky shows above the horizon
-      const hMat = phong(T, 0x4f6b55, { rough: 1 });
-      for (let i = 0; i < 26; i++) {
-        const a = i / 26 * Math.PI * 2 + 0.1, r = R * 4.2 + (i % 4) * 18, w = 40 + (i * 13 % 25);
-        const m = new T.Mesh(new T.SphereGeometry(1, 24, 12), hMat); m.scale.set(w, 9 + (i * 7 % 8), w * 0.7);
-        m.position.set(Math.cos(a) * r, LOW, Math.sin(a) * r); m.rotation.y = a; scene.add(m);
-      }
-    } else {
-      const mMat = phong(T, PAL.mountain), sMat = phong(T, PAL.snow);
-      for (let i = 0; i < 20; i++) {
-        const a = i / 20 * Math.PI * 2 + 0.2, r = R * 3.3 + (i % 3) * 12, h = 22 + (i * 37 % 15), w = 34 + (i * 13 % 18);
-        const m = new T.Mesh(new T.ConeGeometry(w, h, 7), mMat); m.position.set(Math.cos(a) * r, LOW + h / 2, Math.sin(a) * r); m.rotation.y = i; scene.add(m);
-        const cap = new T.Mesh(new T.ConeGeometry(w * 0.31, h * 0.3, 7), sMat); cap.position.set(m.position.x, LOW + h * 0.85 + 0.1, m.position.z); cap.rotation.y = i; scene.add(cap);
-      }
+    // lowland, and low forested ridges fading into haze so the sky shows above the horizon
+    const low = new T.Mesh(new T.PlaneGeometry(R * 20, R * 20), pbr(T, PAL.lowland, { rough: 1 })); low.rotation.x = -Math.PI / 2; low.position.y = LOW - 0.3; scene.add(low);
+    const hMat = pbr(T, PAL.ridge, { rough: 1 }), hGeo = new T.SphereGeometry(1, 24, 12);
+    for (let i = 0; i < 26; i++) {
+      const a = i / 26 * Math.PI * 2 + 0.1, r = R * 4.2 + (i % 4) * 18, w = 40 + (i * 13 % 25);
+      const m = new T.Mesh(hGeo, hMat); m.scale.set(w, 9 + (i * 7 % 8), w * 0.7);
+      m.position.set(Math.cos(a) * r, LOW, Math.sin(a) * r); m.rotation.y = a; scene.add(m);
     }
-    const clouds = [], cMat = new T.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.92 });
-    for (let i = 0; i < 9; i++) {
+    // soft cumulus clouds: clusters of billboard puffs, brighter on top
+    const tex = softTexture(T), clouds = [];
+    for (let i = 0; i < 11; i++) {
       const cl = new T.Group();
-      for (let k = 0; k < 5; k++) { const p = new T.Mesh(new T.IcosahedronGeometry(2.5 + rnd() * 2.5, 0), cMat); p.position.set((k - 2) * 2.8 + rnd(), rnd() * 1.2, rnd() * 2.5); p.scale.y = 0.55; cl.add(p); }
-      cl.position.set((rnd() - 0.5) * R * 5, 26 + rnd() * 10, (rnd() - 0.5) * R * 5); scene.add(cl); clouds.push(cl);
+      for (let k = 0; k < 9; k++) {
+        const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, color: k < 5 ? 0xffffff : 0xdfe6ee, opacity: 0.85 }));
+        const w = 9 + rnd() * 9; sp.scale.set(w, w * 0.62, 1); sp.position.set((rnd() - 0.5) * 22, (k < 5 ? 1.6 : -0.6) + rnd() * 2.2, (rnd() - 0.5) * 8); cl.add(sp);
+      }
+      cl.position.set((rnd() - 0.5) * R * 6, 34 + rnd() * 14, (rnd() - 0.5) * R * 6); scene.add(cl); clouds.push(cl);
     }
 
     // ---------- the two projects ----------
@@ -1183,9 +1237,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
-        const steelI = new T.InstancedMesh(parts.steel, phong(T, PAL.steel, Object.assign({ shininess: 30 }, STEEL)), pts.length);
-        const accI = new T.InstancedMesh(parts.accent, phong(T, colorHex, { emissive: colorHex, emissiveIntensity: 0.2 }), pts.length);
-        const insI = new T.InstancedMesh(parts.ins, phong(T, PAL.porcelain, { shininess: 40 }), pts.length);
+        const steelI = new T.InstancedMesh(parts.steel, pbr(T, PAL.steel, Object.assign({ shininess: 30 }, STEEL)), pts.length);
+        const accI = new T.InstancedMesh(parts.accent, pbr(T, colorHex, { emissive: colorHex, emissiveIntensity: 0.2 }), pts.length);
+        const insI = new T.InstancedMesh(parts.ins, pbr(T, PAL.porcelain, { shininess: 40 }), pts.length);
         // bundled conductors: 1 wire per phase at 115 kV, 2 at 230 kV, 4 at 500 kV
         const offs = p.kv >= 500 ? [[-0.13, 0.11], [0.13, 0.11], [-0.13, -0.11], [0.13, -0.11]] : p.kv >= 230 ? [[-0.13, 0], [0.13, 0]] : [[0, 0]];
         const heads = [];
@@ -1213,7 +1267,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         scene.add(new T.LineSegments(lineGeo(cond), new T.LineBasicMaterial({ color: colorHex })));
         scene.add(new T.LineSegments(lineGeo(shield), new T.LineBasicMaterial({ color: 0x55636f })));
         // orange aviation marker balls on the shield wire
-        const ballI = new T.InstancedMesh(new T.SphereGeometry(0.16 * TS, 8, 6), phong(T, 0xf07a22, { emissive: 0x7a3000, emissiveIntensity: 0.3 }), Math.max(1, balls.length));
+        const ballI = new T.InstancedMesh(new T.SphereGeometry(0.16 * TS, 8, 6), pbr(T, 0xf07a22, { emissive: 0x7a3000, emissiveIntensity: 0.3 }), Math.max(1, balls.length));
         balls.forEach((m, i) => { mtx.makeTranslation(m.x, m.y, m.z); ballI.setMatrixAt(i, mtx); }); ballI.count = balls.length; scene.add(ballI);
         return { anchor: pts[Math.floor(pts.length / 2)], top: kvH };
       }
@@ -1254,7 +1308,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const len = Math.max(10, va.distanceTo(vb) + 8), ang = Math.atan2(dirAB.x, dirAB.z), gm = mid.clone(); gm.y = heightAt(mid.x, mid.z);
       const corr = new T.Mesh(new T.PlaneGeometry(4, len), new T.MeshBasicMaterial({ color: tierHex, transparent: true, opacity: 0.25, depthWrite: false }));
       corr.rotation.set(-Math.PI / 2, 0, ang); corr.position.set(gm.x, gm.y + 0.08, gm.z); scene.add(corr);
-      const road = mesh(T, new T.PlaneGeometry(0.9, len), phong(T, 0xa58d68), false); road.rotation.set(-Math.PI / 2, 0, ang); road.position.set(gm.x, gm.y + 0.1, gm.z); scene.add(road);
+      const road = mesh(T, new T.PlaneGeometry(0.9, len), pbr(T, 0xa58d68), false); road.rotation.set(-Math.PI / 2, 0, ang); road.position.set(gm.x, gm.y + 0.1, gm.z); scene.add(road);
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
@@ -1266,10 +1320,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
     // ponds
-    const waterTex = REAL ? waterNormals(T) : null;
-    const water = REAL
-      ? new T.MeshStandardMaterial({ color: 0x24505c, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.94, normalMap: waterTex, normalScale: new T.Vector2(0.15, 0.15), envMapIntensity: 1.3 })
-      : phong(T, PAL.water, { shininess: 90, specular: 0x9fc3d0, transparent: true, opacity: 0.92, flatShading: false });
+    const waterTex = waterNormals(T);
+    const water = new T.MeshStandardMaterial({ color: PAL.water, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.94, normalMap: waterTex, normalScale: new T.Vector2(0.15, 0.15), envMapIntensity: 1.3 });
     for (let i = 0, made = 0; i < 40 && made < 6; i++) {
       const x = (rnd() - 0.5) * R * 2.6, z = (rnd() - 0.5) * R * 2.6, r = 2.5 + rnd() * 4;
       if (Math.hypot(x, z) > RG - 10 || !clear(x, z, r + 1)) continue;
@@ -1279,9 +1331,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     }
 
     // instanced pines
-    const fol = merge(T, [cylAt(T, 0, 0.55, 1.2, 6, 0, 1.0, 0), cylAt(T, 0, 0.42, 1.0, 6, 0, 1.6, 0), cylAt(T, 0, 0.28, 0.7, 6, 0, 2.1, 0)]);
+    const fol = merge(T, [cylAt(T, 0, 0.55, 1.2, 9, 0, 1.0, 0), cylAt(T, 0, 0.42, 1.0, 9, 0, 1.6, 0), cylAt(T, 0, 0.28, 0.7, 9, 0, 2.1, 0)]);
     const trk = merge(T, [cylAt(T, 0.07, 0.1, 0.6, 5, 0, 0.3, 0)]);
-    const NP = 300, pinesF = new T.InstancedMesh(fol, phong(T, 0xffffff), NP), pinesT = new T.InstancedMesh(trk, phong(T, PAL.trunk), NP);
+    const NP = 300, pinesF = new T.InstancedMesh(fol, pbr(T, 0xffffff), NP), pinesT = new T.InstancedMesh(trk, pbr(T, PAL.trunk), NP);
     let np = 0;
     for (let i = 0; i < NP * 3 && np < NP; i++) {
       // clump trees: pick a grove center then scatter around it
@@ -1310,55 +1362,44 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       if (im2) { im2.count = c; im2.castShadow = true; scene.add(im2); }
       return im;
     };
-    const canopy = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.75, 0); g.translate(0, 1.5, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.55, 0); g.translate(0.35, 1.95, 0.1); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.5, 0); g.translate(-0.3, 1.85, -0.2); return g; })()]);
-    scatter(canopy, phong(T, 0xffffff), 110, 1.8, 0.8, 1.4, 0x5b8a47, 0.06, 0.12, [merge(T, [cylAt(T, 0.06, 0.1, 1.3, 5, 0, 0.65, 0)]), phong(T, PAL.trunk)]);
-    const bush = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.35, 0); g.translate(0, 0.25, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.25, 0); g.translate(0.3, 0.18, 0.1); return g; })()]);
-    scatter(bush, phong(T, 0xffffff), 260, 0.6, 0.7, 1.5, 0x4f7a45, 0.05, 0.14);
+    const canopy = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.75, 1); g.translate(0, 1.5, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.55, 1); g.translate(0.35, 1.95, 0.1); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.5, 1); g.translate(-0.3, 1.85, -0.2); return g; })()]);
+    scatter(canopy, pbr(T, 0xffffff), 110, 1.8, 0.8, 1.4, 0x5b8a47, 0.06, 0.12, [merge(T, [cylAt(T, 0.06, 0.1, 1.3, 5, 0, 0.65, 0)]), pbr(T, PAL.trunk)]);
+    const bush = merge(T, [(() => { const g = new T.IcosahedronGeometry(0.35, 1); g.translate(0, 0.25, 0); return g; })(), (() => { const g = new T.IcosahedronGeometry(0.25, 1); g.translate(0.3, 0.18, 0.1); return g; })()]);
+    scatter(bush, pbr(T, 0xffffff), 260, 0.6, 0.7, 1.5, 0x4f7a45, 0.05, 0.14);
     const rock = new T.DodecahedronGeometry(0.35, 0); rock.translate(0, 0.12, 0);
-    scatter(rock, phong(T, 0xffffff), 90, 0.5, 0.5, 1.8, 0x7d8790, 0.02, 0.12);
+    scatter(rock, pbr(T, 0xffffff), 90, 0.5, 0.5, 1.8, 0x7d8790, 0.02, 0.12);
     const tuft = merge(T, [cylAt(T, 0, 0.05, 0.3, 3, 0, 0.15, 0), cylAt(T, 0, 0.04, 0.24, 3, 0.07, 0.12, 0.03), cylAt(T, 0, 0.04, 0.22, 3, -0.06, 0.11, -0.04)]);
-    const tufts = scatter(tuft, phong(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
+    const tufts = scatter(tuft, pbr(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
 
     // work crews at the closest points
     [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
 
     // steam sprites over stacks and cooling towers
-    const tex = softTexture(T), puffs = [];
+    const puffs = [];
     steam.forEach(st => { for (let i = 0; i < (st.big ? 14 : 8); i++) { const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, color: 0xffffff })); sp.userData = { at: st.at, t: i / (st.big ? 14 : 8), big: st.big, s: st.s }; scene.add(sp); puffs.push(sp); } });
 
     // aim the sun's shadow camera at the pair
     const focus = va.clone().lerp(vb, 0.5);
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
-    if (REAL) linearize(T, scene);
+    linearize(T, scene);
     return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
   }
 
   // ---------- modal and render loop ----------
-  // view: optional { pos, target } to keep the camera when switching styles.
-  function open(pair, opts, view) {
+  function open(pair, opts) {
     const modal = document.getElementById("m3d");
     modal.hidden = false;
     document.getElementById("m3dTitle").textContent = opts.title;
     document.getElementById("m3dSub").textContent = opts.subtitle;
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
-    const style = getStyle(), real = style === "realistic";
-    for (const b of document.querySelectorAll("#m3dStyle button")) {
-      b.setAttribute("aria-pressed", b.dataset.style === style);
-      b.onclick = () => {
-        if (b.dataset.style === getStyle()) return;
-        try { localStorage.setItem(STYLE_KEY, b.dataset.style); } catch (err) { /* keep the choice for this view only */ }
-        const keep = ctx && ctx.view();
-        open(pair, opts, keep);
-      };
-    }
-    msg.textContent = real ? "Loading realistic 3D…" : "Loading 3D…"; msg.hidden = false;
-    if (!view) document.getElementById("m3dClose").focus();
-    ensureThree(real).then(() => {
-      if (modal.hidden || getStyle() !== style) return;
+    msg.textContent = "Loading 3D…"; msg.hidden = false;
+    document.getElementById("m3dClose").focus();
+    ensureThree().then(() => {
+      if (modal.hidden) return;
       close(true);
-      const T = root.THREE, built = build(pair, opts, real);
-      const renderer = new T.WebGLRenderer({ antialias: !real, powerPreference: "high-performance" });
+      const T = root.THREE, built = build(pair, opts);
+      const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
@@ -1367,43 +1408,40 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const v = new T.Vector3();
       const placeTags = () => { const w = stage.clientWidth, h = stage.clientHeight; tags.forEach(t => { v.copy(t.pos).project(cam); const off = v.z > 1; t.el.style.display = off ? "none" : ""; t.el.style.transform = `translate(${(v.x + 1) / 2 * w}px, ${(1 - v.y) / 2 * h}px) translate(-50%, -100%)`; }); };
 
-      const cam = new T.PerspectiveCamera(42, 1, 0.5, real ? 9000 : 2500);
+      const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced || view ? 0 : 2.6;
+      const INTRO = reduced ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
-      if (view) cam.position.copy(view.pos); else if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
-      cam.lookAt(view ? view.target : f);
+      if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
+      cam.lookAt(f);
 
       const controls = new T.OrbitControls(cam, renderer.domElement);
-      controls.target.copy(view ? view.target : f); controls.enableDamping = true; controls.dampingFactor = 0.08;
+      controls.target.copy(f); controls.enableDamping = true; controls.dampingFactor = 0.08;
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
-      controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = !reduced && !INTRO && !view;
+      controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = false;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
 
-      // Realistic: render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
-      let composer = null, fxaa = null, pmrem = null;
-      if (real) {
-        pmrem = new T.PMREMGenerator(renderer);
-        const envScene = new T.Scene(); envScene.add(built.sky.clone());
-        built.scene.environment = pmrem.fromScene(envScene).texture;
-        const rt = new T.WebGLRenderTarget(1, 1, { type: T.HalfFloatType, format: T.RGBAFormat, minFilter: T.LinearFilter, magFilter: T.LinearFilter });
-        composer = new T.EffectComposer(renderer, rt);
-        composer.addPass(new T.RenderPass(built.scene, cam));
-        composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
-        const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
-        composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
-        fxaa = new T.ShaderPass(T.FXAAShader); composer.addPass(fxaa);
-      }
+      // Render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
+      const pmrem = new T.PMREMGenerator(renderer);
+      const envScene = new T.Scene(); envScene.add(built.sky.clone());
+      built.scene.environment = pmrem.fromScene(envScene).texture;
+      const rt = new T.WebGLRenderTarget(1, 1, { type: T.HalfFloatType, format: T.RGBAFormat, minFilter: T.LinearFilter, magFilter: T.LinearFilter });
+      const composer = new T.EffectComposer(renderer, rt);
+      composer.addPass(new T.RenderPass(built.scene, cam));
+      composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
+      const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
+      composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
+      const fxaa = new T.ShaderPass(T.FXAAShader); composer.addPass(fxaa);
 
       const size = () => {
-        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(real ? 1.25 : 1.5, devicePixelRatio);
+        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(1.25, devicePixelRatio);
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
-        if (composer) { composer.setPixelRatio(pr); composer.setSize(w, h); fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr)); }
+        composer.setPixelRatio(pr); composer.setSize(w, h); fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
         cam.aspect = w / h; cam.updateProjectionMatrix();
       };
       size();
@@ -1427,10 +1465,10 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           else if (kind === "beam") m.material.opacity = 0.28 + 0.14 * Math.sin(t * 2.4);
           else m.scale.setScalar(1 + 0.25 * Math.sin(t * 3));
         });
-        built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 200) c.position.x = -200; });
-        if (built.waterTex) built.waterTex.offset.set(t * 0.012, t * 0.007);
+        built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 260) c.position.x = -260; });
+        built.waterTex.offset.set(t * 0.012, t * 0.007);
         controls.update();
-        if (composer) composer.render(); else renderer.render(built.scene, cam);
+        composer.render();
         placeTags(); raf = requestAnimationFrame(loop);
       };
       loop();
@@ -1438,13 +1476,11 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const onResize = () => size();
       addEventListener("resize", onResize);
       ctx = {
-        view: () => ({ pos: cam.position.clone(), target: controls.target.clone() }),
         stop: () => {
           cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
           built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
           [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
-          if (composer) { composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); }
-          if (pmrem) pmrem.dispose();
+          composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); pmrem.dispose();
           renderer.dispose();
         },
       };

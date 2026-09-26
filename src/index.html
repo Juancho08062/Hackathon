@@ -9,12 +9,19 @@
 </style>
 
 <div class="wrap">
-  <header>
-    <div>
-      <h1>Seamline</h1>
-      <p class="tag">Finds where two utilities' planned construction comes within 40 km, ranks each match by how close it is and whether it's built in the same window, and estimates what coordinating would save.</p>
+  <header class="hero">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 42 16 8h2l7 34M11.5 30h11M13 22h8M14.5 14h5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M27 42 32 16h2l5 26M29 32h8M30.5 24h5" fill="none" stroke="#F2A54A" stroke-width="2.4" stroke-linejoin="round"/><path d="M3 10q11 6 22 0t20 1" fill="none" stroke="#FF5C7F" stroke-width="2" stroke-dasharray="3 3"/></svg>
+      <div>
+        <h1>Seamline</h1>
+        <p class="tag">Finds where two utilities' planned construction comes within 40 km, ranks each match by how close it is and whether it's built in the same window, and estimates what coordinating would save.</p>
+      </div>
     </div>
-    <div class="legend" id="legend"></div>
+    <ul class="hero-facts" aria-label="About">
+      <li><b>40 km</b> closest-point test</li>
+      <li><b>4 tiers</b> of what can be shared</li>
+      <li><b>FERC 1920</b> interregional planning</li>
+    </ul>
   </header>
 
   <section class="bar" aria-label="What to compare">
@@ -78,6 +85,7 @@
         <label class="bm"><span class="sr">Map style</span><select id="basemap" aria-label="Map style"></select></label>
         <span class="zm"><button type="button" class="btn" id="zin" aria-label="Zoom in">+</button><button type="button" class="btn" id="zout" aria-label="Zoom out">−</button><button type="button" class="btn" id="zreset">Reset</button></span>
       </h2>
+      <div class="legend" id="legend"></div>
       <svg id="map" role="img" aria-label="Map of planned projects. Drag to pan, scroll or use the buttons to zoom."></svg>
       <div class="mapfoot"><p class="note tilenote" id="tileNote" hidden>Map tiles didn't load. This preview blocks outside images, so open <code>index.html</code> from the repo in a browser to see Streets, Satellite and Terrain. The Plain map always works.</p><span class="attr" id="attr"></span></div>
       <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km.</div>
@@ -107,12 +115,11 @@
   <div class="m3d-box">
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
-      <span class="seg" id="m3dStyle" role="group" aria-label="3D style"><button type="button" data-style="realistic" aria-pressed="true">Realistic</button><button type="button" data-style="stylized" aria-pressed="false">Stylized</button></span>
-      <button type="button" class="btn" id="m3dClose">Close</button>
+      <button type="button" class="btn" id="m3dClose" aria-label="Close 3D view">Close</button>
     </div>
     <div class="m3d-stage" id="m3dStage"></div>
     <p class="m3d-msg" id="m3dMsg" hidden></p>
-    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible. Stylized is lighter if Realistic runs slowly.</p>
+    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible.</p>
   </div>
 </div>
 
