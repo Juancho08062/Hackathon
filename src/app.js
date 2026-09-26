@@ -824,7 +824,7 @@ function renderAsk(P) {
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   P.innerHTML = `<div class="ask">
     <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
-      : `<div class="msg hint"><p class="ask-hero">${SPARK}Ask about the plans</p><p>Projects, overlaps, plan changes or data quality. The common questions are answered right here from the loaded plans.</p><p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`}
+      : askWelcome()}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
     <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="e.g. Which three date moves would save the most?" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
@@ -838,6 +838,33 @@ function renderAsk(P) {
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
+// What the assistant can do, with the numbers of the plans currently loaded. Written out in full because none of it is
+// discoverable otherwise: a reader would not guess that it opens the printable briefs, or that it will explain the
+// pairs it rejected.
+function askWelcome() {
+  const n = PROJECTS.length, pairs = RESULT.pairs.length;
+  const who = solo() ? lblLong(state.utilA) : `${lblLong(state.utilA)} and ${lblLong(state.utilB)}`;
+  const scope = solo()
+    ? `${n} planned projects from ${esc(who)}`
+    : `${n} planned projects across ${esc(who)}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on`;
+  return `<div class="msg hint welcome">
+    <p class="ask-hero">${SPARK}Ask about the plans</p>
+    <p>I answer from the data on this page — ${scope}. Every figure comes from the same tables the map shows; I read them, I never estimate.</p>
+    <p class="wl-head">What I can do for you</p>
+    <ul class="wl">
+      <li><b>Find the overlaps that matter.</b> The closest pairs, the ones most likely to actually happen, anything within a distance you name, or only pairs that share a build window.</li>
+      <li><b>Explain any pair.</b> How far apart at their closest points, both build windows, everything the two utilities could share with the arithmetic behind each figure, and where one staging yard would serve both.</li>
+      <li><b>Tell you why a pair is <em>not</em> on the list.</b> Too far, same utility, or a location that could not be established. Most planned projects do not overlap, and I will say which reason applies.</li>
+      <li><b>Show what changed.</b> How each utility's dates moved between its last two published plans, and which shared build windows that opened or closed.</li>
+      <li><b>Propose a schedule.</b> The few date moves that most raise the expected savings, and what each one adds.</li>
+      <li><b>Write the report.</b> I can open the printable coordination brief for a pair, or the joint schedule proposal, ready to print or send — with a paragraph framing why it matters.</li>
+      <li><b>Check the data.</b> What the pipeline validated, what it caught and fixed, and what still needs a human.</li>
+      <li><b>Put it on the map.</b> When an answer is about one pair or project, the map flies to it.</li>
+    </ul>
+    <p class="wl-foot">Ask in English or Spanish — I answer in the language you write in. Everything above works with no API key. Connect one for open-ended questions.</p>
+    <p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`;
+}
+
 // The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
 const SPARK = `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path class="s1" d="M13 2.5 14.6 8 20 9.6 14.6 11.2 13 16.7 11.4 11.2 6 9.6 11.4 8z"/><path class="s2" d="M6.2 15.2 7 17.6 9.4 18.4 7 19.2 6.2 21.6 5.4 19.2 3 18.4 5.4 17.6z"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",

@@ -424,6 +424,15 @@ body.modal-open .app{visibility:hidden}
 .msg.tool{align-self:flex-start;font-size:11.5px;color:var(--ink2);padding-left:4px}
 .msg.tool::before{content:"· "}
 .msg.hint{max-width:100%;color:var(--ink2)}
+/* The welcome list: dense enough to scan in a few seconds, since it is the first thing a new reader sees. */
+.welcome{font-size:12.5px}
+.wl-head{margin:10px 0 4px;font-weight:600;color:var(--ink);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.wl{margin:0;padding:0;list-style:none;display:grid;gap:5px}
+.wl li{padding-left:13px;position:relative;line-height:1.45}
+.wl li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--blue);opacity:.55}
+.wl b{color:var(--ink);font-weight:600}
+.wl em{font-style:normal;text-decoration:underline;text-decoration-color:var(--ink3)}
+.wl-foot{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--grid)}
 .sugs{display:flex;gap:6px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:thin;flex:none}
 .sugs .chip{flex:none;height:auto;min-height:26px;padding:4px 9px;white-space:nowrap;max-width:44ch;overflow:hidden;text-overflow:ellipsis}
 .ask-hint{margin:8px 0 0;font-size:11.5px;color:var(--ink2);min-height:17px}
