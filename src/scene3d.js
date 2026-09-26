@@ -188,7 +188,8 @@
     const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
     const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
     const reels = [];
-    for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
+    // cable reels in a row, spaced wider than their 1.04 diameter so they never touch
+    for (let i = 0; i < 4; i++) { const x = -w * 0.34 + i * 1.2; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.18 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.18); reels.push(hub); }
     g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
     const trucks = [], cabs = [], tires = [], glass = [];
     for (let i = 0; i < 3; i++) {
@@ -216,7 +217,7 @@
     const cones = [];
     for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
     g.add(mesh(T, merge(T, cones), pbr(T, 0xf07a22)));
-    const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
+    const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-0.4, 0.12, d * 0.08); g.add(crew);
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
     g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
@@ -397,7 +398,8 @@
           const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
-        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3);
+        // no tower on the plateau's edge, and none inside a substation or plant placed before this line
+        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3 && obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 0.8 * TS));
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
@@ -443,7 +445,10 @@
       if (node.userData.stacks) node.userData.stacks.forEach(st => { const w = new T.Vector3(st[0], st[1], st[2]).applyAxisAngle(sv.set(0, 1, 0), 0.35).add(v); steam.push({ at: w, big: !!st[3], s }); });
       return { anchor: v, top: gen ? s * 0.65 : s * 0.45 };
     };
-    const A = place(pair.p, opts.colorA), B = place(pair.q, opts.colorB);
+    // substations and plants first, so the other project's towers can keep off their pads
+    const isL = p => (p.parts || [p.coords]).some(c => c.length > 1);
+    let A, B;
+    if (isL(pair.p) && !isL(pair.q)) { B = place(pair.q, opts.colorB); A = place(pair.p, opts.colorA); } else { A = place(pair.p, opts.colorA); B = place(pair.q, opts.colorB); }
 
     // ---------- the closest-point link and what the tier lets them share ----------
     const va = toV(pair.ca), vb = toV(pair.cb), tierHex = new T.Color(opts.tierColor).getHex();
@@ -476,9 +481,17 @@
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
-      const yd = yardGroup(T, 7, 4.6), o = perp.clone().multiplyScalar(6);
-      yd.scale.setScalar(TS); yd.position.set(mid.x + o.x, heightAt(mid.x + o.x, mid.z + o.z), mid.z + o.z); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
-      obstacles.push([yd.position.x, yd.position.z, 5 * TS]);
+      // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
+      const yd = yardGroup(T, 7, 4.6), yr = 4.4 * TS;
+      let spot = null;
+      for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
+        const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
+        const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
+        if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
+      }
+      if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
+      yd.scale.setScalar(TS); yd.position.set(spot[0], heightAt(spot[0], spot[1]), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
     const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
@@ -536,7 +549,13 @@
     const tufts = scatter(tuft, pbr(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
 
     // work crews at the closest points
-    [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
+    [va, vb].forEach((v, i) => {
+      const cr = crewGroup(T, 4, 21 + i, 1.4), sg = i ? -1 : 1;
+      let off = 1.4;
+      while (off < 14 && !obstacles.every(([ox, oz, r]) => Math.hypot(v.x + perp.x * off * sg - ox, v.z + perp.z * off * sg - oz) > r)) off += 1;
+      const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
+      cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
+    });
 
     // steam sprites over stacks and cooling towers
     const puffs = [];
@@ -576,12 +595,34 @@
       // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
       // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
       let stageW = 1, stageH = 1;
-      const placeTags = () => tags.forEach(t => {
-        v.copy(t.pos).project(cam);
-        const off = v.z > 1, tf = off ? t.tf : `translate(${((v.x + 1) / 2 * stageW).toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
-        if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
-        if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
-      });
+      // Tags that would cover each other are stacked: the one lower on screen keeps its spot, the others move up
+      // just clear of it. Tag sizes are measured once (and on resize), not per frame.
+      const measureTags = () => tags.forEach(t => { t.w = t.el.offsetWidth; t.h = t.el.offsetHeight; });
+      const placeTags = () => {
+        const shown = [];
+        tags.forEach(t => {
+          v.copy(t.pos).project(cam);
+          t.off2 = v.z > 1; t.x = (v.x + 1) / 2 * stageW; t.y = (1 - v.y) / 2 * stageH;
+          if (!t.off2) shown.push(t);
+        });
+        shown.sort((a, b) => b.y - a.y);
+        const placed = [];
+        for (const t of shown) {
+          let y = t.y;
+          for (let guard = 0; guard < 8; guard++) {
+            const hit = placed.find(p => Math.abs(p.x - t.x) < (p.w + t.w) / 2 + 4 && y > p.y - p.h - 4 && y - t.h < p.y + 4);
+            if (!hit) break;
+            y = hit.y - hit.h - 6;
+          }
+          placed.push({ x: t.x, y, w: t.w || 0, h: t.h || 0 });
+          t.y = y;
+        }
+        tags.forEach(t => {
+          const off = t.off2, tf = off ? t.tf : `translate(${t.x.toFixed(1)}px, ${t.y.toFixed(1)}px) translate(-50%, -100%)`;
+          if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
+          if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
+        });
+      };
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
@@ -630,7 +671,7 @@
 
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
-        stageW = w; stageH = h;
+        stageW = w; stageH = h; measureTags();
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";

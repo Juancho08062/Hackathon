@@ -382,6 +382,7 @@ body.m3d-open .app{visibility:hidden}
     <button type="button" class="btn" id="openAssume">Unit costs</button>
     <button type="button" class="btn" id="openImport" aria-expanded="false" aria-controls="import">Import plans</button>
     <button type="button" class="btn" id="copy">Export CSV</button>
+    <button type="button" class="btn primary" id="share" title="Copy a link to exactly this view">Share</button>
   </header>
 
   <div class="filterbar" id="controls">
@@ -1433,7 +1434,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
     const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
     const reels = [];
-    for (let i = 0; i < 5; i++) { const x = -w * 0.38 + i * 0.95; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.24 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.24); reels.push(hub); }
+    // cable reels in a row, spaced wider than their 1.04 diameter so they never touch
+    for (let i = 0; i < 4; i++) { const x = -w * 0.34 + i * 1.2; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.18 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.18); reels.push(hub); }
     g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
     const trucks = [], cabs = [], tires = [], glass = [];
     for (let i = 0; i < 3; i++) {
@@ -1461,7 +1463,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const cones = [];
     for (let i = 0; i < 8; i++) cones.push(cylAt(T, 0.01, 0.06, 0.16, 6, -w / 2 + 0.2 + i * (w - 0.4) / 7, 0.2, d / 2 - 0.12));
     g.add(mesh(T, merge(T, cones), pbr(T, 0xf07a22)));
-    const crew = crewGroup(T, 7, 11, 2.2); crew.position.set(0.2, 0.12, 0.2); g.add(crew);
+    const crew = crewGroup(T, 6, 11, 1.2); crew.position.set(-0.4, 0.12, d * 0.08); g.add(crew);
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
     g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
@@ -1642,7 +1644,8 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
           const a = toV(lc[i - 1]), b = toV(lc[i]), n = Math.max(1, Math.ceil(a.distanceTo(b) / (4 * TS)));
           for (let k = i === 1 ? 0 : 1; k <= n; k++) { const v = a.clone().lerp(b, k / n); v.y = heightAt(v.x, v.z); pts.push(v); }
         }
-        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3);
+        // no tower on the plateau's edge, and none inside a substation or plant placed before this line
+        pts = pts.filter(v => Math.hypot(v.x, v.z) < R * 1.3 && obstacles.every(([ox, oz, r]) => Math.hypot(v.x - ox, v.z - oz) > r + 0.8 * TS));
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
@@ -1688,7 +1691,10 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       if (node.userData.stacks) node.userData.stacks.forEach(st => { const w = new T.Vector3(st[0], st[1], st[2]).applyAxisAngle(sv.set(0, 1, 0), 0.35).add(v); steam.push({ at: w, big: !!st[3], s }); });
       return { anchor: v, top: gen ? s * 0.65 : s * 0.45 };
     };
-    const A = place(pair.p, opts.colorA), B = place(pair.q, opts.colorB);
+    // substations and plants first, so the other project's towers can keep off their pads
+    const isL = p => (p.parts || [p.coords]).some(c => c.length > 1);
+    let A, B;
+    if (isL(pair.p) && !isL(pair.q)) { B = place(pair.q, opts.colorB); A = place(pair.p, opts.colorA); } else { A = place(pair.p, opts.colorA); B = place(pair.q, opts.colorB); }
 
     // ---------- the closest-point link and what the tier lets them share ----------
     const va = toV(pair.ca), vb = toV(pair.cb), tierHex = new T.Color(opts.tierColor).getHex();
@@ -1721,9 +1727,17 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       obstacles.push([gm.x, gm.z, 3]);
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
-      const yd = yardGroup(T, 7, 4.6), o = perp.clone().multiplyScalar(6);
-      yd.scale.setScalar(TS); yd.position.set(mid.x + o.x, heightAt(mid.x + o.x, mid.z + o.z), mid.z + o.z); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
-      obstacles.push([yd.position.x, yd.position.z, 5 * TS]);
+      // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
+      const yd = yardGroup(T, 7, 4.6), yr = 4.4 * TS;
+      let spot = null;
+      for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
+        const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
+        const x = mid.x + Math.cos(a) * rad, z = mid.z + Math.sin(a) * rad;
+        if (Math.hypot(x, z) < R * 1.05 && obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + yr)) spot = [x, z];
+      }
+      if (!spot) spot = [mid.x + perp.x * 6, mid.z + perp.z * 6];
+      yd.scale.setScalar(TS); yd.position.set(spot[0], heightAt(spot[0], spot[1]), spot[1]); yd.rotation.y = Math.atan2(dirAB.x, dirAB.z) + Math.PI / 2; scene.add(yd);
+      obstacles.push([yd.position.x, yd.position.z, yr]);
       labels.push(makeLabel(pair.tier === 2 ? "Shared laydown yard" : "Shared crew staging yard", "#e0a93e", new T.Vector3(yd.position.x, yd.position.y + 3 * TS, yd.position.z), "small"));
     }
     const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
@@ -1781,7 +1795,13 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
     const tufts = scatter(tuft, pbr(T, 0xffffff), 900, 0.3, 0.8, 1.6, 0x88a860, 0.05, 0.14); tufts.castShadow = false;
 
     // work crews at the closest points
-    [va, vb].forEach((v, i) => { const cr = crewGroup(T, 4, 21 + i, 1.4); cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(v.x + perp.x * 1.4 * (i ? -1 : 1), heightAt(v.x, v.z), v.z + perp.z * 1.4 * (i ? -1 : 1)); scene.add(cr); });
+    [va, vb].forEach((v, i) => {
+      const cr = crewGroup(T, 4, 21 + i, 1.4), sg = i ? -1 : 1;
+      let off = 1.4;
+      while (off < 14 && !obstacles.every(([ox, oz, r]) => Math.hypot(v.x + perp.x * off * sg - ox, v.z + perp.z * off * sg - oz) > r)) off += 1;
+      const x = v.x + perp.x * off * sg, z = v.z + perp.z * off * sg;
+      cr.scale.setScalar(Math.min(1.6, TS)); cr.position.set(x, heightAt(x, z), z); scene.add(cr);
+    });
 
     // steam sprites over stacks and cooling towers
     const puffs = [];
@@ -1821,12 +1841,34 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
       // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
       let stageW = 1, stageH = 1;
-      const placeTags = () => tags.forEach(t => {
-        v.copy(t.pos).project(cam);
-        const off = v.z > 1, tf = off ? t.tf : `translate(${((v.x + 1) / 2 * stageW).toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
-        if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
-        if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
-      });
+      // Tags that would cover each other are stacked: the one lower on screen keeps its spot, the others move up
+      // just clear of it. Tag sizes are measured once (and on resize), not per frame.
+      const measureTags = () => tags.forEach(t => { t.w = t.el.offsetWidth; t.h = t.el.offsetHeight; });
+      const placeTags = () => {
+        const shown = [];
+        tags.forEach(t => {
+          v.copy(t.pos).project(cam);
+          t.off2 = v.z > 1; t.x = (v.x + 1) / 2 * stageW; t.y = (1 - v.y) / 2 * stageH;
+          if (!t.off2) shown.push(t);
+        });
+        shown.sort((a, b) => b.y - a.y);
+        const placed = [];
+        for (const t of shown) {
+          let y = t.y;
+          for (let guard = 0; guard < 8; guard++) {
+            const hit = placed.find(p => Math.abs(p.x - t.x) < (p.w + t.w) / 2 + 4 && y > p.y - p.h - 4 && y - t.h < p.y + 4);
+            if (!hit) break;
+            y = hit.y - hit.h - 6;
+          }
+          placed.push({ x: t.x, y, w: t.w || 0, h: t.h || 0 });
+          t.y = y;
+        }
+        tags.forEach(t => {
+          const off = t.off2, tf = off ? t.tf : `translate(${t.x.toFixed(1)}px, ${t.y.toFixed(1)}px) translate(-50%, -100%)`;
+          if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
+          if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
+        });
+      };
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
@@ -1875,7 +1917,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
-        stageW = w; stageH = h;
+        stageW = w; stageH = h; measureTags();
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
@@ -3174,6 +3216,73 @@ function saveAssume(vals) {
 }
 { const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
+
+// ---------- shareable link ----------
+// The URL hash carries what's on screen (utilities, filters, tab, selection, basemap, 3D and camera), so a link
+// pasted into an email opens the same view. It is rewritten as the view changes, without adding history entries.
+let pendingView = null, hashTimer = null;
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.toString()) return;
+  const num = (k, ok) => { const v = +h.get(k); return h.has(k) && isFinite(v) && (!ok || ok(v)) ? v : null; };
+  if (h.get("a")) state.utilA = h.get("a");
+  if (h.get("b")) state.utilB = h.get("b");
+  if (num("d") != null) state.D = num("d");
+  if (num("w") != null) state.B = num("w");
+  if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
+  if (num("h") != null) state.horizon = num("h");
+  if (h.get("past") === "0") state.past = false;
+  if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
+  if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
+  const cam = (h.get("cam") || "").split(",").map(Number);
+  pendingView = { sel: h.get("sel"), d3: h.get("3d") === "1", cam: cam.length === 5 && cam.every(isFinite) ? cam : null };
+}
+function syncControls() {
+  $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
+  $("#buf").value = String(state.B);
+  for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
+  document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
+  $("#pastOn").checked = state.past;
+}
+function applyPendingView() {
+  const v = pendingView; pendingView = null;
+  if (!v) return false;
+  const m = SeamMap.raw();
+  if (v.d3) { SeamMap.set3D(true); $("#b3d").setAttribute("aria-pressed", "true"); }
+  if (v.sel) {
+    const x = RESULT.pairs.find(y => keyOf(y) === v.sel), p = !x && PROJECTS.find(q => q.id === v.sel);
+    if (x) { state.sel = VIEW.find(y => y === x) || x; if (state.tab !== "overlaps" && state.tab !== "ask") state.tab = "overlaps"; }
+    else if (p && solo()) state.sel = { p, solo: true };
+    renderMap(); renderPanel(); renderTimeline();
+  }
+  if (v.cam) { m.jumpTo({ center: [v.cam[0], v.cam[1]], zoom: v.cam[2], pitch: v.cam[3], bearing: v.cam[4] }); return true; }
+  if (state.sel) { flyTo(state.sel); return true; }
+  return false;
+}
+function writeHash() {
+  if (!mapReady) return; // until the map is up, the link being opened is still being applied
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const h = new URLSearchParams();
+    h.set("a", state.utilA); h.set("b", state.utilB);
+    if (state.D !== 40) h.set("d", state.D);
+    if (state.B) h.set("w", state.B);
+    if (state.mode !== "near") h.set("m", state.mode);
+    if (state.horizon) h.set("h", state.horizon);
+    if (!state.past) h.set("past", "0");
+    if (state.tab !== "overlaps") h.set("tab", state.tab);
+    const x = state.sel;
+    if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
+    if (state.basemap !== "plain") h.set("map", state.basemap);
+    {
+      const m = SeamMap.raw(), c = m.getCenter();
+      if (SeamMap.get3D()) h.set("3d", "1");
+      h.set("cam", [c.lng.toFixed(4), c.lat.toFixed(4), m.getZoom().toFixed(2), Math.round(m.getPitch()), Math.round(m.getBearing())].join(","));
+    }
+    history.replaceState(null, "", "#" + h.toString().replace(/%7C/gi, "|").replace(/%2C/gi, ","));
+  }, 250);
+}
+
 // ---------- modals ----------
 function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
 function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
@@ -3186,6 +3295,7 @@ function select(x) {
   if (x && !x.moves) state.tab = "overlaps";
   renderMap(); renderPanel(); renderTimeline();
   if (changed && x) flyTo(x); else if (changed && !x) fitAll(700);
+  writeHash();
 }
 function refresh() {
   compute();
@@ -3195,6 +3305,7 @@ function refresh() {
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
+  writeHash();
 }
 function rebuild() {
   state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
@@ -3203,7 +3314,7 @@ function rebuild() {
 function setBasemap(b) {
   state.basemap = b; store.set("basemap", b);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === b));
-  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap();
+  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap(); writeHash();
 }
 function theme() {
   SeamMap.setTheme({ water: css("--water"), land: css("--land"), county: css("--grid"), stateLine: css("--ink3"), river: css("--river"), place: css("--ink2") });
@@ -3221,8 +3332,12 @@ $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
 for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
-$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); };
-document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#share").onclick = () => {
+  clearTimeout(hashTimer); writeHash();
+  setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
+};
+document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
@@ -3279,6 +3394,8 @@ addEventListener("resize", () => renderTimeline());
 renderAssume();
 renderDatasets();
 SEAM = seamCoords();
+readHash();
+syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
   click: mapClick, hover: mapHover,
@@ -3286,8 +3403,11 @@ SeamMap.init($("#map"), BASE, {
 }).then(() => {
   mapReady = true;
   SeamMap.setBasemap(state.basemap);
+  document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
-  fitAll(0);
+  if (!applyPendingView()) fitAll(0);
+  SeamMap.raw().on("moveend", writeHash);
+  writeHash();
 });
 
 </script>
