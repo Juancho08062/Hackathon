@@ -26,7 +26,7 @@ const store = {
 const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
-  tab: "overlaps", sort: "expected", shown: 60, askKey: false, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  tab: "overlaps", sort: "expected", shown: 60, askKey: false, keyNote: null, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
   basemap: store.get("basemap", "plain"),
 };
 const STATUS = store.get("status", {});
@@ -818,8 +818,9 @@ function renderAsk(P) {
   const keyForm = has
     ? `<span class="muted">Claude (${esc(SeamAgent.MODEL)}) · API key set</span><button type="button" class="link" id="kChange">Change key</button>`
     : state.askKey
-      ? `<label for="kIn"><b>Anthropic API key</b></label><div class="ph-row"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" class="btn sm primary" id="kSave">Use key</button></div>
+      ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
+        ${state.keyNote ? `<span class="note warn">${esc(state.keyNote)}</span>` : ""}
         <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
   P.innerHTML = `<div class="ask">
@@ -832,8 +833,19 @@ function renderAsk(P) {
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
   cycleHint();
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
-  if ($("#kSave")) $("#kSave").onclick = () => { const k = $("#kIn").value.trim(); if (k) { saveKey(k, $("#kRem").checked); state.askKey = false; renderAsk(P); $("#askQ").focus(); } };
-  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; renderAsk(P); };
+  if ($("#kForm")) $("#kForm").onsubmit = e => {
+    e.preventDefault();
+    const k = $("#kIn").value.trim();
+    if (!k) { state.keyNote = "Paste a key first."; return renderAsk(P); }
+    // Not a hard gate — key formats change — but a pasted URL or a truncated string is worth catching here rather than
+    // as an authentication error three seconds later.
+    if (!/^sk-[\w-]{20,}$/.test(k)) { state.keyNote = "That does not look like an Anthropic API key. They start with sk- and are much longer."; return renderAsk(P); }
+    saveKey(k, $("#kRem").checked);
+    state.askKey = false; state.keyNote = null;
+    CHAT.log.push({ role: "tool", text: `API key set. Open-ended questions now go to Claude (${SeamAgent.MODEL}).` });
+    renderAsk(P); $("#askQ").focus();
+  };
+  if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
   P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
@@ -909,7 +921,8 @@ async function sendQuestion(q) {
     CHAT.messages.pop(); // drop the unanswered question so the conversation stays valid
     // The API is unreachable, the key was refused or the SDK would not load. Fall back to the pattern path rather than
     // leaving the question unanswered, and say which happened.
-    finish(answerOffline(q, SeamAgent.explain(err)) || SeamAgent.explain(err));
+    const why = `Your API key is set, but the request failed. ${SeamAgent.explain(err)}`;
+    finish(answerOffline(q, why) || why);
   }
 }
 

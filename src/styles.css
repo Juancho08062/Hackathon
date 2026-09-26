@@ -415,6 +415,8 @@ body.modal-open .app{visibility:hidden}
 .ask-key{display:grid;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--panel2)}
 .ask-key.set{display:flex;justify-content:space-between;align-items:center;font-size:12px}
 .ask-key input{flex:1;min-width:0}
+.ask-key form.ph-row{display:flex;gap:6px;align-items:center}
+.note.warn{color:#92400e}
 .ask-log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
 .msg{max-width:92%;font-size:13px;line-height:1.5}
 .msg p{margin:0 0 6px} .msg p:last-child{margin-bottom:0}
