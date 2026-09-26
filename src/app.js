@@ -937,6 +937,73 @@ function saveAssume(vals) {
 }
 { const a = store.get("assume", null); if (a && typeof a === "object") Engine.setAssumptions(a); }
 
+
+// ---------- shareable link ----------
+// The URL hash carries what's on screen (utilities, filters, tab, selection, basemap, 3D and camera), so a link
+// pasted into an email opens the same view. It is rewritten as the view changes, without adding history entries.
+let pendingView = null, hashTimer = null;
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.toString()) return;
+  const num = (k, ok) => { const v = +h.get(k); return h.has(k) && isFinite(v) && (!ok || ok(v)) ? v : null; };
+  if (h.get("a")) state.utilA = h.get("a");
+  if (h.get("b")) state.utilB = h.get("b");
+  if (num("d") != null) state.D = num("d");
+  if (num("w") != null) state.B = num("w");
+  if (["near", "both", "time"].includes(h.get("m"))) state.mode = h.get("m");
+  if (num("h") != null) state.horizon = num("h");
+  if (h.get("past") === "0") state.past = false;
+  if (["overlaps", "changes", "optimize", "checks", "ask"].includes(h.get("tab"))) state.tab = h.get("tab");
+  if (["plain", "relief", "satellite", "topo"].includes(h.get("map"))) state.basemap = h.get("map");
+  const cam = (h.get("cam") || "").split(",").map(Number);
+  pendingView = { sel: h.get("sel"), d3: h.get("3d") === "1", cam: cam.length === 5 && cam.every(isFinite) ? cam : null };
+}
+function syncControls() {
+  $("#dist").value = String(state.D); if ($("#dist").value !== String(state.D)) { const o = document.createElement("option"); o.value = o.textContent = state.D; $("#dist").append(o); $("#dist").value = String(state.D); }
+  $("#buf").value = String(state.B);
+  for (const k of ["near", "both", "time"]) $("#m-" + k).setAttribute("aria-pressed", k === state.mode);
+  document.querySelectorAll("[data-h]").forEach(o => o.setAttribute("aria-pressed", +o.dataset.h === state.horizon));
+  $("#pastOn").checked = state.past;
+}
+function applyPendingView() {
+  const v = pendingView; pendingView = null;
+  if (!v) return false;
+  const m = SeamMap.raw();
+  if (v.d3) { SeamMap.set3D(true); $("#b3d").setAttribute("aria-pressed", "true"); }
+  if (v.sel) {
+    const x = RESULT.pairs.find(y => keyOf(y) === v.sel), p = !x && PROJECTS.find(q => q.id === v.sel);
+    if (x) { state.sel = VIEW.find(y => y === x) || x; if (state.tab !== "overlaps" && state.tab !== "ask") state.tab = "overlaps"; }
+    else if (p && solo()) state.sel = { p, solo: true };
+    renderMap(); renderPanel(); renderTimeline();
+  }
+  if (v.cam) { m.jumpTo({ center: [v.cam[0], v.cam[1]], zoom: v.cam[2], pitch: v.cam[3], bearing: v.cam[4] }); return true; }
+  if (state.sel) { flyTo(state.sel); return true; }
+  return false;
+}
+function writeHash() {
+  if (!mapReady) return; // until the map is up, the link being opened is still being applied
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const h = new URLSearchParams();
+    h.set("a", state.utilA); h.set("b", state.utilB);
+    if (state.D !== 40) h.set("d", state.D);
+    if (state.B) h.set("w", state.B);
+    if (state.mode !== "near") h.set("m", state.mode);
+    if (state.horizon) h.set("h", state.horizon);
+    if (!state.past) h.set("past", "0");
+    if (state.tab !== "overlaps") h.set("tab", state.tab);
+    const x = state.sel;
+    if (x && x.p && x.q) h.set("sel", keyOf(x)); else if (x && x.solo) h.set("sel", x.p.id);
+    if (state.basemap !== "plain") h.set("map", state.basemap);
+    {
+      const m = SeamMap.raw(), c = m.getCenter();
+      if (SeamMap.get3D()) h.set("3d", "1");
+      h.set("cam", [c.lng.toFixed(4), c.lat.toFixed(4), m.getZoom().toFixed(2), Math.round(m.getPitch()), Math.round(m.getBearing())].join(","));
+    }
+    history.replaceState(null, "", "#" + h.toString().replace(/%7C/gi, "|").replace(/%2C/gi, ","));
+  }, 250);
+}
+
 // ---------- modals ----------
 function openModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
 function closeModal(id) { $("#" + id).hidden = true; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
@@ -949,6 +1016,7 @@ function select(x) {
   if (x && !x.moves) state.tab = "overlaps";
   renderMap(); renderPanel(); renderTimeline();
   if (changed && x) flyTo(x); else if (changed && !x) fitAll(700);
+  writeHash();
 }
 function refresh() {
   compute();
@@ -958,6 +1026,7 @@ function refresh() {
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
     `${RESULT.checked.toLocaleString()} pairs checked · <b>${near.length} overlap</b>${VIEW.length !== near.length ? ` · ${VIEW.length} shown` : ""} · expected savings <b>${money(exp)}</b> <span class="muted">(${money(plan)} if every date held)</span>`;
   renderMap(); renderPanel(); renderTimeline();
+  writeHash();
 }
 function rebuild() {
   state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
@@ -966,7 +1035,7 @@ function rebuild() {
 function setBasemap(b) {
   state.basemap = b; store.set("basemap", b);
   document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === b));
-  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap();
+  SeamMap.setBasemap(b); $("#tileNote").hidden = true; renderMap(); writeHash();
 }
 function theme() {
   SeamMap.setTheme({ water: css("--water"), land: css("--land"), county: css("--grid"), stateLine: css("--ink3"), river: css("--river"), place: css("--ink2") });
@@ -984,8 +1053,12 @@ $("#pastOn").onchange = e => { state.past = e.target.checked; refresh(); };
 for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => { state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); fitAll(700); };
 $("#basemaps").innerHTML = Object.entries(SeamMap.BASEMAPS).map(([k, b]) => `<button type="button" data-b="${k}" aria-pressed="${k === state.basemap}">${b.label}</button>`).join("");
 document.querySelectorAll("#basemaps button").forEach(b => b.onclick = () => setBasemap(b.dataset.b));
-$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); };
-document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); });
+$("#b3d").onclick = () => { if (!mapReady) return; const on = !SeamMap.get3D(); SeamMap.set3D(on); $("#b3d").setAttribute("aria-pressed", on); if (on && state.basemap === "plain") setBasemap("relief"); writeHash(); };
+$("#share").onclick = () => {
+  clearTimeout(hashTimer); writeHash();
+  setTimeout(() => navigator.clipboard.writeText(location.href).then(() => { $("#share").textContent = "Link copied"; setTimeout(() => { $("#share").textContent = "Share"; }, 1600); }, () => prompt("Copy this link", location.href)), 300);
+};
+document.querySelectorAll(".tabs [role=tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; if (state.sel && !state.sel.cluster) { state.sel = null; renderMap(); renderTimeline(); } renderPanel(); writeHash(); });
 $("#play").onclick = togglePlay;
 $("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
 $("#tall").onclick = () => { stopPlay(); setT(null); };
@@ -1042,6 +1115,8 @@ addEventListener("resize", () => renderTimeline());
 renderAssume();
 renderDatasets();
 SEAM = seamCoords();
+readHash();
+syncControls();
 renderPickers(); compute(); legend(); setupScrub(); refresh();
 SeamMap.init($("#map"), BASE, {
   click: mapClick, hover: mapHover,
@@ -1049,6 +1124,9 @@ SeamMap.init($("#map"), BASE, {
 }).then(() => {
   mapReady = true;
   SeamMap.setBasemap(state.basemap);
+  document.querySelectorAll("#basemaps button").forEach(o => o.setAttribute("aria-pressed", o.dataset.b === state.basemap));
   theme();
-  fitAll(0);
+  if (!applyPendingView()) fitAll(0);
+  SeamMap.raw().on("moveend", writeHash);
+  writeHash();
 });
