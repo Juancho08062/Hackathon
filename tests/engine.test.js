@@ -57,5 +57,12 @@ t("importer: GeoJSON lines and a default utility", () => {
   assert.deepStrictEqual(r.projects[0].coords[0], [33, -81]);
   assert.strictEqual(r.errors.length, 1);
 });
+t("shareable: closer tiers include everything farther tiers allow, in the challenge's words", () => {
+  const all = x => E.shareable(x).flatMap(g => g.items);
+  assert.deepStrictEqual(all({ tier: 3, sameWindow: true }), ["Crews", "Cranes", "Contractors"]);
+  assert.deepStrictEqual(all({ tier: 0, sameWindow: true }), ["Outage timing", "Crossing structures", "Right-of-way", "Access roads", "Permits", "Laydown yards", "Deliveries", "Crews", "Cranes", "Contractors"]);
+  const g = E.shareable({ tier: 1, sameWindow: false });
+  assert.deepStrictEqual(g.map(x => x.active), [true, false, false]); // land yes; yards and crews need a shared window
+});
 t("importer template loads", () => { assert.strictEqual(I.parsePlan(I.TEMPLATE, "t.csv", {}).projects.length, 2); });
 console.log(`\n${n} tests passed`);

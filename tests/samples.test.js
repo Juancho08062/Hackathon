@@ -89,6 +89,14 @@ let n = 0;
   assert.strictEqual(gpx.projects.find(p => /Route/.test(p.name)).coords.length, 5);
   n++; console.log("ok - GPX: needs a default in-service date, then loads the route and waypoints");
 
+  // Existing-infrastructure layer (HIFLD field layout): no dates or names needed; names come from SUB_1 and SUB_2.
+  const [ex] = await load(["hifld-style-existing-lines.geojson"], { utility: "", in_service: "2000", existing: true });
+  assert.strictEqual(ex.projects.length, 4, ex.errors.join("; "));
+  assert.deepStrictEqual(ex.projects.map(p => p.name), ["North Augusta – Graniteville", "Vogtle – Wadley", "Hardeeville – Port Wentworth", "Existing facility"]);
+  assert.deepStrictEqual(ex.projects.map(p => p.kv), [230, 500, 115, 230]);
+  assert(ex.projects.every(p => p.utility === "Example Existing Owner"));
+  n++; console.log("ok - existing lines: HIFLD-style fields load as a background layer");
+
   // Loading every sample together gives eight utilities, each with overlaps against DESC or Georgia.
   const all = (await Promise.all(EXPECT.map(e => load([e[0]], e[5])))).flat().flatMap(r => r.projects);
   const withBuiltin = builtin.concat(all);

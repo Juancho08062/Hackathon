@@ -50,6 +50,15 @@
     { max: Infinity, label: "Over 40 km", short: "Outside 40 km", means: "Beyond one staging yard's daily drive", tok: "--ink3" },
   ];
   const tierOf = km => TIERS.findIndex(t => km <= t.max);
+  // What each tier lets two projects share, in the challenge's own words. Closer tiers also get everything farther
+  // tiers allow. Crew and yard sharing only happens if both are under construction at the same time (window: true).
+  const SHARES = [
+    { tier: 0, label: "Touching or crossing", items: ["Outage timing", "Crossing structures"], window: false },
+    { tier: 1, label: "Under 1.6 km", items: ["Right-of-way", "Access roads", "Permits"], window: false },
+    { tier: 2, label: "Under 8 km", items: ["Laydown yards", "Deliveries"], window: true },
+    { tier: 3, label: "Under 40 km", items: ["Crews", "Cranes", "Contractors"], window: true },
+  ];
+  const shareable = x => SHARES.filter(s => x.tier <= s.tier).map(s => Object.assign({}, s, { active: !s.window || x.sameWindow }));
 
   // ---------- build windows ----------
   const monthIndex = iso => { const d = new Date(iso + "T00:00:00Z"); return d.getUTCFullYear() * 12 + d.getUTCMonth() + d.getUTCDate() / 31; };
@@ -94,13 +103,13 @@
   function savings(x) {
     const A = ASSUME, items = [];
     const ca = estCost(x.p), cb = estCost(x.q), small = ca.v <= cb.v ? ca : cb;
-    if (x.tier <= 3 && x.sameWindow) items.push({ k: "Shared crews and equipment", v: small.v * A.mobPct * A.mobShare, how: `half of a ${A.mobPct * 100}% mobilization cost on the smaller project (${fmtMoney(small.v)}${small.est ? ", estimated" : ""})` });
-    if (x.tier <= 2 && x.sameWindow) items.push({ k: "One laydown yard instead of two", v: A.yard, how: "about 3 ha yard lease, grading and security for the build" });
+    if (x.tier <= 3 && x.sameWindow) items.push({ k: "Shared crews, cranes and contractors", v: small.v * A.mobPct * A.mobShare, how: `one mobilization instead of two: half of a ${A.mobPct * 100}% mobilization cost on the smaller project (${fmtMoney(small.v)}${small.est ? ", estimated" : ""})` });
+    if (x.tier <= 2 && x.sameWindow) items.push({ k: "One laydown yard and shared deliveries", v: A.yard, how: "about 3 ha yard lease, grading and security for the build" });
     if (x.tier <= 1) {
       const ha = A.rowKm * A.rowWidthM / 10;
-      items.push({ k: "Shared right-of-way and access", v: ha * A.landPerHa + A.access + A.permits, how: `${ha.toFixed(1)} ha of ${A.rowWidthM} m corridor over ${A.rowKm} km at ${fmtMoney(A.landPerHa)}/ha, plus one access road and a joint permit package` });
+      items.push({ k: "Shared right-of-way, access roads and permits", v: ha * A.landPerHa + A.access + A.permits, how: `${ha.toFixed(1)} ha of ${A.rowWidthM} m corridor over ${A.rowKm} km at ${fmtMoney(A.landPerHa)}/ha, plus one access road and a joint permit package` });
     }
-    if (x.tier === 0) items.push({ k: "One coordinated outage", v: A.outage, how: "one crossing outage and crew standby instead of two" });
+    if (x.tier === 0) items.push({ k: "One coordinated outage and crossing design", v: A.outage, how: "one crossing outage and crew standby instead of two, with crossing structures designed once" });
     return { items, total: items.reduce((s, i) => s + i.v, 0), ca, cb };
   }
   const fmtMoney = c => c == null ? "" : c >= 1e6 ? "$" + (c / 1e6).toFixed(1) + "M" : "$" + Math.round(c / 1e3) + "K";
@@ -128,6 +137,6 @@
     return { pairs: out, checked: A.length * B.length };
   }
 
-  const api = { closest, lengthKm, TIERS, tierOf, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
+  const api = { closest, lengthKm, TIERS, tierOf, SHARES, shareable, monthIndex, windowOverlap, estMonths, sharedResources, estCost, savings, ASSUME, fmtMoney, findOverlaps };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Engine = api;
 })(this);

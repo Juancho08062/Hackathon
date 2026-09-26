@@ -58,6 +58,7 @@
           <div><label for="impIsd">Default in-service date <span class="note">(for rows without one, like GPX)</span></label><input id="impIsd" type="text" placeholder="e.g. 2029 or 2029-06-30" autocomplete="off"></div>
           <div><label for="impStart">Default construction start <span class="note">(optional)</span></label><input id="impStart" type="text" placeholder="estimated if blank" autocomplete="off"></div>
         </div>
+        <label class="chk exist-imp"><input type="checkbox" id="impExisting"> These are <b>existing</b> lines and substations, like a HIFLD download. Show them as a background layer instead of comparing them.</label>
         <label class="drop" id="drop" for="file">
           <input id="file" type="file" multiple>
           <b>Drop files here</b> or click to choose<span class="fmts">XLSX · XLS · CSV · TSV · KML · KMZ · SHP · ZIP · GeoJSON · JSON · GPX</span>
@@ -83,6 +84,7 @@
     <div class="card">
       <h2>Map
         <span class="seg" role="group" aria-label="Map view"><button type="button" id="v-focus" aria-pressed="true">Overlap area</button><button type="button" id="v-all" aria-pressed="false">All projects</button></span>
+        <label class="chk"><input type="checkbox" id="exOn" checked> Existing infrastructure</label>
         <label class="bm"><span class="sr">Map style</span><select id="basemap" aria-label="Map style"></select></label>
         <span class="zm"><button type="button" class="btn" id="zin" aria-label="Zoom in">+</button><button type="button" class="btn" id="zout" aria-label="Zoom out">−</button><button type="button" class="btn" id="zreset">Reset</button></span>
       </h2>

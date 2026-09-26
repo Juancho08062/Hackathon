@@ -143,6 +143,11 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .tilenote{color:var(--hot);margin:6px 0}
 .maphint{padding:9px 16px;border-top:1px solid var(--line);background:var(--panel2)}
 
+.chk{display:inline-flex;align-items:center;gap:6px;font-family:var(--body);font-size:13px;font-weight:400;color:var(--ink2);cursor:pointer;letter-spacing:0}
+.chk input{accent-color:var(--hot);width:15px;height:15px;margin:0}
+.exist-imp{display:flex;align-items:flex-start;margin:0 0 12px;line-height:1.4}
+.exist-imp input{margin-top:2px;flex:none}
+
 /* ---------- time scrubber ---------- */
 .scrub{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px 10px;border-top:1px solid var(--line);background:var(--panel2)}
 .scrub .play{min-width:72px;justify-content:center;background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -201,6 +206,13 @@ input[type=range]{width:100%;accent-color:var(--hot);margin:6px 0 0}
 .imp .tot td{font-weight:600;border-bottom:0;color:var(--time);padding-top:8px}
 .row{display:flex;flex-wrap:wrap;gap:8px}
 
+.shares{display:grid;gap:6px}
+.shares h3{margin:0 0 2px}
+.sg{display:grid;grid-template-columns:130px 1fr;gap:4px 10px;align-items:center;padding:6px 0 6px 10px;border-left:3px solid var(--c)}
+.sg .sl{font-size:12px;font-weight:600;color:var(--c)}
+.sg .chips{margin:0}
+.sg em{grid-column:2;font-style:normal;font-size:11px;color:var(--ink3)}
+.sg.off .chip{opacity:.45}
 .whatif{display:grid;gap:8px;padding:12px;border-radius:var(--r-sm);background:var(--panel);box-shadow:inset 0 0 0 1px var(--grid)}
 .whatif .dh{flex-wrap:wrap}
 .whatif .seg button{font-size:12px;padding:4px 10px}

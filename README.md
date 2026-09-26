@@ -22,6 +22,8 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 
 - **Overlap finder.** Measures the distance between the closest points of every pair of projects (lines, substations, plants), flags pairs within 40 km, and tiers them by what the utilities could share.
 - **Ranked list.** Tier first, then pairs built in the same window, then distance. Filter by tier, search, and copy the list as CSV.
+- **What each pair can share.** Every pair lists what its tier allows, in the challenge's words: outage timing and crossing structures (touching), right-of-way, access roads and permits (under 1.6 km), laydown yards and deliveries (under 8 km), and crews, cranes and contractors (under 40 km). Closer pairs get everything farther tiers allow; yard and crew sharing needs a shared build window.
+- **Existing infrastructure.** Existing plants, the Stevens Creek hydro plant and existing lines are drawn in grey and can be switched off. Existing lines and substations downloaded from HIFLD (GeoJSON, shapefile or KML) load as a background layer from the import panel.
 - **Cost and impact estimate.** A rough savings figure for each pair, with every assumption listed.
 - **Light and dark themes** that follow the system setting.
 - **Map** with pan and zoom and four styles: Plain, Streets, Satellite and Terrain.
@@ -68,7 +70,7 @@ Column names are matched loosely. For example, `owner` or `Transmission Owner` w
 | in_service | yes | `2029`, `2029-06`, `6/1/2029` or `Summer 2029`. Files without dates, like GPX, use the default in-service date typed in the import panel |
 | kv, type, start, cost, description | no | type is `new_line`, `rebuild`, `substation` or `generation`, and is guessed from the name if left out |
 
-The [`samples/`](samples) folder has one fictional plan per format (nine files), each from a different made-up utility, with projects placed near the built-in DESC and Georgia work so overlaps show up:
+The [`samples/`](samples) folder has one fictional plan per format (nine files) plus an example existing-lines layer, each from a different made-up utility, with projects placed near the built-in DESC and Georgia work so overlaps show up:
 
 | file | utility | what it exercises |
 |---|---|---|
@@ -80,6 +82,7 @@ The [`samples/`](samples) folder has one fictional plan per format (nine files),
 | `savannah-river-transmission.kml` | Savannah River Transmission Co. | attributes in an ArcGIS-style HTML table in each description |
 | `piedmont-lakes-electric.kmz` | Piedmont Lakes Electric | zipped KML with ExtendedData and a MultiGeometry |
 | `tri-county-grid-shapefile.zip` | Tri-County Grid Cooperative | two layers in UTM zone 17N, reprojected using the `.prj` |
+| `hifld-style-existing-lines.geojson` | (existing lines, example) | the HIFLD field layout (`OWNER`, `VOLTAGE`, `SUB_1`, `SUB_2`); tick "These are existing lines" to load it as a background layer |
 | `edisto-electric-survey.gpx` | Edisto Electric Cooperative | a surveyed route and waypoints with no dates or utility: type the utility name and a default in-service date first |
 
 `tests/samples.test.js` loads each one through the same readers the browser uses. After an import, Seamline compares the new utility with whichever loaded utility has the nearest project.
