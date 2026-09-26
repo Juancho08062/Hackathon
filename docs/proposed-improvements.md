@@ -12,6 +12,11 @@ Nothing here re-implements work that already exists. The inventory below is the
 result of reading the repo first, and one of the ideas that motivated this
 document was dropped after measurement disproved it (see R4).
 
+**Status: all five are implemented on this branch.** Each section still reads as
+a requirement, with its acceptance criteria, so the code can be checked against
+what it was asked to do. Where the implementation departed from the requirement,
+the section says so.
+
 ## How the numbers here were produced
 
 Every figure in this document came from running the repo's own engine over its
@@ -193,8 +198,18 @@ languages, and an out-of-scope question returning `null`.
 
 ### Files
 
-New `tests/agent.test.js` (~250 lines). `package.json`: add it to the `test`
-script. No production code changes.
+New `tests/agent.test.js`. `package.json`: add it to the `test` script.
+
+One seam in production code is unavoidable: `ask()` built its client on the first
+line, so the loop could not run without a network and a key. It now accepts an
+optional `client`, which only the tests pass:
+
+```js
+async function ask({ apiKey, system, tools, messages, execute, onTool, client: injected }) {
+  const c = injected || await getClient(apiKey);
+```
+
+Two lines, and the production path is byte-identical to before.
 
 ---
 
@@ -346,8 +361,12 @@ established), `unknown_project`. `Engine.closest` already computes what this
 needs.
 
 **A borderline band.** `get_overview` gains `just_outside`: how many pairs fall
-between the threshold and 5% beyond it, with the closest few listed. In the map,
-a toggle draws them in dashed grey.
+between the threshold and 5% beyond it. Under the ranked list, a quiet footer
+names how many there are and the closest three, and says why they are shown.
+
+Shipped as that footer rather than as a map layer: a rejected pair drawn on the
+map competes for attention with the flagged ones, which is the opposite of the
+point. A greyed map layer remains a reasonable follow-up.
 
 ### Acceptance
 
