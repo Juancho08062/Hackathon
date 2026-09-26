@@ -573,7 +573,15 @@
       const overlay = document.createElement("div"); overlay.className = "m3d-labels"; stage.appendChild(overlay);
       const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos }; });
       const v = new T.Vector3();
-      const placeTags = () => { const w = stage.clientWidth, h = stage.clientHeight; tags.forEach(t => { v.copy(t.pos).project(cam); const off = v.z > 1; t.el.style.display = off ? "none" : ""; t.el.style.transform = `translate(${(v.x + 1) / 2 * w}px, ${(1 - v.y) / 2 * h}px) translate(-50%, -100%)`; }); };
+      // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
+      // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
+      let stageW = 1, stageH = 1;
+      const placeTags = () => tags.forEach(t => {
+        v.copy(t.pos).project(cam);
+        const off = v.z > 1, tf = off ? t.tf : `translate(${((v.x + 1) / 2 * stageW).toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
+        if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
+        if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
+      });
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
@@ -608,8 +616,9 @@
         ssao.ssaoMaterial.defines.KERNEL_SIZE = Q.ssao; ssao.ssaoMaterial.uniforms.kernel.value = ssao.kernel; ssao.ssaoMaterial.needsUpdate = true;
         ssao.kernelRadius = 1.4; ssao.minDistance = 0.000002; ssao.maxDistance = 0.0006;
         // clouds, steam and labels are sprites: keep them out of the occlusion pass
-        const hide = ssao.overrideVisibility.bind(ssao);
-        ssao.overrideVisibility = function () { hide(); built.scene.traverse(o => { if (o.isSprite || o === built.sky) o.visible = false; }); };
+        const hide = ssao.overrideVisibility.bind(ssao), skip = [];
+        built.scene.traverse(o => { if (o.isSprite || o === built.sky) skip.push(o); });
+        ssao.overrideVisibility = function () { hide(); skip.forEach(o => { o.visible = false; }); };
         composer.addPass(ssao);
       } else composer.addPass(new T.RenderPass(built.scene, cam));
       composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
@@ -621,6 +630,7 @@
 
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
+        stageW = w; stageH = h;
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";

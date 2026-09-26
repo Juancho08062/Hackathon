@@ -364,17 +364,17 @@ svg text{font-family:var(--body)}
 .m3d-head>div{flex:1 1 auto;min-width:0}
 .m3d-head h2{margin:0;font-size:24px;font-weight:600;text-wrap:balance;text-shadow:0 1px 8px rgba(0,0,0,.4)}
 .m3d-head p{margin:3px 0 0;color:rgba(255,255,255,.82)}
-.m3d-head .btn{pointer-events:auto;flex:none;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25);backdrop-filter:blur(6px)}
-.m3d-head .btn:hover{background:rgba(255,255,255,.22)}
+.m3d-head .btn{pointer-events:auto;flex:none;background:rgba(12,24,30,.42);color:#fff;border-color:rgba(255,255,255,.25)}
+.m3d-head .btn:hover{background:rgba(12,24,30,.6)}
 .m3d-q{pointer-events:auto;flex:none;display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.85)}
-.m3d-q select{font:inherit;font-size:13px;height:34px;padding:0 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px)}
+.m3d-q select{font:inherit;font-size:13px;height:34px;padding:0 8px;border-radius:var(--r-sm);background:rgba(12,24,30,.42);color:#fff;border:1px solid rgba(255,255,255,.25)}
 .m3d-q option{color:#13222A}
 .m3d-head #m3dLabels[aria-pressed=false]{opacity:.75}
 .m3d-stage.nolabels .m3d-labels,.m3d-stage.nolabels~.m3d-foot{display:none}
 .m3d-msg{position:absolute;z-index:3;margin:0;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(6,14,18,.8);padding:10px 16px;border-radius:var(--r-sm);max-width:80%}
-.m3d-foot{position:absolute;z-index:2;left:14px;bottom:14px;margin:0;max-width:calc(100% - 28px);padding:6px 12px;border-radius:999px;background:rgba(6,14,18,.62);color:rgba(255,255,255,.85);backdrop-filter:blur(6px);font-size:12px}
+.m3d-foot{position:absolute;z-index:2;left:14px;bottom:14px;margin:0;max-width:calc(100% - 28px);padding:6px 12px;border-radius:999px;background:rgba(6,14,18,.7);color:rgba(255,255,255,.85);font-size:12px}
 .m3d-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.m3d-tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;color:#fff;background:rgba(8,18,24,.72);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.14);border-left:4px solid var(--c);padding:4px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.m3d-tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;color:#fff;background:rgba(8,18,24,.8);border:1px solid rgba(255,255,255,.14);border-left:4px solid var(--c);padding:4px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .m3d-tag.big{font-size:14px;padding:5px 12px}
 .m3d-tag.small{font-size:11px;font-weight:500}
 
@@ -446,6 +446,13 @@ svg text{font-family:var(--body)}
 @keyframes boxIn{from{opacity:0;transform:translateY(24px) scale(.95)}}
 @keyframes boxOut{to{opacity:0;transform:translateY(12px) scale(.97)}}
 .m3d-tag{transition:opacity .3s}
+/* Once the 3D view has opened, nothing else may cost a frame: the open animation is dropped (a finished animation held
+   with fill-mode still makes the browser composite the canvas through an extra layer), the page behind stops blurring
+   and animating, and nothing over the canvas blurs what is under it (those blurs are recomputed on every 3D frame). */
+.m3d.settled,.m3d.settled .m3d-box{animation:none}
+.m3d.settled{backdrop-filter:none}
+body.m3d-open .wrap,body.m3d-open .progress{visibility:hidden}
+body.m3d-open .wrap *{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition:none!important;animation:none!important}
   .rise,.reveal{opacity:1;transform:none}
@@ -1811,7 +1818,15 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
       const overlay = document.createElement("div"); overlay.className = "m3d-labels"; stage.appendChild(overlay);
       const tags = built.labels.map(l => { const el = document.createElement("span"); el.className = "m3d-tag " + l.size; el.style.setProperty("--c", l.color); el.textContent = l.text; overlay.appendChild(el); return { el, pos: l.pos }; });
       const v = new T.Vector3();
-      const placeTags = () => { const w = stage.clientWidth, h = stage.clientHeight; tags.forEach(t => { v.copy(t.pos).project(cam); const off = v.z > 1; t.el.style.display = off ? "none" : ""; t.el.style.transform = `translate(${(v.x + 1) / 2 * w}px, ${(1 - v.y) / 2 * h}px) translate(-50%, -100%)`; }); };
+      // Labels follow their points on screen. Styles are written only when they change (to the nearest tenth of a pixel),
+      // and the stage size is read on resize, not every frame, so placing them never makes the page recalculate layout.
+      let stageW = 1, stageH = 1;
+      const placeTags = () => tags.forEach(t => {
+        v.copy(t.pos).project(cam);
+        const off = v.z > 1, tf = off ? t.tf : `translate(${((v.x + 1) / 2 * stageW).toFixed(1)}px, ${((1 - v.y) / 2 * stageH).toFixed(1)}px) translate(-50%, -100%)`;
+        if (off !== t.off) { t.off = off; t.el.style.display = off ? "none" : ""; }
+        if (tf !== t.tf) { t.tf = tf; t.el.style.transform = tf; }
+      });
 
       const cam = new T.PerspectiveCamera(42, 1, 0.5, 9000);
       const f = built.focus, d = built.span * 1.5 + 16;
@@ -1846,8 +1861,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
         ssao.ssaoMaterial.defines.KERNEL_SIZE = Q.ssao; ssao.ssaoMaterial.uniforms.kernel.value = ssao.kernel; ssao.ssaoMaterial.needsUpdate = true;
         ssao.kernelRadius = 1.4; ssao.minDistance = 0.000002; ssao.maxDistance = 0.0006;
         // clouds, steam and labels are sprites: keep them out of the occlusion pass
-        const hide = ssao.overrideVisibility.bind(ssao);
-        ssao.overrideVisibility = function () { hide(); built.scene.traverse(o => { if (o.isSprite || o === built.sky) o.visible = false; }); };
+        const hide = ssao.overrideVisibility.bind(ssao), skip = [];
+        built.scene.traverse(o => { if (o.isSprite || o === built.sky) skip.push(o); });
+        ssao.overrideVisibility = function () { hide(); skip.forEach(o => { o.visible = false; }); };
         composer.addPass(ssao);
       } else composer.addPass(new T.RenderPass(built.scene, cam));
       composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
@@ -1859,6 +1875,7 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
 
       const size = () => {
         const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(Q.dpr, devicePixelRatio);
+        stageW = w; stageH = h;
         renderer.setPixelRatio(pr);
         renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
@@ -2256,13 +2273,16 @@ function countUp(el, key) {
   const a = from == null ? nums(to).map(() => 0) : nums(from), b = nums(to);
   if (still() || a.length !== b.length || a.every((v, i) => v === b[i])) return;
   const fmt = (tok, v) => { const dec = (tok.split(".")[1] || "").length, s = v.toFixed(dec); return tok.includes(",") || (v >= 1000 && !dec) ? Number(s).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec }) : s; };
-  const t0 = performance.now(), D = 900;
+  const at = k => { let i = 0; return to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k)); };
+  el.textContent = at(0); // paint the starting value first, so the final one never flashes
+  let t0 = null;
+  const D = 900;
   const step = now => {
     if (shown.get(key) !== to || !el.isConnected) return; // a newer value took over
-    const k = easeOut(Math.max(0, Math.min(1, (now - t0) / D))); // the first frame's time can be a little before t0
-    let i = 0;
-    el.textContent = to.replace(/\d[\d,]*(?:\.\d+)?/g, tok => fmt(tok, a[i] + (b[i++] - a[i - 1]) * k));
-    if (k < 1) requestAnimationFrame(step); else el.textContent = to;
+    if (t0 == null) t0 = now; // time the count from the first frame it is on screen
+    const k = easeOut(Math.min(1, (now - t0) / D));
+    el.textContent = k < 1 ? at(k) : to;
+    if (k < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
 }
@@ -2618,8 +2638,23 @@ function briefMap(x) {
 function closeBrief() { closeAnimated($("#brief"), () => { $("#brief").hidden = true; }); }
 // 3D quality: Standard, High (default) or Ultra, remembered between visits.
 const quality3d = () => { try { const q = localStorage.getItem("seamline.3dquality"); if (Scene3D.QUALITY[q]) return q; } catch (err) { /* storage blocked: use the default */ } return "high"; };
+// Once the 3D view has finished opening, drop its open animation and hide the page behind it, so the browser only
+// draws the 3D canvas on each frame (see ".m3d.settled" in styles.css).
+function settle3d(on) {
+  const m = $("#m3d"), done = () => { m.classList.add("settled"); document.body.classList.add("m3d-open"); };
+  m.classList.remove("settled"); document.body.classList.remove("m3d-open");
+  if (!on) return;
+  if (still()) return done();
+  const box = $("#m3d .m3d-box"), end = e => {
+    if (e.animationName !== "boxIn") return;
+    box.removeEventListener("animationend", end);
+    if (!m.hidden && !m.classList.contains("closing")) done();
+  };
+  box.addEventListener("animationend", end);
+}
 function open3d(x) {
   $("#m3dQ").value = quality3d();
+  const wasOpen = !$("#m3d").hidden;
   Scene3D.open(x, {
     title: `${x.p.name} and ${x.q.name}`,
     subtitle: `${TIERS[x.tier].label}: ${km(x.km)} at the closest points. ${TIERS[x.tier].means}.${x.sav.total ? " Rough savings " + money(x.sav.total) + "." : ""}`,
@@ -2628,6 +2663,7 @@ function open3d(x) {
     distText: `${km(x.km)} apart · ${TIERS[x.tier].short}`,
     quality: quality3d(),
   });
+  if (!wasOpen) settle3d(true);
 }
 
 // ---------- timeline ----------
@@ -2830,7 +2866,7 @@ $("#m3dLabels").onclick = () => setLabels3d($("#m3dLabels").getAttribute("aria-p
 try { if (localStorage.getItem("seamline.3dlabels") === "off") setLabels3d(false); } catch (err) { /* storage blocked: labels stay on */ }
 $("#m3dQ").value = quality3d();
 $("#m3dQ").onchange = e => { try { localStorage.setItem("seamline.3dquality", e.target.value); } catch (err) { /* storage blocked: keep it for this visit */ } Scene3D.reopen(e.target.value); };
-const close3d = () => closeAnimated($("#m3d"), () => Scene3D.close());
+const close3d = () => { settle3d(false); closeAnimated($("#m3d"), () => Scene3D.close()); };
 $("#m3dClose").onclick = close3d;
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") close3d(); });
 addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) close3d(); });
