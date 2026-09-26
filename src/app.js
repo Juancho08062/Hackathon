@@ -26,7 +26,8 @@ const store = {
 const state = {
   utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", horizon: 0, past: true,
   sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null, exist: true,
-  tab: "overlaps", sort: "expected", shown: 60, askKey: false, keyNote: null, opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
+  tab: "overlaps", sort: "expected", shown: 60, askKey: false, keyNote: null,
+  askLang: store.get("askLang", (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en"), opt: { maxShift: 6, who: "both" }, showMoves: false, openCheck: null,
   basemap: store.get("basemap", "plain"),
 };
 const STATUS = store.get("status", {});
@@ -670,13 +671,19 @@ How Seamline measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
+Answer only from what the tools return. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
-  { name: "search_projects", description: "Find planned projects by words in their name, description, substation names, TEAMS number or source page. Returns up to `limit` matches with id, utility, kV, type, construction window, in-service date, cost and location confidence.", input_schema: { type: "object", properties: { query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'" }, utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" }, limit: { type: "integer", description: "Max results, default 10" } }, required: ["query"] } },
+  { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
+    query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'. Omit to rank everything." },
+    utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" },
+    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to order the results. cost covers Dominion only; kv and length_km cover both utilities." },
+    order: { type: "string", enum: ["desc", "asc"], description: "desc = largest or latest first (default), asc = smallest or earliest first" },
+    limit: { type: "integer", description: "Max results, default 10" } } } },
   { name: "get_project", description: "Everything Seamline knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
   { name: "list_overlaps", description: "Ranked flagged pairs of projects (one from each utility). Filter and sort them; each row has a key for get_overlap and show_on_map.", input_schema: { type: "object", properties: {
     sort: { type: "string", enum: ["expected", "chance", "distance"], description: "expected = expected savings (default), chance = chance of a shared window, distance = closest first" },
+    order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking — the least valuable pairs, or the farthest apart — since only `limit` rows come back." },
     max_distance_km: { type: "number", description: "Only pairs at most this far apart" },
     min_chance: { type: "number", description: "Only pairs with at least this chance (0 to 1)" },
     same_window_on_paper: { type: "boolean", description: "true: only pairs whose planned windows overlap; false: only pairs that don't" },
@@ -699,7 +706,9 @@ const TOOLS = [
     max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" } } } },
 ];
 const projOut = p => ({ id: p.id, utility: p.utility, name: p.name, kv: p.kv, type: TYPE[p.type] || p.type, construction: `${p.start} to ${p.in_service}`, start_published: !!p.start_published,
-  in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built, cost_usd: p.cost || null, location_confidence: p.loc, source: p.page ? `${p.source} (${p.page})` : p.source });
+  in_service: p.in_service, in_service_passed: isPast(p), likely_built: !!p.likely_built,
+  cost_usd: p.cost || null, cost_note: p.cost ? undefined : "not published in this utility's filing",
+  length_km: +Engine.lengthKm(p).toFixed(1) || null, location_confidence: p.loc, source: p.page ? `${p.source} (${p.page})` : p.source });
 const pairOut = x => ({ key: keyOf(x), distance_km: +x.km.toFixed(2), tier: TIERS[Math.min(x.tier, 4)].label, project_a: `${x.p.name} (${x.p.utility}, in service ${x.p.in_service})`, project_b: `${x.q.name} (${x.q.utility}, in service ${x.q.in_service})`,
   windows_on_paper: x.ov > 0 ? `${Math.round(x.ov)} months shared` : `${Math.round(x.gap)} months apart`, chance_of_shared_window: x.risk.why === "built" ? "none, one side is likely built" : +x.risk.chance.toFixed(2),
   expected_savings_usd: Math.round(x.risk.expected), savings_if_dates_hold_usd: Math.round(x.sav.total), challenge_reference: REFS[keyOf(x)] || null });
@@ -716,8 +725,17 @@ function runTool(name, i) {
       savings_if_dates_hold_usd: Math.round(RESULT.pairs.reduce((a, x) => a + x.sav.total, 0)), as_of: TODAY, sources: $("#asof").textContent };
   }
   if (name === "search_projects") {
-    const ps = PROJECTS.filter(p => (!i.utility || p.utility.toLowerCase() === String(i.utility).toLowerCase()) && hit(`${p.id} ${p.name} ${p.desc || ""} ${p.page || ""} ${(p.located || []).map(l => l.name).join(" ")}`, i.query));
-    return { matches: ps.length, projects: ps.slice(0, Math.min(25, i.limit || 10)).map(projOut) };
+    const ps = PROJECTS.filter(p => (!i.utility || p.utility.toLowerCase() === String(i.utility).toLowerCase()) &&
+      (!i.query || hit(`${p.id} ${p.name} ${p.desc || ""} ${p.page || ""} ${(p.located || []).map(l => l.name).join(" ")}`, i.query)));
+    const key = { cost: p => p.cost || 0, kv: p => p.kv || 0, length_km: p => Engine.lengthKm(p), in_service: p => mon(p.in_service), name: p => p.name };
+    const sorted = i.sort && key[i.sort]
+      ? ps.slice().sort((a, b) => { const x = key[i.sort](a), y = key[i.sort](b); const c = typeof x === "string" ? x.localeCompare(y) : x - y; return i.order === "asc" ? c : -c; })
+      : ps;
+    const out = { matches: ps.length, projects: sorted.slice(0, Math.min(25, i.limit || 10)).map(projOut) };
+    // If the ranking is by money, say which side of the comparison has no figures at all, so the answer cannot present
+    // a Dominion project as the largest of both utilities.
+    if (i.sort === "cost") out.note = `Ranked by published cost. ${PROJECTS.filter(p => !p.cost).length} of ${PROJECTS.length} projects publish no cost and are ordered last; every Georgia project is among them.`;
+    return out;
   }
   if (name === "get_project") {
     const p = PROJECTS.find(v => v.id === i.id);
@@ -731,7 +749,7 @@ function runTool(name, i) {
       (i.same_window_on_paper == null || x.sameWindow === i.same_window_on_paper) && (i.include_past !== false || (!isPast(x.p) && !isPast(x.q))) &&
       (!i.project_query || hit(`${x.p.name} ${x.q.name} ${x.p.id} ${x.q.id}`, i.project_query)));
     const by = { expected: (a, b) => b.risk.expected - a.risk.expected, chance: (a, b) => b.risk.chance - a.risk.chance, distance: (a, b) => a.km - b.km }[i.sort || "expected"] || ((a, b) => b.risk.expected - a.risk.expected);
-    xs = xs.slice().sort(by);
+    xs = xs.slice().sort(i.order === "asc" ? (a, b) => -by(a, b) : by);
     return { matching_pairs: xs.length, rows: xs.slice(0, Math.min(25, i.limit || 10)).map(pairOut) };
   }
   if (name === "get_overlap") {
@@ -801,14 +819,90 @@ function runTool(name, i) {
   }
   throw new Error("Unknown tool " + name);
 }
-const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
-  .split(/\n{2,}/).map(par => /^\s*[-*] /m.test(par) ? "<ul>" + par.split("\n").filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*[-*]\s+/, "")}</li>`).join("") + "</ul>" : `<p>${par.replace(/\n/g, "<br>")}</p>`).join("");
+// Minimal markdown for the assistant's answers: headings, ordered and unordered lists with one level of nesting,
+// pipe tables, bold, italic and inline code. Text is escaped before any of it, so a model that emits HTML gets it shown
+// rather than run. Deliberately small — this renders answers, not documents.
+const md = text => {
+  const inline = t => esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[\s([])\*([^*\n]+)\*/g, "$1<i>$2</i>")
+    .replace(/(^|\s)_([^_\n]+)_(?=$|[\s.,;:)])/g, "$1<i>$2</i>");
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  const out = [];
+  let para = [], table = null;
+  // A stack of open list types, so a nested list is emitted inside its parent item rather than beside it, and an item
+  // is only closed once whatever it contains has been closed.
+  const stack = [];
+  let liOpen = false;
+
+  const flushPara = () => { if (para.length) { out.push(`<p>${para.map(inline).join("<br>")}</p>`); para = []; } };
+  const closeItem = () => { if (liOpen) { out.push("</li>"); liOpen = false; } };
+  const flushList = () => {
+    while (stack.length) { closeItem(); out.push(`</${stack.pop()}>`); liOpen = stack.length > 0; }
+    liOpen = false;
+  };
+  const flushTable = () => {
+    if (!table) return;
+    const [head, ...body] = table;
+    out.push(`<table class="mt"><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>` +
+      body.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("") + "</tbody></table>");
+    table = null;
+  };
+  const flushAll = () => { flushPara(); flushList(); flushTable(); };
+  const cells = line => line.replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+
+  for (const line of lines) {
+    if (!line.trim()) { flushAll(); continue; }
+
+    // A pipe table: the row after the header is all dashes, which is what tells one apart from a line with a pipe in it.
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      flushPara(); flushList();
+      const row = cells(line.trim());
+      if (table && row.every(c => /^:?-{2,}:?$/.test(c))) continue;   // the separator row carries no data
+      table = table || [];
+      table.push(row);
+      continue;
+    }
+    flushTable();
+
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) { flushPara(); flushList(); out.push(`<h4>${inline(heading[2])}</h4>`); continue; }
+
+    const item = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+    if (item) {
+      flushPara();
+      const want = /\d/.test(item[2]) ? "ol" : "ul";
+      const level = Math.min(1, Math.floor(item[1].length / 2)) + 1;  // one level of nesting is enough here
+      while (stack.length > level) { closeItem(); out.push(`</${stack.pop()}>`); liOpen = stack.length > 0; }
+      if (stack.length === level) closeItem();                        // a sibling: close the item before the next one
+      while (stack.length < level) { out.push(`<${want}>`); stack.push(want); }
+      out.push(`<li>${inline(item[3])}`);
+      liOpen = true;
+      continue;
+    }
+
+    // An indented line under a list item belongs to that item, not to a new paragraph.
+    if (stack.length && /^\s{2,}\S/.test(line)) { out.push(`<div class="li-note">${inline(line.trim())}</div>`); continue; }
+
+    flushList();
+    para.push(line.trim());
+  }
+  flushAll();
+  return out.join("");
+};
 const apiKey = () => { try { return sessionStorage.getItem("seamline.key") || localStorage.getItem("seamline.key") || ""; } catch (err) { return CHAT.key || ""; } };
 function saveKey(k, remember) {
   CHAT.key = k;
   try { sessionStorage.setItem("seamline.key", k); if (remember) localStorage.setItem("seamline.key", k); else localStorage.removeItem("seamline.key"); } catch (err) { /* storage blocked: key lives for this page only */ }
 }
-const SUGGEST = ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "How reliable is the data?"];
+const SUGGEST_BY_LANG = {
+  en: ["Which overlaps are most likely to happen, and what could they save?", "Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "What changed between DESC's last two plans?", "Which three date moves would save the most?", "Show me what's planned near Augusta", "Which is the biggest project?", "How reliable is the data?"],
+  es: ["¿Qué solapes son más probables y cuánto podrían ahorrar?", "Explícame el par de Jasper - Okatie con McIntosh - Purrysburg", "¿Qué cambió entre los dos últimos planes de DESC?", "¿Qué tres movimientos de fecha ahorrarían más?", "¿Qué hay planeado cerca de Augusta?", "¿Cuál es el proyecto más grande?", "¿Qué tan confiable es el dato?"],
+};
+// The flags set the panel's language. The browser's own preference is only the first guess; after that the choice sticks.
+const askLang = () => state.askLang;
+const SUGGEST = () => SUGGEST_BY_LANG[askLang()] || SUGGEST_BY_LANG.en;
 // The panel leads with what it can do, not with a key field. The common questions are answered from the loaded plans
 // with no model at all (agent-offline.js), so opening with "Anthropic API key" in bold reads as a paywall on a feature
 // that is already working. The key is offered at the bottom, for the open-ended questions that do need it.
@@ -820,32 +914,69 @@ function renderAsk(P) {
     : state.askKey
       ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
-        ${state.keyNote ? `<span class="note warn">${esc(state.keyNote)}</span>` : ""}
+        <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
         <span class="note">The assistant runs in your browser and sends your question, plus the Seamline data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
       : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
+  const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
+    <div class="ask-bar">
+      <span class="muted">${esc(C.hero)}</span><span class="grow"></span>
+      ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
+    </div>
     <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Assistant answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text)}</div>`).join("")
       : askWelcome()}
       ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
-    <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST.map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
-    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="e.g. Which three date moves would save the most?" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
+    <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
+    <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = log.scrollHeight;
   cycleHint();
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
-  if ($("#kForm")) $("#kForm").onsubmit = e => {
+  // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
+  // asking: is this key good? The panel is mutated in place rather than re-rendered while the check runs, so the typed
+  // value survives it.
+  if ($("#kForm")) $("#kForm").onsubmit = async e => {
     e.preventDefault();
-    const k = $("#kIn").value.trim();
-    if (!k) { state.keyNote = "Paste a key first."; return renderAsk(P); }
-    // Not a hard gate — key formats change — but a pasted URL or a truncated string is worth catching here rather than
-    // as an authentication error three seconds later.
-    if (!/^sk-[\w-]{20,}$/.test(k)) { state.keyNote = "That does not look like an Anthropic API key. They start with sk- and are much longer."; return renderAsk(P); }
-    saveKey(k, $("#kRem").checked);
-    state.askKey = false; state.keyNote = null;
-    CHAT.log.push({ role: "tool", text: `API key set. Open-ended questions now go to Claude (${SeamAgent.MODEL}).` });
-    renderAsk(P); $("#askQ").focus();
+    const input = $("#kIn"), btn = $("#kSave"), note = () => $("#kNote");
+    const k = input.value.trim();
+    const say = (text, cls) => { const n = note(); if (n) { n.textContent = text; n.className = `note ${cls}`; } };
+    if (!k) return say("Paste a key first.", "warn");
+    // Not a hard gate — key formats change — but a pasted URL or a truncated string is better caught here than as an
+    // authentication error a moment later.
+    if (!/^sk-[\w-]{20,}$/.test(k)) return say("That does not look like an Anthropic API key. They start with sk- and are much longer.", "warn");
+
+    input.disabled = btn.disabled = true;
+    btn.textContent = "Checking…";
+    say("Asking the API whether this key works…", "");
+    const r = await SeamAgent.verify(k);
+    input.disabled = btn.disabled = false;
+    btn.textContent = "Use key";
+
+    if (r.ok) {
+      saveKey(k, $("#kRem").checked);
+      state.askKey = false; state.keyNote = null;
+      CHAT.log.push({ role: "tool", text: `Key accepted. Open-ended questions now go to ${r.model}.` });
+      renderAsk(P); $("#askQ").focus();
+      return;
+    }
+    if (r.transient) {
+      // The key could not be judged, only the connection. Keep it, and say exactly that.
+      saveKey(k, $("#kRem").checked);
+      state.askKey = false;
+      state.keyNote = null;
+      CHAT.log.push({ role: "tool", text: `Key saved but not verified — ${r.reason} It will be used as soon as the API is reachable.` });
+      renderAsk(P); $("#askQ").focus();
+      return;
+    }
+    say(r.reason, "warn");
   };
   if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("seamline.key"); localStorage.removeItem("seamline.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
+  P.querySelectorAll(".flag").forEach(b => b.onclick = () => {
+    if (b.dataset.lang === state.askLang) return;
+    state.askLang = b.dataset.lang; store.set("askLang", state.askLang);
+    hintAt = 0;
+    renderAsk(P);
+  });
   P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
@@ -853,27 +984,62 @@ function renderAsk(P) {
 // What the assistant can do, with the numbers of the plans currently loaded. Written out in full because none of it is
 // discoverable otherwise: a reader would not guess that it opens the printable briefs, or that it will explain the
 // pairs it rejected.
+const ASK_COPY = {
+  en: {
+    flag: "🇺🇸", code: "EN", label: "Answer in English",
+    hero: "Ask about the plans",
+    scopePair: (n, who, pairs) => `I answer from the data on this page — ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
+    scopeSolo: (n, who) => `I answer from the data on this page — ${n} planned projects from ${who}. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
+    head: "What I can do for you",
+    items: [
+      ["Find the overlaps that matter.", "The closest pairs, the ones most likely to actually happen, anything within a distance you name, or only pairs that share a build window."],
+      ["Explain any pair.", "How far apart at their closest points, both build windows, everything the two utilities could share with the arithmetic behind each figure, and where one staging yard would serve both."],
+      ["Tell you why a pair is <em>not</em> on the list.", "Too far, same utility, or a location that could not be established. Most planned projects do not overlap, and I will say which reason applies."],
+      ["Rank the projects themselves.", "The biggest by cost, the longest, the highest voltage, the first or last to be built — and which measure I ranked by."],
+      ["Show what changed.", "How each utility's dates moved between its last two published plans, and which shared build windows that opened or closed."],
+      ["Propose a schedule.", "The few date moves that most raise the expected savings, and what each one adds."],
+      ["Write the report.", "I can open the printable coordination brief for a pair, or the joint schedule proposal, ready to print or send — with a paragraph framing why it matters."],
+      ["Check the data.", "What the pipeline validated, what it caught and fixed, and what still needs a human."],
+      ["Put it on the map.", "When an answer is about one pair or project, the map flies to it."],
+    ],
+    foot: "Everything above works with no API key. Connect one for open-ended questions.",
+    placeholder: "e.g. Which three date moves would save the most?",
+  },
+  es: {
+    flag: "🇪🇸", code: "ES", label: "Responder en español",
+    hero: "Preguntá sobre los planes",
+    scopePair: (n, who, pairs) => `Respondo con los datos de esta página — ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
+    scopeSolo: (n, who) => `Respondo con los datos de esta página — ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
+    head: "Qué puedo hacer por vos",
+    items: [
+      ["Encontrar los solapes que importan.", "Los pares más cercanos, los más probables, los que estén a menos de la distancia que digas, o solo los que comparten ventana de obra."],
+      ["Explicar cualquier par.", "A qué distancia están en sus puntos más cercanos, las dos ventanas de obra, todo lo que las dos utilities podrían compartir con la aritmética de cada cifra, y dónde un solo patio serviría a ambas."],
+      ["Decirte por qué un par <em>no</em> está en la lista.", "Muy lejos, misma utility, o una ubicación que no se pudo establecer. La mayoría de los proyectos planeados no se solapan, y te digo cuál es el motivo."],
+      ["Rankear los proyectos.", "El más grande por costo, el más largo, el de mayor voltaje, el primero o el último en construirse — y con qué medida los ordené."],
+      ["Mostrar qué cambió.", "Cómo se movieron las fechas de cada utility entre sus dos últimos planes publicados, y qué ventanas compartidas abrió o cerró eso."],
+      ["Proponer un cronograma.", "Los pocos movimientos de fecha que más suben el ahorro esperado, y cuánto agrega cada uno."],
+      ["Escribir el informe.", "Puedo abrir el brief de coordinación imprimible de un par, o la propuesta conjunta de cronograma, listos para imprimir o enviar — con un párrafo que encuadra por qué importa."],
+      ["Revisar el dato.", "Qué validó el pipeline, qué atrapó y corrigió, y qué todavía necesita un humano."],
+      ["Ponerlo en el mapa.", "Cuando la respuesta es sobre un par o un proyecto, el mapa vuela ahí."],
+    ],
+    foot: "Todo lo de arriba funciona sin API key. Conectá una para preguntas abiertas.",
+    placeholder: "ej. ¿Qué tres movimientos de fecha ahorrarían más?",
+  },
+};
+
+// What the assistant can do, with the numbers of the plans currently loaded. Written out in full because none of it is
+// discoverable otherwise: a reader would not guess that it opens the printable briefs, or that it will explain the
+// pairs it rejected.
 function askWelcome() {
+  const C = ASK_COPY[askLang()] || ASK_COPY.en;
   const n = PROJECTS.length, pairs = RESULT.pairs.length;
-  const who = solo() ? lblLong(state.utilA) : `${lblLong(state.utilA)} and ${lblLong(state.utilB)}`;
-  const scope = solo()
-    ? `${n} planned projects from ${esc(who)}`
-    : `${n} planned projects across ${esc(who)}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on`;
+  const who = solo() ? esc(lblLong(state.utilA)) : `${esc(lblLong(state.utilA))} ${askLang() === "es" ? "y" : "and"} ${esc(lblLong(state.utilB))}`;
   return `<div class="msg hint welcome">
-    <p class="ask-hero">${SPARK}Ask about the plans</p>
-    <p>I answer from the data on this page — ${scope}. Every figure comes from the same tables the map shows; I read them, I never estimate.</p>
-    <p class="wl-head">What I can do for you</p>
-    <ul class="wl">
-      <li><b>Find the overlaps that matter.</b> The closest pairs, the ones most likely to actually happen, anything within a distance you name, or only pairs that share a build window.</li>
-      <li><b>Explain any pair.</b> How far apart at their closest points, both build windows, everything the two utilities could share with the arithmetic behind each figure, and where one staging yard would serve both.</li>
-      <li><b>Tell you why a pair is <em>not</em> on the list.</b> Too far, same utility, or a location that could not be established. Most planned projects do not overlap, and I will say which reason applies.</li>
-      <li><b>Show what changed.</b> How each utility's dates moved between its last two published plans, and which shared build windows that opened or closed.</li>
-      <li><b>Propose a schedule.</b> The few date moves that most raise the expected savings, and what each one adds.</li>
-      <li><b>Write the report.</b> I can open the printable coordination brief for a pair, or the joint schedule proposal, ready to print or send — with a paragraph framing why it matters.</li>
-      <li><b>Check the data.</b> What the pipeline validated, what it caught and fixed, and what still needs a human.</li>
-      <li><b>Put it on the map.</b> When an answer is about one pair or project, the map flies to it.</li>
-    </ul>
-    <p class="wl-foot">Ask in English or Spanish — I answer in the language you write in. Everything above works with no API key. Connect one for open-ended questions.</p>
+    <p class="ask-hero">${SPARK}${esc(C.hero)}</p>
+    <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
+    <p class="wl-head">${esc(C.head)}</p>
+    <ul class="wl">${C.items.map(([b, rest]) => `<li><b>${b}</b> ${esc(rest)}</li>`).join("")}</ul>
+    <p class="wl-foot">${esc(C.foot)}</p>
     <p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`;
 }
 
@@ -886,7 +1052,7 @@ const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searc
 // or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
 // saying the model is needed. reason, when given, is why the model was unavailable.
 function answerOffline(q, reason) {
-  const lang = SeamOffline.language(q), plan = SeamOffline.interpret(q);
+  const lang = askLang(), plan = SeamOffline.interpret(q);
   if (!plan) return null;
   CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
   let text;
@@ -908,13 +1074,14 @@ async function sendQuestion(q) {
   // No key: answer by pattern if the question is one the tools cover, otherwise ask for the key and say what does work.
   if (!apiKey()) {
     const offline = answerOffline(q, null);
-    const lang = SeamOffline.language(q);
+    const lang = askLang();
     return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key above.`);
   }
 
   CHAT.messages.push({ role: "user", content: q });
   try {
-    const r = await SeamAgent.ask({ apiKey: apiKey(), system: SYSTEM, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
+    const answerIn = askLang() === "es" ? "Answer in Spanish." : "Answer in English.";
+    const r = await SeamAgent.ask({ apiKey: apiKey(), system: `${SYSTEM}\n\n${answerIn}`, tools: TOOLS, messages: CHAT.messages, execute: async (n, input) => runTool(n, input),
       onTool: n => { CHAT.log.push({ role: "tool", text: TOOL_NOTE[n] || n }); again(); } });
     finish(r.text + (r.truncated ? "\n\n(The answer was cut short.)" : ""));
   } catch (err) {
@@ -938,7 +1105,7 @@ function cycleHint() {
   const el = $("#askHint"), q = $("#askQ");
   if (!el) return;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const paint = () => { el.innerHTML = `Try: <b>${esc(SUGGEST[hintAt % SUGGEST.length])}</b>`; };
+  const paint = () => { const list = SUGGEST(); el.innerHTML = `${askLang() === "es" ? "Probá" : "Try"}: <b>${esc(list[hintAt % list.length])}</b>`; };
   paint();
   if (reduced) return;
   hintTimer = setInterval(() => {
