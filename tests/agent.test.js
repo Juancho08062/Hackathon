@@ -223,6 +223,55 @@ t("the offline matcher hands off rather than guessing", () => {
   }
 });
 
+// ---------- offline matcher: projects named in words ----------
+// The page hands interpret() the project list and the flagged pairs, so a question can name projects by the places in
+// their titles. The real plans and the real engine are used, so these break if the data drifts under the matcher.
+{
+  const E = require("../src/engine.js");
+  const catalog = require("../data/projects.json").filter(p => !p.existing);
+  const found = E.findOverlaps(catalog, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const flagged = found.pairs || found;
+  const pairOf = (a, b) => flagged.find(x => (x.p.id === a && x.q.id === b) || (x.p.id === b && x.q.id === a));
+  const opts = { projects: catalog, pairKey: (a, b) => { const x = pairOf(a, b); return x ? `${x.p.id}|${x.q.id}` : null; },
+    pairRank: key => pairOf(...key.split("|")).km };
+  const named = [
+    // distance, timing and cost questions about one named pair all resolve to that pair, whatever the dash
+    ["How close are Hooks–Thurmond and Evans Primary?", "get_overlap", { key: "DESCP-31|IRP-20793" }],
+    ["How close are Hooks - Thurmond and Evans Primary - Thurmond Dam #6?", "get_overlap", { key: "DESCP-31|IRP-20794" }],
+    ["When are Hooks-Thurmond and Evans Primary built?", "get_overlap", { key: "DESCP-31|IRP-20793" }],
+    ["How much could Hooks — Thurmond and Evans Primary save?", "get_overlap", { key: "DESCP-31|IRP-20793" }],
+    ["¿Qué tan cerca están Hooks-Thurmond y Evans Primary?", "get_overlap", { key: "DESCP-31|IRP-20793" }],
+    ["Explain the Jasper - Okatie and McIntosh - Purrysburg pair", "get_overlap", { key: "DESC-12|IRP-20277" }],
+    ["show Jackson and Goshen Area on the map", "show_on_map", { key: "DESC-33|GA-13" }],
+    ["write a brief for Jackson and Goshen Area", "open_brief", { key: "DESC-33|GA-13" }],
+    // "Goshen Area" is the Goshen title with nothing left over, not one of the other Goshen lines
+    ["Why isn't Jackson paired with Goshen Area?", "why_not", { project_id_a: "DESC-33", project_id_b: "GA-13" }],
+    // one project: its closest pairs for distance, its pairs for money, the project itself otherwise
+    ["How far is Hooks - Thurmond from Georgia's work?", "list_overlaps", { project_query: "DESCP-31", sort: "distance" }],
+    ["What could Hooks - Thurmond save?", "list_overlaps", { project_query: "DESCP-31" }],
+    ["When is Jasper Okatie built?", "get_project", { id: "DESC-12" }],
+  ];
+  t("the offline matcher answers about the projects a question names", () => {
+    for (const [q, tool, input] of named) {
+      const plan = O.interpret(q, opts);
+      assert(plan, `no plan for: ${q}`);
+      assert.strictEqual(plan.tool, tool, q);
+      for (const [k, v] of Object.entries(input)) assert.deepStrictEqual(plan.input[k], v, `${q} → ${k}`);
+    }
+  });
+  t("names never pull a general question onto one pair", () => {
+    const general = [
+      ["Which overlaps are most likely to happen, and what could they save?", "list_overlaps"],
+      ["Show me what's planned near Augusta", "search_projects"],
+      ["Which is the biggest project?", "search_projects"],
+      ["How many pairs were checked?", "get_overview"],
+      ["Which three date moves would save the most?", "optimize_schedule"],
+    ];
+    for (const [q, tool] of general) assert.strictEqual(O.interpret(q, opts).tool, tool, q);
+    for (const q of ["hello", "what is the weather in Atlanta", "explain FERC Order 1920"]) assert.strictEqual(O.interpret(q, opts), null, q);
+  });
+}
+
 t("language is read off the question", () => {
   assert.strictEqual(O.language("top 5 overlaps"), "en");
   assert.strictEqual(O.language("¿dónde se solapan?"), "es");

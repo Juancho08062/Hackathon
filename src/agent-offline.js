@@ -100,10 +100,96 @@
     return words.length ? words.slice(0, 4).join(" ") : null;
   }
 
+  // ---------- projects named in words ----------
+  // "How close are Hooks–Thurmond and Evans Primary?" names two projects by the places in their titles, not by id.
+  // A project's name words are its title minus the words every title shares (voltages, "rebuild", "substation",
+  // sponsor tags), so "Hooks" and "Thurmond" identify DESC's Hooks - Thurmond tie. Dashes of any kind, case and accents
+  // are folded away first. The question is split where it joins two names ("and", "with", "vs", "y", a comma), each
+  // part picks the projects whose name words it contains most of, and a tie is settled by which candidates actually
+  // form a flagged pair with the other part's project.
+  const NAME_GENERIC = new Set(("kv tie ties line lines rebuild rebuilds reconductor reconductoring construct construction add adds addition new " +
+    "substation substations sub switching station area solution reactor reactors series sav gtc meag usa transmission distribution project projects " +
+    "upgrade upgrades replace replacement install installation expansion transformer transformers bank banks capacitor capacitors unit plant fold " +
+    "desc dominion georgia power gpc energy loop tap retire retirement convert conversion phase phases circuit circuits").split(" "));
+  // "#6" is kept (as "no6"): Evans Primary - Thurmond Dam #5 and #6 differ only there
+  const nameWords = s => fold(s).replace(/#\s*(\d+)/g, " no$1 ").replace(/[^a-z0-9]+/g, " ").split(" ")
+    .filter(w => w.length > 2 && !/^\d+$/.test(w) && !/^\d+(kv|mw|mva)$/.test(w) && !NAME_GENERIC.has(w) && !FILLER.has(w));
+  const SPLIT_RE = /\s+(?:and|with|vs\.?|versus|against|y|con|contra|frente a)\s+|[,;&×]|\s+x\s+/;
+  // Every project matching this part of the question best, with how many of its name words matched.
+  function candidates(part, catalog) {
+    const words = new Set(nameWords(part));
+    if (!words.size) return { best: 0, list: [], tight: [] };
+    const has = w => words.has(w) || (w.length >= 5 && [...words].some(v => v.length >= 5 && (v.startsWith(w) || w.startsWith(v))));
+    let best = 0, list = [];
+    for (const p of catalog) {
+      const own = p._words || (p._words = [...new Set(nameWords(p.name))]);
+      const score = own.filter(has).length;
+      if (!score) continue;
+      if (score > best) { best = score; list = [p]; } else if (score === best) list.push(p);
+    }
+    // "Jasper Okatie" matches both "Jasper - Okatie #2" and "Okatie Substation, Jasper-Yemassee Fold-in"; the title
+    // whose own name words were all said wins over the one that has words left over
+    const frac = p => best / p._words.length, top = Math.max(0, ...list.map(frac));
+    return { best, list, tight: list.filter(p => frac(p) === top) };
+  }
+  // The projects the question names: one or two, or null when it names none or cannot tell which.
+  function projectsNamed(q, opts) {
+    const catalog = (opts && opts.projects) || [];
+    if (!catalog.length) return null;
+    const parts = String(q).split(SPLIT_RE).map(v => v && v.trim()).filter(Boolean).map(v => candidates(v, catalog)).filter(r => r.best);
+    if (!parts.length) return null;
+    const rank = (opts && opts.pairRank) || (() => 0), pairKey = (opts && opts.pairKey) || (() => null);
+    if (parts.length >= 2) {
+      const [A, B] = parts, said = new Set(nameWords(q));
+      // Rank every candidate pair by how many of its two titles' words the question said (then the share of them), then
+      // by whether it is a flagged pair, then by distance. "Hooks–Thurmond and Evans Primary" then lands on Evans Primary - Thurmond Dam rather than
+      // Evans Primary - Thomson Primary, because the question said Thurmond.
+      const scored = [];
+      for (const a of A.list) for (const b of B.list) {
+        if (a === b || a.utility === b.utility) continue;
+        const both = new Set([...a._words, ...b._words]), fit = [...both].filter(w => said.has(w)).length / both.size;
+        const cover = a._words.filter(w => said.has(w)).length + b._words.filter(w => said.has(w)).length;
+        const key = pairKey(a.id, b.id);
+        scored.push({ a, b, key, cover, fit, rank: key ? rank(key) : Infinity });
+      }
+      scored.sort((x, y) => y.cover - x.cover || y.fit - x.fit || !!y.key - !!x.key || x.rank - y.rank);
+      const [pick, next] = scored;
+      // an unflagged pick must be unambiguous: nothing else fits the question as well
+      if (pick && (pick.key || !next || next.cover < pick.cover || next.fit < pick.fit)) return { projects: [pick.a, pick.b], key: pick.key };
+      return null;
+    }
+    // one part names one project; a pair needs a second part, so a single ambiguous name is left to the model
+    const { tight } = parts[0];
+    if (tight.length === 1) return { projects: tight, key: null };
+    return null;
+  }
+  const DIST_WORDS = /\b(how (?:close|far|near)|distance|closest|nearest|apart|near|nearby|km|miles?|cerca|lejos|distancia|mas cercan)/;
+  const COST_WORDS = /(\$|\b(?:cost|costs|save|saves|saving|savings|worth|money|share|ahorr|costo|cuesta|compart))/;
+  function interpretNamed(q, s, opts) {
+    const found = projectsNamed(q, opts);
+    if (!found) return null;
+    const plan = (tool, input, why) => ({ tool, input, matched: why });
+    const [a, b] = found.projects;
+    if (b) {
+      if (any(s, WHY_NOT)) return plan("why_not", { project_id_a: a.id, project_id_b: b.id }, ["why not", "named projects"]);
+      if (!found.key) return plan("compare_projects", { project_ids: [a.id, b.id] }, ["named projects", "not flagged"]);
+      if (any(s, BRIEF) || any(s, REPORT)) return plan("open_brief", { key: found.key }, ["brief", "named pair"]);
+      if (any(s, MAP)) return plan("show_on_map", { key: found.key }, ["map", "named pair"]);
+      return plan("get_overlap", { key: found.key }, "named pair");
+    }
+    if (any(s, MAP)) return plan("show_on_map", { project_id: a.id }, ["map", "named project"]);
+    // one project and a question about distance or money: its pairs, closest or most valuable first
+    if (DIST_WORDS.test(s)) return plan("list_overlaps", { project_query: a.id, sort: "distance", limit: 5 }, ["named project", "closest"]);
+    if (COST_WORDS.test(s) || any(s, OVERLAP_WORDS)) return plan("list_overlaps", { project_query: a.id, limit: 5 }, ["named project", "pairs"]);
+    return plan("get_project", { id: a.id }, "named project");
+  }
+
   // ---------- interpret ----------
   // A tool call for this question, or null to hand off to the model. Specific intents are tested before the general
   // overlap search, because "which date moves would save the most?" also contains the word "save".
-  function interpret(question) {
+  // opts, when the page supplies it, lets questions name projects in words: { projects: [{ id, name, utility }],
+  // pairKey(idA, idB) → the flagged pair's key or null, pairRank(key) → lower is a better pair }.
+  function interpret(question, opts) {
     const q = String(question || "").trim();
     if (!q) return null;
     const s = fold(q);
@@ -168,12 +254,14 @@
 
     const id = ids(q);
     if (id.length && !any(s, OVERLAP_WORDS)) return plan("get_project", { id: id[0] }, "project id");
+    // projects named in words, unless the words are a place ("near Augusta"), which is a search of its own
+    const place = placeAfter(q);
+    if (!id.length && !place) { const byName = interpretNamed(q, s, opts); if (byName) return byName; }
     // "How many pairs were checked" is an overview question even though it says "pairs"; what would make it a ranking
     // instead is a filter of its own, so the overview route yields when the question names a distance or a count.
     if (any(s, OVERVIEW) && distanceKm(s) == null && !limitOf(s)) return plan("get_overview", {}, "overview");
 
     // "What's planned near Augusta" is a search, not a ranking — unless the question also asks about overlaps.
-    const place = placeAfter(q);
     if (place && !any(s, OVERLAP_WORDS)) return plan("search_projects", { query: place }, "place");
 
     return interpretOverlaps(q, s, place);

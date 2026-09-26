@@ -1229,7 +1229,8 @@ const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searc
 // or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
 // saying the model is needed. reason, when given, is why the model was unavailable.
 function answerOffline(q, reason, calls) {
-  const lang = askLang(), plan = SeamOffline.interpret(q);
+  const lang = askLang(), plan = SeamOffline.interpret(q, { projects: PROJECTS,
+    pairKey: (a, b) => { const x = findPair(`${a}|${b}`); return x ? keyOf(x) : null; }, pairRank: key => { const x = findPair(key); return x ? x.km : 0; } });
   if (!plan) return null;
   CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
   let text;
@@ -1296,7 +1297,7 @@ const gtrim = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
 const gfig = (title, body, h, alt) => `<figure class="geo-fig"><figcaption>${esc(title)}</figcaption><svg viewBox="0 0 320 ${h}" role="img" aria-label="${esc(alt || title)}">${body}</svg></figure>`;
 
 // Distance: both projects on a small map, with a dashed line between their closest points and the gap written on it.
-function geoPairMap(p, q, many) {
+function geoPairMap(p, q, many, links) {
   const all = many || [p, q], [d, ca, cb] = many ? [0, null, null] : Engine.closest(p, q);
   const feat = v => Engine.isLine(v) ? { type: "MultiLineString", coordinates: Engine.partsOf(v).filter(c => c.length > 1).map(c => c.map(w => [w[1], w[0]])) } : { type: "Point", coordinates: [v.coords[0][1], v.coords[0][0]] };
   const W = 320, H = 170, box = { type: "FeatureCollection", features: all.map(v => ({ type: "Feature", geometry: feat(v) })) };
@@ -1309,9 +1310,13 @@ function geoPairMap(p, q, many) {
   const one = v => Engine.isLine(v) ? `<path d="${path(feat(v))}" fill="none" style="stroke:${gu(v.utility)}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`
     : `<circle cx="${f(P(v.coords[0])[0])}" cy="${f(P(v.coords[0])[1])}" r="5" style="fill:${gu(v.utility)};stroke:var(--panel)" stroke-width="2"/>`;
   if (many) {
-    const us = [...new Set(all.map(v => v.utility))];
-    const key = us.map((u, i) => `<g transform="translate(${8 + i * 158},${H - 12})"><rect width="10" height="4" y="-4" rx="1" style="fill:${gu(u)}"/><text x="14" y="0">${esc(lblLong(u))} (${all.filter(v => v.utility === u).length})</text></g>`).join("");
-    return gfig(`${all.length} project${all.length === 1 ? "" : "s"} on the map`, `<clipPath id="gfc${++geoSeq}"><rect width="${W}" height="${H - 22}" rx="4"/></clipPath><g clip-path="url(#gfc${geoSeq})"><rect width="${W}" height="${H - 22}" style="fill:var(--water)"/>${st}${seam}${all.map(one).join("")}</g>${key}`, H,
+    // links: one project's pairs, each drawn with its closest-point gap and the nearest one labeled
+    const us = [...new Set(all.map(v => v.utility))], focus = links && links.length ? all[0] : null;
+    const gaps = (links || []).map(x => { const [u, v] = [P(x.ca), P(x.cb)]; return `<line x1="${f(u[0])}" y1="${f(u[1])}" x2="${f(v[0])}" y2="${f(v[1])}" style="stroke:var(--hot)" stroke-width="1.4" stroke-dasharray="3 3"/>`; }).join("");
+    const near = links && links[0], nm = near && P(near.ca), nl = near ? `<text x="${f(Math.min(W - 60, Math.max(60, nm[0])))}" y="${f(Math.max(14, nm[1] - 10))}" text-anchor="middle" class="gf-num" paint-order="stroke" style="stroke:var(--panel)" stroke-width="3">nearest ${esc(near.km < 0.1 ? "touching" : km(near.km))}</text>` : "";
+    const key = us.map((u, i) => `<g transform="translate(${8 + i * 158},${H - 12})"><rect width="10" height="4" y="-4" rx="1" style="fill:${gu(u)}"/><text x="14" y="0">${esc(focus && u === focus.utility ? gtrim(short(focus), 24) : `${lbl(u)} (${all.filter(v => v.utility === u).length})`)}</text></g>`).join("");
+    const title = focus ? `${short(focus)} and its ${links.length} nearest pair${links.length === 1 ? "" : "s"}` : `${all.length} project${all.length === 1 ? "" : "s"} on the map`;
+    return gfig(title, `<clipPath id="gfc${++geoSeq}"><rect width="${W}" height="${H - 22}" rx="4"/></clipPath><g clip-path="url(#gfc${geoSeq})"><rect width="${W}" height="${H - 22}" style="fill:var(--water)"/>${st}${seam}${all.slice(1).map(one).join("")}${all.slice(0, 1).map(one).join("")}${gaps}</g>${nl}${key}`, H,
       `Map of ${all.map(v => v.name).join(", ")}`);
   }
   const [a, b] = [P(ca), P(cb)], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
@@ -1366,18 +1371,22 @@ function geoDiagram(q, calls) {
   const pairs = [], projects = [];
   const addPair = x => { if (x && !pairs.includes(x)) pairs.push(x); };
   const proj = id => PROJECTS.find(v => v.id === String(id || "").toUpperCase());
-  let list = null, projList = null, sortBy = null, named = false;
+  let list = null, projList = null, sortBy = null, named = false, single = null;
   for (const { name, input: i, result: r } of ok) {
     if (["get_overlap", "open_brief"].includes(name) || (name === "show_on_map" && i.key)) addPair(findPair(i.key));
     if (name === "show_on_map" && i.project_id && proj(i.project_id)) projects.push(proj(i.project_id));
-    if (name === "get_project" && proj(i.id)) projects.push(proj(i.id));
+    if (name === "get_project" && proj(i.id)) {
+      projects.push(proj(i.id));
+      // its strongest counterparts ride along, so a timing question shows what it would line up with
+      (r.top_overlaps || []).slice(0, 3).map(o => findPair(o.key)).filter(Boolean).forEach(x => projects.push(x.p.id === i.id ? x.q : x.p));
+    }
     if (name === "why_not" || name === "compare_projects") {
       const ids = name === "why_not" ? [i.project_id_a, i.project_id_b] : (i.project_ids || []);
       const ps = ids.map(proj).filter(Boolean);
       if (ps.length >= 2) { const f = RESULT.pairs.find(x => (x.p === ps[0] && x.q === ps[1]) || (x.p === ps[1] && x.q === ps[0])); f ? addPair(f) : pairs.push({ p: ps[0], q: ps[1], loose: true }); }
       ps.forEach(p => projects.push(p));
     }
-    if (name === "list_overlaps" && r.rows) { list = r.rows.map(row => findPair(row.key)).filter(Boolean); sortBy = i.sort || "expected"; named = !!i.project_query; }
+    if (name === "list_overlaps" && r.rows) { list = r.rows.map(row => findPair(row.key)).filter(Boolean); sortBy = i.sort || "expected"; named = !!i.project_query; single = proj(i.project_query) || null; }
     if (name === "search_projects" && r.projects) { projList = r.projects.map(v => proj(v.id)).filter(Boolean); sortBy = i.sort || null; named = !!i.query; }
     if (name === "optimize_schedule" && r.moves && r.moves.length)
       return geoBars(r.moves.map(m => ({ label: `${m.months > 0 ? "+" : ""}${m.months} mo ${m.project}`, v: m.adds_usd, color: gu(m.utility) })), "What each date move adds", money);
@@ -1389,6 +1398,12 @@ function geoDiagram(q, calls) {
       return geoBars(TIERS.slice(0, 4).map((t, k) => ({ label: t.label, v: RESULT.pairs.filter(x => x.tier === k).length, color: tcol(k) })), "Flagged pairs by distance tier", v => String(v));
   }
   if (list && list.length) {
+    // one project asked about by name: it and its nearest counterparts of the other utility
+    if (single) {
+      const others = list.map(x => x.p === single ? x.q : x.p);
+      if (has("timing") && !has("cost")) return geoWindows([single, ...others.slice(0, 5)], `Build windows: ${short(single)} and its pairs`);
+      if (has("distance") || sortBy === "distance") return list.length === 1 ? geoPairMap(list[0].p, list[0].q) : geoPairMap(null, null, [single, ...others.slice(0, 6)], list.slice(0, 6));
+    }
     if (has("timing") && !has("cost")) return geoWindows(list.slice(0, 4).flatMap(x => [x.p, x.q]), "Build windows of the top pairs");
     // a question that names the projects is about that pair, not a ranking of the few rows that matched
     if (list.length === 1 || (named && list.length <= 3 && !has("rank"))) addPair(list[0]);
