@@ -83,7 +83,7 @@
       <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km.</div>
     </div>
     <div class="card">
-      <h2>Coordination opportunities <em id="cnt"></em></h2>
+      <h2><span id="listTitle">Coordination opportunities</span> <em id="cnt"></em></h2>
       <div class="search"><input id="q" type="search" placeholder="Filter by project or place" aria-label="Filter opportunities"><button type="button" class="btn" id="copy">Copy as CSV</button></div>
       <span class="note msg" id="msg" aria-live="polite"></span>
       <div id="detail"></div>
@@ -107,12 +107,12 @@
   <div class="m3d-box">
     <div class="m3d-head">
       <div><h2 id="m3dTitle"></h2><p id="m3dSub" class="note"></p></div>
-      <label class="px"><input type="checkbox" id="m3dPixel" checked> Pixel art</label>
+      <span class="seg" id="m3dStyle" role="group" aria-label="3D style"><button type="button" data-style="realistic" aria-pressed="true">Realistic</button><button type="button" data-style="stylized" aria-pressed="false">Stylized</button></span>
       <button type="button" class="btn" id="m3dClose">Close</button>
     </div>
     <div class="m3d-stage" id="m3dStage"></div>
     <p class="m3d-msg" id="m3dMsg" hidden></p>
-    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible.</p>
+    <p class="note m3d-foot">Drag to orbit, scroll to zoom. Distances along the ground are to scale; tower heights are exaggerated so they stay visible. Stylized is lighter if Realistic runs slowly.</p>
   </div>
 </div>
 

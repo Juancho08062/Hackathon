@@ -1,6 +1,7 @@
 // Seamline 3D: a stylized scene of one flagged pair — both utilities' lattice towers, wires, substations and plants,
 // the closest-point link, and the shared zone the tier allows (corridor, laydown yard or staging yard).
 // three.js loads on first use. Horizontal positions are to scale; heights are exaggerated so towers read.
+// Two looks: Stylized (flat-shaded, light) and Realistic (PBR materials, physical sky, HDR bloom, ACES tone mapping, FXAA).
 (function (root) {
   const PAL = {
     skyTop: 0x3f6488, horizon: 0xcfdbe3, fog: 0xbccbd5, sun: 0xfff1d6,
@@ -9,11 +10,19 @@
     fence: 0x46525c, snow: 0xf2f6f8, mountain: 0x6c8196, water: 0x3f7d8f, pine: 0x2f5140, trunk: 0x4a3b2e, crane: 0xe0a93e,
   };
 
-  let ctx = null;
-  const ensureThree = () => root.Libs.need("THREE", "OrbitControls");
+  let ctx = null, REAL = false;
+  const ensureThree = real => root.Libs.need("THREE", "OrbitControls", ...(real ? ["ThreeExtras"] : []));
+  const STYLE_KEY = "seamline.3dstyle";
+  const getStyle = () => { try { return localStorage.getItem(STYLE_KEY) === "stylized" ? "stylized" : "realistic"; } catch (err) { return "realistic"; } };
 
   // ---------- helpers ----------
-  const phong = (T, color, extra) => new T.MeshPhongMaterial(Object.assign({ color, flatShading: true, shininess: 8 }, extra));
+  // Material helper. Stylized: flat-shaded Phong. Realistic: smooth PBR, with rough/metal hints (shiny Phong maps to low roughness).
+  const phong = (T, color, extra = {}) => {
+    const { shininess, specular, rough, metal, ...rest } = extra;
+    if (!REAL) return new T.MeshPhongMaterial(Object.assign({ color, flatShading: true, shininess: shininess ?? 8 }, specular != null ? { specular } : {}, rest));
+    return new T.MeshStandardMaterial(Object.assign({ color, roughness: rough ?? (shininess >= 40 ? 0.35 : 0.85), metalness: metal ?? 0 }, rest, { flatShading: false }));
+  };
+  const STEEL = { metal: 0.65, rough: 0.38 };
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const makeLabel = (text, color, pos, size = "") => ({ text, color, pos: pos.clone(), size });
   const rng = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -80,7 +89,7 @@
   }
 
   function substationGroup(T, s, color) {
-    const g = new T.Group(), steel = phong(T, PAL.steel), dark = phong(T, PAL.steelDark);
+    const g = new T.Group(), steel = phong(T, PAL.steel, STEEL), dark = phong(T, PAL.steelDark, STEEL);
     const pad = mesh(T, new T.BoxGeometry(s, 0.16, s * 0.8), phong(T, PAL.gravel), false); pad.position.y = 0.08; g.add(pad);
     // fence
     const f = [], hw = s * 0.52, hd = s * 0.42;
@@ -138,7 +147,7 @@
   }
 
   function plantGroup(T, s, color) {
-    const g = new T.Group(), steel = phong(T, PAL.steel), dark = phong(T, PAL.steelDark);
+    const g = new T.Group(), steel = phong(T, PAL.steel, STEEL), dark = phong(T, PAL.steelDark, STEEL);
     const pad = mesh(T, new T.BoxGeometry(s * 1.2, 0.16, s * 0.9), phong(T, PAL.concrete), false); pad.position.y = 0.08; g.add(pad);
     const hall = mesh(T, new T.BoxGeometry(s * 0.5, s * 0.22, s * 0.3), dark); hall.position.set(-s * 0.2, s * 0.11 + 0.16, s * 0.08); g.add(hall);
     const stripe = mesh(T, new T.BoxGeometry(s * 0.51, s * 0.035, s * 0.31), phong(T, color, { emissive: color, emissiveIntensity: 0.15 })); stripe.position.set(-s * 0.2, s * 0.19 + 0.16, s * 0.08); g.add(stripe);
@@ -233,6 +242,39 @@
   }
   const wheels = (T, list, x, z, len, wid) => { for (const dx of [-len / 2 + 0.15, len / 2 - 0.15]) for (const dz of [-wid / 2, wid / 2]) { const w = cylAt(T, 0.13, 0.13, 0.08, 10, 0, 0, 0); w.rotateX(Math.PI / 2); w.translate(x + dx, 0.13, z + dz); list.push(w); } };
 
+  // Tiling normal map for ripples on ponds (realistic mode): a few summed sine waves, converted to normals.
+  function waterNormals(T) {
+    const N = 128, c = document.createElement("canvas"); c.width = c.height = N;
+    const x = c.getContext("2d"), img = x.createImageData(N, N), TAU = Math.PI * 2;
+    const hgt = (i, j) => Math.sin(TAU * (i * 3 + j) / N) + 0.6 * Math.sin(TAU * (i * -2 + j * 5) / N) + 0.35 * Math.sin(TAU * (i * 7 - j * 4) / N);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const dx = hgt(i + 1, j) - hgt(i - 1, j), dy = hgt(i, j + 1) - hgt(i, j - 1), l = Math.hypot(dx, dy, 4), o = (j * N + i) * 4;
+      img.data[o] = 128 - 127 * dx / l; img.data[o + 1] = 128 - 127 * dy / l; img.data[o + 2] = 128 + 127 * 4 / l; img.data[o + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(5, 5);
+    return t;
+  }
+  // Colors in this file are written as sRGB hex. The realistic pipeline works in linear light, so convert every
+  // material, light, vertex and instance color once after the scene is built.
+  function linearize(T, scene) {
+    const seen = new Set(), c = new T.Color();
+    const conv = arr => { for (let i = 0; i < arr.length; i += 3) { c.fromArray(arr, i).convertSRGBToLinear().toArray(arr, i); } };
+    scene.traverse(o => {
+      if (o.isLight) o.color.convertSRGBToLinear();
+      if (o.isHemisphereLight) o.groundColor.convertSRGBToLinear();
+      if (o.isInstancedMesh && o.instanceColor) conv(o.instanceColor.array);
+      if (o.geometry && o.geometry.attributes && o.geometry.attributes.color && !seen.has(o.geometry)) { seen.add(o.geometry); conv(o.geometry.attributes.color.array); }
+      [].concat(o.material || []).forEach(m => {
+        if (seen.has(m) || m.isShaderMaterial) return; seen.add(m);
+        if (m.color) m.color.convertSRGBToLinear();
+        if (m.isMeshStandardMaterial && m.envMapIntensity === 1) m.envMapIntensity = 0.35; // sky light fills shadows without washing out color
+        if (m.emissive) m.emissive.convertSRGBToLinear();
+      });
+    });
+    scene.fog.color.convertSRGBToLinear();
+  }
+
   // Soft round sprite texture for steam.
   function softTexture(T) {
     const c = document.createElement("canvas"); c.width = c.height = 64;
@@ -243,7 +285,8 @@
   }
 
   // ---------- build ----------
-  function build(pair, opts) {
+  function build(pair, opts, real) {
+    REAL = real;
     const T = root.THREE, rnd = rng(7);
     const c0 = [(pair.ca[0] + pair.cb[0]) / 2, (pair.ca[1] + pair.cb[1]) / 2];
     const KX = 111.32 * Math.cos(c0[0] * Math.PI / 180), KY = 110.57;
@@ -261,11 +304,17 @@
     const toV = ([lat, lon]) => { const x = (lon - c0[1]) * KX * S, z = -(lat - c0[0]) * KY * S; return new T.Vector3(x, heightAt(x, z), z); };
 
     const scene = new T.Scene();
-    scene.fog = new T.FogExp2(PAL.fog, 0.0075);
-    const sunDir = new T.Vector3(0.55, 0.75, 0.35).normalize();
+    scene.fog = new T.FogExp2(REAL ? 0xa9bccb : PAL.fog, REAL ? 0.0036 : 0.0075);
+    const sunDir = new T.Vector3(0.55, REAL ? 0.52 : 0.75, 0.35).normalize();
 
-    // sky dome: gradient plus a warm glow around the sun
-    scene.add(new T.Mesh(new T.SphereGeometry(R * 9, 32, 16), new T.ShaderMaterial({
+    // sky: a physical (Preetham) sky in realistic mode, else a gradient dome with a warm glow around the sun
+    let sky = null;
+    if (REAL) {
+      sky = new T.Sky(); sky.scale.setScalar(3000);
+      const u = sky.material.uniforms;
+      u.turbidity.value = 5.5; u.rayleigh.value = 1.4; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.82; u.sunPosition.value.copy(sunDir);
+      scene.add(sky);
+    } else scene.add(new T.Mesh(new T.SphereGeometry(R * 9, 32, 16), new T.ShaderMaterial({
       side: T.BackSide, depthWrite: false,
       uniforms: { top: { value: new T.Color(PAL.skyTop) }, horizon: { value: new T.Color(PAL.horizon) }, sunC: { value: new T.Color(PAL.sun) }, sunDir: { value: sunDir } },
       vertexShader: "varying vec3 vd; void main(){ vd = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
@@ -274,8 +323,8 @@
         "c += sunC * (pow(s, 400.0) * 1.2 + pow(s, 12.0) * 0.25); gl_FragColor = vec4(c, 1.0); }",
     })));
 
-    scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, 0.75));
-    const sun = new T.DirectionalLight(PAL.sun, 0.95);
+    scene.add(new T.HemisphereLight(0xdde8f2, 0x46584c, REAL ? 0.2 : 0.75));
+    const sun = new T.DirectionalLight(PAL.sun, REAL ? 2.6 : 0.95);
     sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
     const sc = sun.shadow.camera; sc.left = sc.bottom = -R * 1.4; sc.right = sc.top = R * 1.4; sc.near = 1; sc.far = R * 5;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
@@ -296,11 +345,16 @@
     gGeo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
     gGeo.computeVertexNormals();
     // speckled grass texture, multiplied over the vertex colors
-    const gc = document.createElement("canvas"); gc.width = gc.height = 128;
-    const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, 128, 128);
-    for (let i = 0; i < 2600; i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * 128), Math.floor(gr() * 128), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
-    const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(34, 34);
-    const ground = new T.Mesh(gGeo, phong(T, 0xffffff, { vertexColors: true, shininess: 2, map: groundTex })); ground.receiveShadow = true; scene.add(ground);
+    const GS = REAL ? 256 : 128, gc = document.createElement("canvas"); gc.width = gc.height = GS;
+    const gx = gc.getContext("2d"), gr = rng(3); gx.fillStyle = "#eef2ea"; gx.fillRect(0, 0, GS, GS);
+    for (let i = 0; i < (REAL ? 9000 : 2600); i++) { const v = 170 + Math.floor(gr() * 85); gx.fillStyle = `rgb(${v - 10},${v},${v - 18})`; gx.fillRect(Math.floor(gr() * GS), Math.floor(gr() * GS), 1 + Math.floor(gr() * 2), 1 + Math.floor(gr() * 3)); }
+    if (REAL) { // grass blades and a few bare patches
+      for (let i = 0; i < 2200; i++) { const x = gr() * GS, y = gr() * GS, v = 150 + Math.floor(gr() * 90); gx.strokeStyle = `rgba(${v - 30},${v},${v - 60},0.7)`; gx.beginPath(); gx.moveTo(x, y); gx.lineTo(x + (gr() - 0.5) * 3, y - 2 - gr() * 4); gx.stroke(); }
+      for (let i = 0; i < 14; i++) { gx.fillStyle = "rgba(205,190,160,0.18)"; gx.beginPath(); gx.arc(gr() * GS, gr() * GS, 6 + gr() * 18, 0, 7); gx.fill(); }
+    }
+    const groundTex = new T.CanvasTexture(gc); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.repeat.set(REAL ? 26 : 34, REAL ? 26 : 34);
+    if (REAL) { groundTex.encoding = T.sRGBEncoding; groundTex.anisotropy = 4; }
+    const ground = new T.Mesh(gGeo, phong(T, 0xffffff, REAL ? { vertexColors: true, rough: 0.95, map: groundTex, bumpMap: groundTex, bumpScale: 0.03 } : { vertexColors: true, shininess: 2, map: groundTex })); ground.receiveShadow = true; scene.add(ground);
 
     // basalt columns around the cliff
     const colGeo = new T.CylinderGeometry(1, 1, 1, 6); colGeo.translate(0, 0.5, 0);
@@ -315,11 +369,21 @@
 
     // lowland, distant snowcapped mountains, clouds
     const low = new T.Mesh(new T.PlaneGeometry(R * 20, R * 20), phong(T, PAL.lowland)); low.rotation.x = -Math.PI / 2; low.position.y = LOW - 0.3; scene.add(low);
-    const mMat = phong(T, PAL.mountain), sMat = phong(T, PAL.snow);
-    for (let i = 0; i < 20; i++) {
-      const a = i / 20 * Math.PI * 2 + 0.2, r = R * 3.3 + (i % 3) * 12, h = 22 + (i * 37 % 15), w = 34 + (i * 13 % 18);
-      const m = new T.Mesh(new T.ConeGeometry(w, h, 7), mMat); m.position.set(Math.cos(a) * r, LOW + h / 2, Math.sin(a) * r); m.rotation.y = i; scene.add(m);
-      const cap = new T.Mesh(new T.ConeGeometry(w * 0.31, h * 0.3, 7), sMat); cap.position.set(m.position.x, LOW + h * 0.85 + 0.1, m.position.z); cap.rotation.y = i; scene.add(cap);
+    if (REAL) {
+      // realistic: low forested ridges fading into haze, so the physical sky shows above the horizon
+      const hMat = phong(T, 0x4f6b55, { rough: 1 });
+      for (let i = 0; i < 26; i++) {
+        const a = i / 26 * Math.PI * 2 + 0.1, r = R * 4.2 + (i % 4) * 18, w = 40 + (i * 13 % 25);
+        const m = new T.Mesh(new T.SphereGeometry(1, 24, 12), hMat); m.scale.set(w, 9 + (i * 7 % 8), w * 0.7);
+        m.position.set(Math.cos(a) * r, LOW, Math.sin(a) * r); m.rotation.y = a; scene.add(m);
+      }
+    } else {
+      const mMat = phong(T, PAL.mountain), sMat = phong(T, PAL.snow);
+      for (let i = 0; i < 20; i++) {
+        const a = i / 20 * Math.PI * 2 + 0.2, r = R * 3.3 + (i % 3) * 12, h = 22 + (i * 37 % 15), w = 34 + (i * 13 % 18);
+        const m = new T.Mesh(new T.ConeGeometry(w, h, 7), mMat); m.position.set(Math.cos(a) * r, LOW + h / 2, Math.sin(a) * r); m.rotation.y = i; scene.add(m);
+        const cap = new T.Mesh(new T.ConeGeometry(w * 0.31, h * 0.3, 7), sMat); cap.position.set(m.position.x, LOW + h * 0.85 + 0.1, m.position.z); cap.rotation.y = i; scene.add(cap);
+      }
     }
     const clouds = [], cMat = new T.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.92 });
     for (let i = 0; i < 9; i++) {
@@ -344,7 +408,7 @@
       }
       if (pts.length >= 2) {
         const key = kvH.toFixed(2), parts = towerCache[key] || (towerCache[key] = towerParts(T, kvH / TS));
-        const steelI = new T.InstancedMesh(parts.steel, phong(T, PAL.steel, { shininess: 30 }), pts.length);
+        const steelI = new T.InstancedMesh(parts.steel, phong(T, PAL.steel, Object.assign({ shininess: 30 }, STEEL)), pts.length);
         const accI = new T.InstancedMesh(parts.accent, phong(T, colorHex, { emissive: colorHex, emissiveIntensity: 0.2 }), pts.length);
         const insI = new T.InstancedMesh(parts.ins, phong(T, PAL.porcelain, { shininess: 40 }), pts.length);
         // bundled conductors: 1 wire per phase at 115 kV, 2 at 230 kV, 4 at 500 kV
@@ -427,7 +491,10 @@
     const clear = (x, z, pad) => obstacles.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r + pad) && Math.hypot(x - mid.x, z - mid.z) > 7;
 
     // ponds
-    const water = phong(T, PAL.water, { shininess: 90, specular: 0x9fc3d0, transparent: true, opacity: 0.92, flatShading: false });
+    const waterTex = REAL ? waterNormals(T) : null;
+    const water = REAL
+      ? new T.MeshStandardMaterial({ color: 0x24505c, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.94, normalMap: waterTex, normalScale: new T.Vector2(0.15, 0.15), envMapIntensity: 1.3 })
+      : phong(T, PAL.water, { shininess: 90, specular: 0x9fc3d0, transparent: true, opacity: 0.92, flatShading: false });
     for (let i = 0, made = 0; i < 40 && made < 6; i++) {
       const x = (rnd() - 0.5) * R * 2.6, z = (rnd() - 0.5) * R * 2.6, r = 2.5 + rnd() * 4;
       if (Math.hypot(x, z) > RG - 10 || !clear(x, z, r + 1)) continue;
@@ -488,23 +555,35 @@
     const focus = va.clone().lerp(vb, 0.5);
     sun.target.position.copy(focus); sun.position.copy(focus).add(sunDir.clone().multiplyScalar(R * 2));
 
-    return { scene, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex };
+    if (REAL) linearize(T, scene);
+    return { scene, sky, puffs, pulse, clouds, labels, focus, span: Math.max(12, va.distanceTo(vb)), tex, groundTex, waterTex };
   }
 
   // ---------- modal and render loop ----------
-  function open(pair, opts) {
+  // view: optional { pos, target } to keep the camera when switching styles.
+  function open(pair, opts, view) {
     const modal = document.getElementById("m3d");
     modal.hidden = false;
     document.getElementById("m3dTitle").textContent = opts.title;
     document.getElementById("m3dSub").textContent = opts.subtitle;
     const stage = document.getElementById("m3dStage"), msg = document.getElementById("m3dMsg");
-    msg.textContent = "Loading 3D…"; msg.hidden = false;
-    document.getElementById("m3dClose").focus();
-    ensureThree().then(() => {
-      if (modal.hidden) return;
+    const style = getStyle(), real = style === "realistic";
+    for (const b of document.querySelectorAll("#m3dStyle button")) {
+      b.setAttribute("aria-pressed", b.dataset.style === style);
+      b.onclick = () => {
+        if (b.dataset.style === getStyle()) return;
+        try { localStorage.setItem(STYLE_KEY, b.dataset.style); } catch (err) { /* keep the choice for this view only */ }
+        const keep = ctx && ctx.view();
+        open(pair, opts, keep);
+      };
+    }
+    msg.textContent = real ? "Loading realistic 3D…" : "Loading 3D…"; msg.hidden = false;
+    if (!view) document.getElementById("m3dClose").focus();
+    ensureThree(real).then(() => {
+      if (modal.hidden || getStyle() !== style) return;
       close(true);
-      const T = root.THREE, built = build(pair, opts);
-      const renderer = new T.WebGLRenderer({ antialias: true });
+      const T = root.THREE, built = build(pair, opts, real);
+      const renderer = new T.WebGLRenderer({ antialias: !real, powerPreference: "high-performance" });
       renderer.setClearColor(PAL.fog);
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       stage.innerHTML = ""; stage.appendChild(renderer.domElement);
@@ -513,28 +592,43 @@
       const v = new T.Vector3();
       const placeTags = () => { const w = stage.clientWidth, h = stage.clientHeight; tags.forEach(t => { v.copy(t.pos).project(cam); const off = v.z > 1; t.el.style.display = off ? "none" : ""; t.el.style.transform = `translate(${(v.x + 1) / 2 * w}px, ${(1 - v.y) / 2 * h}px) translate(-50%, -100%)`; }); };
 
-      const cam = new T.PerspectiveCamera(42, 1, 0.5, 2500);
+      const cam = new T.PerspectiveCamera(42, 1, 0.5, real ? 9000 : 2500);
       const f = built.focus, d = built.span * 1.5 + 16;
       const endPos = new T.Vector3(f.x + d * 0.75, f.y + d * 0.5, f.z + d * 0.85), rel = endPos.clone().sub(f);
       const endR = rel.length(), endAz = Math.atan2(rel.x, rel.z), endEl = Math.asin(rel.y / endR);
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const INTRO = reduced ? 0 : 2.6;
+      const INTRO = reduced || view ? 0 : 2.6;
       const orbitAt = (r, az, el) => cam.position.set(f.x + r * Math.cos(el) * Math.sin(az), f.y + r * Math.sin(el), f.z + r * Math.cos(el) * Math.cos(az));
-      if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
-      cam.lookAt(f);
+      if (view) cam.position.copy(view.pos); else if (INTRO) orbitAt(endR * 2.3, endAz + 1.1, Math.min(1.25, endEl + 0.5)); else cam.position.copy(endPos);
+      cam.lookAt(view ? view.target : f);
 
       const controls = new T.OrbitControls(cam, renderer.domElement);
-      controls.target.copy(f); controls.enableDamping = true; controls.dampingFactor = 0.08;
+      controls.target.copy(view ? view.target : f); controls.enableDamping = true; controls.dampingFactor = 0.08;
       controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 6; controls.maxDistance = 150;
-      controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = !reduced && !INTRO;
+      controls.autoRotateSpeed = 0.5; controls.enabled = !INTRO; controls.autoRotate = !reduced && !INTRO && !view;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
 
+      // Realistic: render in linear HDR (half-float target), add bloom, then ACES tone mapping, sRGB conversion and FXAA.
+      let composer = null, fxaa = null, pmrem = null;
+      if (real) {
+        pmrem = new T.PMREMGenerator(renderer);
+        const envScene = new T.Scene(); envScene.add(built.sky.clone());
+        built.scene.environment = pmrem.fromScene(envScene).texture;
+        const rt = new T.WebGLRenderTarget(1, 1, { type: T.HalfFloatType, format: T.RGBAFormat, minFilter: T.LinearFilter, magFilter: T.LinearFilter });
+        composer = new T.EffectComposer(renderer, rt);
+        composer.addPass(new T.RenderPass(built.scene, cam));
+        composer.addPass(new T.UnrealBloomPass(new T.Vector2(256, 256), 0.18, 0.55, 0.95));
+        const tone = new T.ShaderPass(T.ACESFilmicToneMappingShader); tone.uniforms.exposure.value = 0.72; composer.addPass(tone);
+        composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
+        fxaa = new T.ShaderPass(T.FXAAShader); composer.addPass(fxaa);
+      }
+
       const size = () => {
-        const w = stage.clientWidth, h = stage.clientHeight, px = document.getElementById("m3dPixel").checked ? 3 : 1;
-        renderer.setPixelRatio(px === 1 ? Math.min(1.5, devicePixelRatio) : 1);
-        renderer.setSize(Math.max(1, Math.round(w / px)), Math.max(1, Math.round(h / px)), false);
+        const w = stage.clientWidth, h = stage.clientHeight, pr = Math.min(real ? 1.25 : 1.5, devicePixelRatio);
+        renderer.setPixelRatio(pr);
+        renderer.setSize(Math.max(1, w), Math.max(1, h), false);
         renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "100%";
-        stage.classList.toggle("pixel", px > 1);
+        if (composer) { composer.setPixelRatio(pr); composer.setSize(w, h); fxaa.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr)); }
         cam.aspect = w / h; cam.updateProjectionMatrix();
       };
       size();
@@ -559,18 +653,26 @@
           else m.scale.setScalar(1 + 0.25 * Math.sin(t * 3));
         });
         built.clouds.forEach((c, i) => { c.position.x += 0.012 * (1 + (i % 3) * 0.4); if (c.position.x > 200) c.position.x = -200; });
-        controls.update(); renderer.render(built.scene, cam); placeTags(); raf = requestAnimationFrame(loop);
+        if (built.waterTex) built.waterTex.offset.set(t * 0.012, t * 0.007);
+        controls.update();
+        if (composer) composer.render(); else renderer.render(built.scene, cam);
+        placeTags(); raf = requestAnimationFrame(loop);
       };
       loop();
       msg.hidden = true;
       const onResize = () => size();
       addEventListener("resize", onResize);
-      document.getElementById("m3dPixel").onchange = size;
-      ctx = { stop: () => {
-        cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
-        built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
-        built.tex.dispose(); built.groundTex.dispose(); renderer.dispose();
-      } };
+      ctx = {
+        view: () => ({ pos: cam.position.clone(), target: controls.target.clone() }),
+        stop: () => {
+          cancelAnimationFrame(raf); removeEventListener("resize", onResize); controls.dispose();
+          built.scene.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose && o.material.dispose(); });
+          [built.tex, built.groundTex, built.waterTex, built.scene.environment].forEach(x => x && x.dispose());
+          if (composer) { composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); }
+          if (pmrem) pmrem.dispose();
+          renderer.dispose();
+        },
+      };
     }).catch(err => { msg.hidden = false; msg.textContent = root.THREE ? "The 3D view couldn't be drawn: " + err.message : "The 3D view needs an internet connection to load three.js. " + err.message; });
   }
   function close(keepOpen) {

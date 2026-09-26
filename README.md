@@ -23,8 +23,8 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 - **Cost and impact estimate.** A rough savings figure for each pair, with every assumption listed.
 - **Map** with pan and zoom and four styles: Plain, Streets, Satellite and Terrain.
 - **Timeline** of each flagged project's estimated construction window.
-- **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Pixel-art mode is lighter on slow laptops.
-- **Import** any utility's plan and compare any two utilities.
+- **3D view** of any pair: lattice towers, conductors, substations, plants, crews and the shared right-of-way or yard its tier allows. Two styles: **Realistic** (physically based materials, sky lighting, soft shadows, bloom and filmic tone mapping) and **Stylized**, which is lighter on slow laptops.
+- **Import** any utility's plan and compare any two utilities, or set the second utility to **None** to just browse one utility's projects.
 
 ![3D view of a pair that can share a crew staging yard](docs/screenshots/3d-view.png)
 
