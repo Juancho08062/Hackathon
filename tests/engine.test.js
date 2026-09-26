@@ -1,5 +1,7 @@
 // Run with: node tests/engine.test.js
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const E = require("../src/engine.js");
 const I = require("../src/ingest.js");
 const projects = require("../data/projects.json").filter(p => !p.existing);
@@ -36,9 +38,36 @@ t("ranking: tier first, then same window, then distance", () => {
 });
 t("built-in data: DESC vs Georgia within 40 km", () => {
   const { pairs, checked } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
-  assert.strictEqual(checked, 54 * 39);
-  assert.strictEqual(pairs.length, 20);
+  const n = u => projects.filter(p => p.utility === u).length;
+  assert.strictEqual(checked, n("DESC") * n("GPC"));
+  assert(n("DESC") >= 60 && n("GPC") >= 150, `${n("DESC")} DESC, ${n("GPC")} GPC`);
+  // most of the dataset does not overlap: a small share of pairs is flagged
+  assert(pairs.length > 50 && pairs.length < checked * 0.03, `${pairs.length} of ${checked}`);
   assert.strictEqual(pairs[0].tier, 0);
+});
+t("built-in data: every overlap in the challenge's reference table is flagged", () => {
+  const { pairs } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
+  const rows = fs.readFileSync(path.join(__dirname, "../data/official/reference_overlaps.csv"), "utf8").trim().split("\n").slice(1);
+  assert.strictEqual(rows.length, 6);
+  for (const row of rows) {
+    const [id, mi, , , , a, b] = row.split(",");
+    const x = pairs.find(x => (x.p.id === a && x.q.id === b) || (x.p.id === b && x.q.id === a));
+    assert(x, `${id} ${a} / ${b} not flagged`);
+    // the reference measures centre to centre; closest points can only be as close or closer
+    assert(x.km <= +mi * 1.609344 + 0.5, `${id}: ${x.km.toFixed(2)} km vs reference ${mi} mi`);
+  }
+});
+t("built-in data: official projects carry their source and how each end point was placed", () => {
+  const irp = projects.filter(p => p.id.startsWith("IRP-"));
+  assert(irp.length > 100);
+  for (const p of irp) {
+    assert(/IRP/.test(p.source) && /TEAMS/.test(p.page), p.id);
+    assert(p.located.some(l => l.method !== "not found"), p.id);
+    assert(p.start <= p.in_service, p.id);
+  }
+  const evans = projects.find(p => p.id === "IRP-20793");
+  assert.strictEqual(evans.project_start, "2029-06-01");
+  assert.strictEqual(evans.in_service, "2033-06-01");
 });
 t("importer: loose column names, $ costs, year-only dates", () => {
   const csv = 'Owner,Project Name,Voltage,Work Type,ISD,Latitude,Longitude,To_Lat,To_Lon,Estimated Cost\nSantee Cooper,"Pee Dee - Kingsburg 230 kV, rebuild",230,Rebuild,2029,34.2,-79.7,34.0,-79.5,"$12,500,000"';

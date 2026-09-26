@@ -1,0 +1,153 @@
+key,zone,name,lat,lon,method,confidence,note
+queensboro,desc,Queensboro,32.722793,-79.967332,reference,high,Projects_Overlaps.xlsx
+okatie,desc,Okatie Substation,32.333758,-81.032495,reference,high,Projects_Overlaps.xlsx
+cainhoy,desc,Cainhoy,32.941402,-79.842276,osm_substation,high,Cainhoy Substation (w229116275)
+hamlin,desc,Hamlin,32.859937,-79.788441,osm_substation,high,Hamlin Substation (w229116306)
+eastover,desc,Eastover,33.877115,-80.692259,town,low,town of Eastover (n154100234)
+burton,desc,Burton,32.436488,-80.721016,osm_substation,high,Burton Substation (w185362029)
+denny terrace,desc,Denny Terrace,34.057609,-81.061561,osm_substation,high,Denny Terrace Substation (w185130609)
+wateree,desc,Wateree,33.821307,-80.628422,osm_plant,medium,"Wateree Station (r17131066); 4 candidates, nearest the zone"
+bluffton,desc,Bluffton,32.235027,-80.853384,reference,high,Projects_Overlaps.xlsx
+faber place,desc,Faber Place,32.85008,-80.014624,osm_substation,high,Faber Place Substation (w217507829)
+stevens creek,desc,Stevens Creek,33.562599,-82.051362,reference,high,Projects_Overlaps.xlsx
+hooks,desc,Hooks,33.65682,-82.159478,manual,high,"Clarks Hill SC, at the GPC-SCE&G tie point OSM tags as w1074904615"
+harleyville,desc,Harleyville Transmission Tap,33.209907,-80.451166,osm_substation,high,Harleyville Substation (w1075801506)
+summerville,desc,Summerville,33.018,-80.176,manual,high,"Summerville SC, DESC substation area"
+canadys,desc,Canadys,33.064096,-80.6206,osm_substation,high,Canadys Substation (w185032900)
+yemassee,desc,Yemassee,32.697426,-80.863793,osm_substation,high,Yemassee Substation (w185317032)
+jasper,desc,Jasper,32.35912,-81.1246,reference,high,Projects_Overlaps.xlsx
+wagener,desc,Wagener Tap,33.650112,-81.360566,osm_substation,high,Wagener Substation (w993540535)
+church creek,desc,Church Creek,32.83032,-80.070279,osm_substation,high,Church Creek Substation (w185330726)
+ward,desc,Ward,33.87218,-81.697723,osm_substation,high,Ward Substation (w185197506)
+saint george,desc,St George,33.199388,-80.592009,osm_substation,high,Saint George Switching Station (w1069480257)
+sumter,desc,Sumter,33.897661,-80.323976,osm_substation,high,Sumter Substation (w185032893)
+thurmond,desc,Thurmond,33.660127,-82.195931,reference,high,Projects_Overlaps.xlsx
+batesburg,desc,Batesburg,33.913487,-81.564435,osm_substation,high,Batesburg Substation (w178951280)
+dawson,desc,Dawson Sub,31.757592,-84.430385,osm_substation,low,Dawson Substation (w682330140)
+urquhart,desc,Urquhart,33.43287,-81.911081,osm_substation,medium,"Urquhart Substation (r14317637); 2 candidates, nearest the zone"
+toolebeck,desc,Toolebeck,33.534632,-81.669327,osm_substation,high,Toolebeck Substation (w1073259467)
+williams,desc,Williams,33.016814,-79.928513,osm_plant,medium,"Williams Station (r20086234); 2 candidates, nearest the zone"
+jack primus,desc,Jack Primus Tap,32.919384,-79.904495,osm_substation,high,Jack Primus Substation (w1097237376)
+charleston,desc,Charleston Transmission,32.779202,-79.926181,osm_substation,medium,"Charleston East Side #216 (w1363130971); 4 candidates, nearest the zone"
+cameron,desc,Cameron Jct,33.563666,-80.708996,osm_substation,high,Cameron Substation (w318318141)
+elloree,desc,Elloree,33.532384,-80.579724,osm_substation,high,Elloree Substation (w1075509549)
+saint matthews,desc,St Matthews,33.664876,-80.777868,town,low,town of Saint Matthews (n153842111)
+hyundai motors savannah,219,HYUNDAI MOTORS SAVANNAH,32.14,-81.4,manual,low,"Hyundai Metaplant, Ellabell GA"
+mitchell,216,MITCHELL,31.447121,-84.133843,reference,high,Projects_Overlaps.xlsx
+north tifton,216,NORTH TIFTON,31.478089,-83.54913,reference,high,Projects_Overlaps.xlsx
+bremen,211,BREMEN,33.709192,-85.142716,osm_substation,medium,"Bremen Primary Substation (w9307582); 2 candidates, nearest the zone"
+bonaire,214,BONAIRE PRI,32.564795,-83.600023,osm_substation,medium,"Bonaire Primary Substation (w160308063); 2 candidates, nearest the zone"
+eatonton,214,EATONTON PRIMARY,33.304481,-83.402519,osm_substation,high,Eatonton Substation (w171527955)
+jesup,218,JESUP,31.603106,-81.924947,reference,high,Projects_Overlaps.xlsx
+ludowici,218,LUDOWICI PRIMARY,31.721597,-81.743703,reference,high,Projects_Overlaps.xlsx
+norcross,202,NORCROSS,33.932557,-84.21343,osm_substation,high,Norcross Substation (w159758307)
+pine grove,216,PINE GROVE PRIMARY,30.881649,-83.227987,osm_substation,low,Pine Grove Primary Substation (w174399121)
+deptford,219,DEPTFORD,32.066828,-81.048384,osm_substation,high,Deptford Substation (w122007500)
+magnolia,219,MAGNOLIA,32.022687,-81.086181,osm_substation,high,Magnolia Substation (w121857248)
+villa rica,211,VILLA RICA,33.741022,-84.854865,osm_substation,high,Villa Rica Substation (w159758304)
+heard county,213,HEARD COUNTY,33.358678,-84.994222,osm_substation,high,Heard County Substation (w163891193)
+tenaska,213,TENASKA (,33.351627,-84.99809,osm_substation,medium,"Tenaska Georgia Substation (w163891161); 2 candidates, nearest the zone"
+anthony shoals,212,ANTHONY SHOALS,34.001832,-82.636279,osm_substation,low,Anthony Shoals Substation (w171540506)
+sk,211,SK,34.239246,-83.480155,osm_substation,low,SK Battery Substation (w1066858908)
+anthony shoals,215,ANTHONY SHOALS,34.001832,-82.636279,osm_substation,high,Anthony Shoals Substation (w171540506)
+washington,215,WASHINGTON,33.706504,-82.753196,osm_substation,medium,"Washington Substation #2 (w490789707); 3 candidates, nearest the zone"
+little ogeechee,219,LITTLE OGEECHEE,31.995,-81.225,manual,low,"Little Ogeechee River, south Savannah GA"
+blankets creek,201,BLANKETS CREEK,34.185757,-84.508012,osm_substation,high,Blankets Creek Substation (w178249108)
+woodstock,201,WOODSTOCK,34.08527,-84.513456,osm_substation,high,Woodstock Substation (w177931262)
+east point,208,EAST POINT,33.67635,-84.462966,osm_substation,high,East Point Primary Substation (r14128477)
+fenwick street,215,FENWICK STREET,33.4655,-81.969,manual,low,downtown Augusta GA
+sand bar ferry,215,SAND BAR FERRY (,33.43,-81.933,manual,low,"Sand Bar Ferry Rd, east Augusta GA"
+gordon,214,GORDON,32.882471,-83.316914,osm_substation,high,Gordon Substation (w170991651)
+morrow,206,MORROW (WHITE),33.605931,-84.333462,osm_substation,high,Morrow Substation (w171479107)
+gainesville,212,GAINESVILLE,34.263022,-83.809673,osm_substation,medium,"Gainesville Substation #2 (w179716524); 2 candidates, nearest the zone"
+conyers,206,CONYERS,33.66761,-84.01769,town,low,town of Conyers (n153974943)
+lagrange,213,LAGRANGE,33.030532,-85.029884,osm_substation,medium,"LaGrange Substation #12 (w1021051769); 2 candidates, nearest the zone"
+robins spring,214,ROBINS SPRING,33.005427,-82.879763,osm_substation,high,Robins Spring Substation (w1011162726)
+klondike,206,KLONDIKE,33.636977,-84.124487,osm_substation,high,Klondike Substation (w159784541)
+dresden,213,DRESDEN,33.351115,-84.905954,osm_substation,high,Dresden Substation (w163891152)
+ray place road,215,RAY PLACE RD,33.468258,-82.819772,osm_substation,high,Ray Place Road Switching Station (w1085484843)
+morrow,208,MORROW,33.605931,-84.333462,osm_substation,high,Morrow Substation (w171479107)
+boulevard,219,BOULEVARD,32.041231,-81.144464,osm_substation,high,Boulevard Substation (w381797798)
+big ogeechee,219,BIG OGEECHEE (CC,32.1,-81.38,manual,low,"Big Ogeechee area, Bryan County GA"
+mcintosh,219,MCINTOSH,32.352116,-81.175112,reference,high,Projects_Overlaps.xlsx
+purrysburg,219,PURRYSBURG,32.318,-81.117,manual,high,"Purrysburg, Jasper County SC"
+scottdale,206,SCOTTDALE,33.789827,-84.264089,town,low,town of Scottdale (n153969561)
+union city,208,UNION CITY,33.587056,-84.54243,town,low,town of Union City (n154110018)
+yates,208,YATES (WHITE),33.457634,-84.896958,osm_plant,high,Plant Yates (w1024438670)
+dresden,208,DRESDEN,33.351115,-84.905954,osm_substation,high,Dresden Substation (w163891152)
+barnesville,213,BARNESVILLE PRIMARY,33.032069,-84.201258,osm_substation,medium,"Barnesville Primary Substation (w564834100); 2 candidates, nearest the zone"
+sandersville,214,SANDERSVILLE,33.001821,-82.832729,osm_substation,medium,"Sandersville Substation #6 (w484518626); 2 candidates, nearest the zone"
+fortson,213,FORTSON SUBSTATION,32.610165,-84.915634,osm_substation,low,Fortson Substation (w163762708)
+yates common,208,YATES COMMON,33.461641,-84.904198,osm_substation,high,Yates Common Substation (w652943491)
+yates common,211,YATES COMMON,33.461641,-84.904198,osm_substation,high,Yates Common Substation (w652943491)
+villa rica,201,VILLA RICA,33.741022,-84.854865,osm_substation,high,Villa Rica Substation (w159758304)
+doyle,212,DOYLE,33.837924,-83.698786,osm_substation,high,Doyle Substation (w176906118)
+douglasville,201,DOUGLASVILLE,33.751497,-84.747714,town,low,town of Douglasville (n154309277)
+east moultrie,216,EAST MOULTRIE,31.242178,-83.743474,osm_substation,high,East Moultrie Substation (w174466530)
+offerman,218,OFFERMAN,31.423072,-82.143662,osm_substation,high,Offerman Substation (w52069715)
+lawrenceville,202,LAWRENCEVILLE,33.958149,-84.019879,osm_substation,medium,"Lawrenceville Substation #1 (w985152731); 4 candidates, nearest the zone"
+warrenton,215,WARRENTON PRIMARY,33.406448,-82.670842,osm_substation,medium,"Warrenton Substation (w1046106634); 2 candidates, nearest the zone"
+wadley,214,WADLEY PRI.,32.884657,-82.415872,osm_substation,low,"Wadley Substation (w1005940922); 2 candidates, nearest the zone"
+goshen,219,GOSHEN (SAV),32.248701,-81.209472,reference,high,Projects_Overlaps.xlsx: Goshen (SAV)
+kraft,219,KRAFT,32.148135,-81.145983,osm_substation,high,Kraft Substation (w121986375)
+lloyd shoals,214,LLOYD SHOALS,33.320614,-83.841009,osm_plant,high,Lloyd Shoals Dam (w674159021)
+athena,212,ATHENA,33.976403,-83.346119,osm_substation,high,Athena Substation (w171540528)
+east watkinsville,212,EAST WATKINSVILLE (,33.860546,-83.384765,osm_substation,high,East Watkinsville Substation (w171540512)
+perry,214,PERRY,32.455381,-83.702021,osm_substation,high,Perry Primary Substation (w177850740)
+fitzgerald,214,FITZGERALD,31.729335,-83.292411,osm_substation,low,Fitzgerald Substation (w617660021)
+pitts,214,PITTS,31.944621,-83.540721,town,low,town of Pitts (n153845164)
+bostwick,212,BOSTWICK,33.737371,-83.514509,town,low,town of Bostwick (n154108644)
+east social circle,212,EAST SOCIAL CIRCLE,33.67415,-83.679326,osm_substation,high,East Social Circle Substation (w171531630)
+south bainbridge,216,SOUTH BAINBRIDGE,30.839608,-84.488921,osm_substation,high,South Bainbridge Substation (w165831924)
+thomasville,216,THOMASVILLE,30.90852,-84.005031,osm_substation,high,Thomasville Substation (w172096005)
+west point,213,WEST POINT DAM (USA),32.918762,-85.188822,osm_plant,medium,"West Point Dam (w1058469136); 3 candidates, nearest the zone"
+coleman,219,COLEMAN,32.10772,-81.226912,osm_substation,medium,"Coleman Substation (w608270486); 2 candidates, nearest the zone"
+dean forest,219,DEAN FOREST,32.08351,-81.188722,osm_substation,high,Dean Forest Substation (w121674829)
+south macon,214,SOUTH MACON,32.820349,-83.626198,osm_substation,high,South Macon Substation (w170991653)
+wansley,208,WANSLEY,33.410956,-85.030769,osm_substation,high,Wansley Substation (w159784571)
+blakely,216,BLAKELY PRIMARY,31.371554,-84.90598,osm_substation,medium,"Blakely Primary Substation (w270628470); 2 candidates, nearest the zone"
+butler,213,BUTLER,32.571022,-84.289729,osm_substation,low,Butler Primary Substation (w170999705)
+thomaston,213,THOMASTON,32.946564,-84.266479,osm_substation,medium,"Thomaston #3 Substation (w729075834); 2 candidates, nearest the zone"
+porterdale,206,PORTERDALE PRIMARY,33.575115,-83.893795,town,low,town of Porterdale (n154335377)
+bay creek,202,BAY CREEK,33.86812,-83.882351,osm_substation,high,Bay Creek Substation (w175826909)
+eastman,214,EASTMAN PRIMARY,32.213299,-83.161422,osm_substation,low,Eastman Primary Substation (w164880657)
+talbot,213,TALBOT,32.588839,-84.69318,osm_substation,low,"Talbot County Energy Substation (w163762719); 2 candidates, nearest the zone"
+hopewell,202,HOPEWELL,34.174192,-84.283406,osm_substation,high,Hopewell Substation (w177931281)
+tenaska,201,TENASKA,33.351627,-84.99809,osm_substation,medium,"Tenaska Georgia Substation (w163891161); 2 candidates, nearest the zone"
+wansley,201,WANSLEY,33.410956,-85.030769,osm_substation,high,Wansley Substation (w159784571)
+lloyd shoals,206,LLOYD SHOALS,33.320614,-83.841009,osm_plant,high,Lloyd Shoals Dam (w674159021)
+mcever road,212,MCEVER ROAD,34.272883,-83.873801,osm_substation,high,McEver Road Substation (w1037359821)
+mcmanus,218,MCMANUS,31.215869,-81.544137,osm_plant,high,Plant McManus (w31496730)
+west brunswick,218,WEST BRUNSWICK,31.279909,-81.558657,osm_substation,high,West Brunswick Substation (w174697782)
+fort valley,214,FORT VALLEY,32.561358,-83.872258,osm_substation,high,Fort Valley Substation (w493048692)
+north druid hills,202,NORTH DRUID HILLS,33.816771,-84.313257,town,low,town of North Druid Hills (n154006223)
+rice hope,219,RICE HOPE,32.17,-81.175,manual,low,"Rice Hope, Port Wentworth GA"
+conyers,202,CONYERS,33.66761,-84.01769,town,low,town of Conyers (n153974943)
+atkinson,201,ATKINSON,33.825476,-84.471421,osm_plant,medium,Plant McDonough-Atkinson (w186847078)
+cornelia,212,CORNELIA,34.511488,-83.527117,town,low,town of Cornelia (n154392676)
+dawson crossing,212,DAWSON CROSSING,34.378118,-84.133575,osm_substation,high,Dawson Crossing Substation (w177912657)
+nelson,212,NELSON (WHITE),34.382937,-84.370357,osm_substation,medium,"Nelson Substation (w1059984089); 2 candidates, nearest the zone"
+east point,201,EAST POINT,33.67635,-84.462966,osm_substation,high,East Point Primary Substation (r14128477)
+lake oconee,214,LAKE OCONEE,33.45953,-83.247451,osm_substation,high,Lake Oconee Substation (w1054868572)
+goshen,215,GOSHEN,33.31976,-81.995312,osm_substation,high,Goshen Substation (w52019569)
+hartwell,212,HARTWELL DAM,34.341157,-82.821173,osm_substation,low,"Hartwell Energy Facility Substation (w52408419); 4 candidates, nearest the zone"
+hartwell energy,212,HARTWELL ENERGY,34.341157,-82.821173,osm_substation,low,"Hartwell Energy Facility Substation (w52408419); 2 candidates, nearest the zone"
+tiger creek,214,TIGER CREEK,33.094506,-82.981585,osm_substation,high,Tiger Creek Substation (w170296000)
+warthen,214,WARTHEN,33.120062,-82.859484,osm_substation,high,Warthen Substation (w160057277)
+jefferson road,212,JEFFERSON ROAD,33.977796,-83.579481,osm_substation,high,Jefferson Rd Substation (w1017583912)
+athena,215,ATHENA,33.976403,-83.346119,osm_substation,low,Athena Substation (w171540528)
+toccoa,212,TOCCOA,34.580946,-83.352734,osm_substation,high,Toccoa Primary Substation (w52440914)
+bainbridge,216,BAINBRIDGE TRANSMISSION,30.912552,-84.566992,osm_substation,high,Bainbridge Substation (w1058040908)
+avery,202,AVERY,34.216989,-84.385764,osm_substation,high,Avery Substation (w700215120)
+bowen,211,BOWEN,34.121585,-84.922327,osm_substation,medium,"Bowen Substation (w159758323); 2 candidates, nearest the zone"
+wadley,215,WADLEY,32.884657,-82.415872,osm_substation,medium,"Wadley Substation (w1005940922); 2 candidates, nearest the zone"
+meldrim,219,MELDRIM,32.155282,-81.368377,osm_substation,high,Meldrim Substation (w121624363)
+evans,215,EVANS PRIMARY,33.543994,-82.168648,reference,high,Projects_Overlaps.xlsx
+thurmond,215,THURMOND DAM (USA),33.660127,-82.195931,reference,high,Projects_Overlaps.xlsx
+center,212,CENTER PRIMARY,34.053441,-83.398085,osm_substation,high,Center Primary Substation (w171540518)
+snellville,212,SNELLVILLE,33.838869,-84.048121,osm_substation,high,Snellville Substation (w176906115)
+south hall,212,SOUTH HALL,34.21861,-83.802581,osm_substation,high,South Hall Substation (w159608145)
+mcgrau ford,212,MCGRAU FORD,34.326453,-84.337007,osm_substation,high,McGrau Ford Substation (w159758301)
+thomson,215,THOMSON PRIMARY,33.453955,-82.414219,osm_substation,medium,"Thomson Primary Substation (w160065782); 2 candidates, nearest the zone"
+arlington,216,ARLINGTON PRIMARY,31.439579,-84.721794,osm_substation,high,Arlington Substation (w855787918)
+vogtle,215,VOGTLE,33.145816,-81.76271,osm_substation,high,Vogtle Substation (500KV/230KV) (w121812102)
