@@ -165,6 +165,13 @@ select{font-weight:500;min-width:0}
 .maphint{padding:8px 14px;border-top:1px solid var(--line)}
 @media (max-width:900px){.import-grid,.fields{grid-template-columns:1fr}#openImport{margin-left:0}}
 .compare select{flex:1 1 180px;min-width:0}
+.bm select{padding:3px 8px;font-size:13px;font-family:var(--body);font-weight:400}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mapfoot{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:center;padding:0 14px}
+.mapfoot:has(.attr:empty):has(.tilenote[hidden]){display:none}
+.attr{font-size:11px;color:var(--ink3);margin-left:auto;padding:4px 0}
+.tilenote{color:var(--hot);margin:6px 0}
+#map image{image-rendering:auto}
 
 </style>
 
@@ -233,9 +240,11 @@ select{font-weight:500;min-width:0}
     <div class="card">
       <h2>Map
         <span class="seg" role="group" aria-label="Map view"><button type="button" id="v-focus" aria-pressed="true">Overlap area</button><button type="button" id="v-all" aria-pressed="false">All projects</button></span>
+        <label class="bm"><span class="sr">Map style</span><select id="basemap" aria-label="Map style"></select></label>
         <span class="zm"><button type="button" class="btn" id="zin" aria-label="Zoom in">+</button><button type="button" class="btn" id="zout" aria-label="Zoom out">−</button><button type="button" class="btn" id="zreset">Reset</button></span>
       </h2>
       <svg id="map" role="img" aria-label="Map of planned projects. Drag to pan, scroll or use the buttons to zoom."></svg>
+      <div class="mapfoot"><p class="note tilenote" id="tileNote" hidden>Map tiles didn't load. This preview blocks outside images, so open <code>index.html</code> from the repo in a browser to see Streets, Satellite, Terrain and Dark. The Plain map always works.</p><span class="attr" id="attr"></span></div>
       <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km.</div>
     </div>
     <div class="card">
@@ -556,7 +565,16 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const LABEL = { DESC: "Dominion Energy SC", GPC: "Georgia (Georgia Power, GTC, MEAG)" };
 const lbl = u => LABEL[u] || u;
 const TYPE = { new_line: "new line", rebuild: "rebuild", substation: "substation", generation: "generation" };
-const state = { utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "" };
+// Raster basemaps. "plain" is the built-in vector map and works offline.
+const BASEMAPS = {
+  plain: { label: "Plain" },
+  streets: { label: "Streets", url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, attr: "© OpenStreetMap contributors" },
+  satellite: { label: "Satellite", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, attr: "Imagery © Esri, Maxar, Earthstar Geographics" },
+  terrain: { label: "Terrain", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin, USGS" },
+  dark: { label: "Dark", url: (z, x, y) => `https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`, attr: "© OpenStreetMap contributors © CARTO" },
+};
+let tileErrors = 0;
+const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "" };
 
 const fmtD = (p, which) => {
   const d = new Date(p[which] + "T00:00:00Z");
@@ -596,10 +614,15 @@ function drawMap() {
   const path = d3.geoPath(proj), pt = c => proj([c[1], c[0]]);
   svg.selectAll("*").remove();
   svg.append("rect").attr("width", MW).attr("height", MH).attr("fill", css("--water"));
+  const raster = !!BASEMAPS[state.basemap].url, bright = state.basemap === "satellite" || state.basemap === "dark";
+  svg.append("g").attr("id", "tiles");
   const z = svg.append("g").attr("id", "zoomg"), g = z.append("g");
-  g.selectAll(".st").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", css("--land")).attr("stroke", css("--line")).attr("stroke-width", 1);
-  g.selectAll(".co").data(BASE.counties).join("path").attr("d", d => path(d.g)).attr("fill", "none").attr("stroke", css("--grid")).attr("stroke-width", .6);
-  g.selectAll(".sb").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", "none").attr("stroke", css("--ink3")).attr("stroke-width", 1.1);
+  if (!raster) {
+    g.selectAll(".st").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", css("--land")).attr("stroke", css("--line")).attr("stroke-width", 1);
+    g.selectAll(".co").data(BASE.counties).join("path").attr("d", d => path(d.g)).attr("fill", "none").attr("stroke", css("--grid")).attr("stroke-width", .6);
+  }
+  g.selectAll(".sb").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", "none")
+    .attr("stroke", bright ? "rgba(255,255,255,.7)" : css("--ink3")).attr("stroke-width", raster ? 1.5 : 1.1);
   const places = [["Augusta", 33.47, -81.97], ["Savannah", 32.08, -81.09], ["Atlanta", 33.75, -84.39], ["Columbia", 34.0, -81.03], ["Charleston", 32.78, -79.93], ["Macon", 32.84, -83.63], ["Thomson", 33.47, -82.50], ["Beaufort", 32.43, -80.67], ["Aiken", 33.60, -81.68]];
   const stl = BASE.states.map(s => { const c = d3.geoCentroid({ type: "Feature", geometry: s.g }); return [s.n.toUpperCase(), c[1], c[0], true]; });
   g.selectAll(".lb").data(stl.concat(places)).join("text").attr("x", d => proj([d[2], d[1]])[0]).attr("y", d => proj([d[2], d[1]])[1])
@@ -615,14 +638,44 @@ function drawMap() {
   z.append("g").attr("id", "links");
   z.append("g").attr("id", "projs");
   svg.append("g").attr("id", "scale").attr("transform", `translate(24,${MH - 30})`);
-  zoomBehavior = d3.zoom().scaleExtent([1, 20]).on("zoom", ev => { zoomK = ev.transform.k; z.attr("transform", ev.transform); applyK(); });
+  zoomBehavior = d3.zoom().scaleExtent([1, 20]).on("zoom", ev => { zoomK = ev.transform.k; z.attr("transform", ev.transform); renderTiles(ev.transform); applyK(); });
+  if (raster) z.selectAll("text").attr("fill", bright ? "#fff" : css("--ink")).attr("stroke", bright ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.8)").attr("stroke-width", 3).attr("paint-order", "stroke");
+  tileErrors = 0; $("#tileNote").hidden = true;
+  $("#attr").textContent = BASEMAPS[state.basemap].attr || "";
+  renderTiles(d3.zoomIdentity);
   svg.call(zoomBehavior).on("dblclick.zoom", null);
   zoomK = 1;
 }
+// Web Mercator tiles aligned to the d3 projection: world spans 2πS px at scale S, offset by the projection translate.
+function renderTiles(t) {
+  const bm = BASEMAPS[state.basemap], layer = d3.select("#tiles");
+  if (!bm.url) { layer.selectAll("image").remove(); return; }
+  const S = proj.scale(), [tx, ty] = proj.translate();
+  const W = 2 * Math.PI * S * t.k, left = t.x + t.k * (tx - Math.PI * S), top = t.y + t.k * (ty - Math.PI * S);
+  const z = Math.max(0, Math.min(18, Math.round(Math.log2(W / 256)))), n = 2 ** z, ts = W / n;
+  const tiles = [];
+  for (let i = Math.max(0, Math.floor(-left / ts)); i <= Math.min(n - 1, Math.floor((MW - left) / ts)); i++)
+    for (let j = Math.max(0, Math.floor(-top / ts)); j <= Math.min(n - 1, Math.floor((MH - top) / ts)); j++) tiles.push([z, i, j]);
+  layer.selectAll("image").data(tiles, d => d.join("/"))
+    .join(e => e.append("image").attr("href", d => bm.url(...d)).attr("preserveAspectRatio", "none")
+      .on("error", () => { if (++tileErrors === 3) tilesFailed(); }))
+    .attr("x", d => left + d[1] * ts).attr("y", d => top + d[2] * ts).attr("width", ts + .5).attr("height", ts + .5);
+}
+
+// Outside tiles can be blocked (offline, or a sandboxed preview): fall back to the plain map and say why.
+function tilesFailed() {
+  if (!BASEMAPS[state.basemap].url) return;
+  const name = BASEMAPS[state.basemap].label;
+  state.basemap = "plain"; $("#basemap").value = "plain";
+  drawMap(); refresh();
+  $("#tileNote").innerHTML = `${name} tiles couldn't load here, so the map switched back to Plain. They need an internet connection and don't load inside sandboxed previews; open <code>index.html</code> in a browser to use them.`;
+  $("#tileNote").hidden = false;
+}
+
 // Keep markers and labels the same on-screen size while zooming.
 function applyK() {
   const k = zoomK, z = d3.select("#zoomg");
-  z.selectAll("text").attr("font-size", function () { return this.dataset.fs / k; });
+  z.selectAll("text").attr("font-size", function () { return this.dataset.fs / k; }).attr("stroke-width", function () { return this.getAttribute("stroke") ? 3 / k : null; });
   z.selectAll("text.exl").attr("x", function () { return +this.dataset.x + 9 / k; }).attr("y", function () { return +this.dataset.y + 4 / k; });
   z.selectAll("path.dia").attr("d", function () { const x = +this.dataset.x, y = +this.dataset.y, s = 6 / k; return `M${x},${y - s}L${x + s},${y}L${x},${y + s}L${x - s},${y}Z`; });
   z.selectAll("circle").attr("r", function () { return this.dataset.r / k; });
@@ -647,11 +700,15 @@ function renderMap() {
   const rows = PROJECTS.filter(p => p.utility === state.utilA || p.utility === state.utilB)
     .map(p => ({ p, on: flagged.has(p.id), hi: focus && (focus.p === p || focus.q === p) }));
   const G = d3.select("#projs").selectAll("g.p").data(rows, d => d.p.id)
-    .join(e => { const g = e.append("g").attr("class", "p"); g.append("path"); g.append("circle"); return g; });
+    .join(e => { const g = e.append("g").attr("class", "p"); g.append("path").attr("class", "casing"); g.append("path").attr("class", "line"); g.append("circle"); return g; });
+  const raster = !!BASEMAPS[state.basemap].url;
+  G.select("path.casing").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
+    .attr("fill", "none").attr("stroke", raster ? "rgba(255,255,255,.85)" : css("--panel")).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
+    .attr("stroke-width", d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + 3);
   G.attr("opacity", d => focus ? (d.hi ? 1 : .22) : d.on ? 1 : .3).style("cursor", "pointer")
     .on("mousemove", (ev, d) => showTip(ev, d.p)).on("mouseleave", hideTip)
     .on("click", (ev, d) => { const pr = VIEW.find(x => x.p === d.p || x.q === d.p); if (pr) select(pr); });
-  G.select("path").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
+  G.select("path.line").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
     .attr("fill", "none").attr("stroke", d => uColor(d.p.utility)).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
     .attr("stroke-width", d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0))
     .attr("stroke-dasharray", d => d.p.loc === "low" ? "6 4" : null);
@@ -839,6 +896,9 @@ for (const m of ["near", "both", "time"]) $("#m-" + m).onclick = () => {
 for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => {
   state.view = v; for (const k of ["focus", "all"]) $("#v-" + k).setAttribute("aria-pressed", k === v); drawMap(); refresh();
 };
+$("#basemap").innerHTML = Object.entries(BASEMAPS).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join("");
+$("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) {} drawMap(); refresh(); };
+try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) {}
 $("#zin").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1.6);
 $("#zout").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.6);
 $("#zreset").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.transform, d3.zoomIdentity);
