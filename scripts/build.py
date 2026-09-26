@@ -10,6 +10,7 @@ for key, text in {
     "/*LIBS*/": src("libs.js"),
     "/*FORMATS*/": src("formats.js"),
     "/*SCENE3D*/": src("scene3d.js"),
+    "/*MAP*/": src("map.js"),
     "/*APP*/": src("app.js"),
     "/*BASEMAP*/null": (root / "data/basemap.json").read_text(),
     "/*PROJECTS*/[]": json.dumps(json.load(open(root / "data/projects.json")), separators=(",", ":")),

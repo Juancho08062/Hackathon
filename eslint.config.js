@@ -13,7 +13,7 @@ module.exports = [
       globals: {
         ...globals.browser,
         module: "readonly", require: "readonly",
-        d3: "readonly", Engine: "readonly", Ingest: "readonly", Libs: "readonly", Formats: "readonly", Scene3D: "readonly",
+        d3: "readonly", Engine: "readonly", Ingest: "readonly", Libs: "readonly", Formats: "readonly", Scene3D: "readonly", SeamMap: "readonly", maplibregl: "readonly",
       },
     },
     rules: { "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }] },

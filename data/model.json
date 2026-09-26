@@ -1,5 +1,11 @@
 {
  "as_of": "2026-09-26",
+ "pipeline": {
+  "pdfs": 2,
+  "official": 262,
+  "official_placed": 194,
+  "on_map": 225
+ },
  "slips": {
   "DESC": {
    "n": 30,

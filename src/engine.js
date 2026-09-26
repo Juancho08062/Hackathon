@@ -333,7 +333,7 @@
   // project that has not started yet (and is not likely built or a power plant) by each step up to maxShift months either way, never
   // starting before today, and keeps the single move worth the most; it stops when no move is worth minGain or after
   // maxMoves. Each project moves at most once. Chances use the same seeded draws, so comparisons are fair.
-  // opts: { today, bufferMonths, maxShift = 6, step = 3, maxMoves = 8, minGain = 25000, draws = 600 }
+  // opts: { today, bufferMonths, maxShift = 6, step = 3, maxMoves = 8, minGain = 25000, draws = 600, utilities (only these move) }
   function optimizeSchedule(pairs, slips, opts = {}) {
     const o = Object.assign({ bufferMonths: 0, maxShift: 6, step: 3, maxMoves: 8, minGain: 25000, draws: 600 }, opts);
     const now = o.today ? monthIndex(o.today) : -Infinity;
@@ -346,7 +346,8 @@
     const byProject = new Map();
     rows.forEach(r => [r.x.p, r.x.q].forEach(p => { if (!byProject.has(p.id)) byProject.set(p.id, { p, rows: [] }); byProject.get(p.id).rows.push(r); }));
     // Power plants are left where they are: their dates follow resource planning, not transmission crews.
-    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && p.type !== "generation" && monthIndex(p.start) > now);
+    const movable = [...byProject.values()].filter(({ p }) => !p.existing && !p.likely_built && p.type !== "generation" && monthIndex(p.start) > now &&
+      (!o.utilities || o.utilities.includes(p.utility)));
     const before = total(), moves = [];
     while (moves.length < o.maxMoves) {
       let best = null;

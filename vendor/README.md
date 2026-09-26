@@ -5,6 +5,7 @@ Pinned copies of the third-party scripts Seamline loads, so the site works offli
 | file | library | version | license |
 |---|---|---|---|
 | `d3.min.js` | [d3](https://d3js.org) | 7.9.0 | ISC |
+| `maplibre-gl.js`, `maplibre-gl.css` | [MapLibre GL JS](https://maplibre.org) (UMD build) | 5.24.0 | BSD-3-Clause |
 | `three.min.js` | [three.js](https://threejs.org) | r128 (0.128.0) | MIT |
 | `OrbitControls.js` | three.js examples | r128 (0.128.0) | MIT |
 | `three-extras.js` | three.js examples: Sky, EffectComposer, RenderPass, ShaderPass, UnrealBloomPass and the Copy, LuminosityHighPass, ACESFilmicToneMapping, GammaCorrection and FXAA shaders, concatenated | r128 (0.128.0) | MIT |
