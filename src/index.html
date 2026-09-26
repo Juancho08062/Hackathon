@@ -1,6 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Seamline</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%230C1F27'/%3E%3Cpath d='M12 40 18 9h2l6 31M14 29h10M15.5 21h7' fill='none' stroke='%237FD3EA' stroke-width='2.6' stroke-linejoin='round'/%3E%3Cpath d='M27 40 32 17h2l5 23M29 31h8' fill='none' stroke='%23F2A54A' stroke-width='2.6' stroke-linejoin='round'/%3E%3Cpath d='M5 12q10 6 20 0t18 1' fill='none' stroke='%23FF5C7F' stroke-width='2.2' stroke-dasharray='3 3'/%3E%3C/svg%3E">
 <meta name="description" content="Compare neighboring utilities' planned transmission work and flag projects close enough to share crews, land and outages.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -87,8 +88,14 @@
       </h2>
       <div class="legend" id="legend"></div>
       <svg id="map" role="img" aria-label="Map of planned projects. Drag to pan, scroll or use the buttons to zoom."></svg>
+      <div class="scrub" id="scrub">
+        <button type="button" class="btn play" id="play" aria-pressed="false">Play</button>
+        <div class="scrub-track"><input type="range" id="tslider" step="1" aria-label="Month to show on the map"><div class="ticks" id="tticks" aria-hidden="true"></div></div>
+        <div class="scrub-read"><b id="tyear">All years</b><span id="tlive" hidden></span></div>
+        <button type="button" class="btn" id="tall" hidden>Show all years</button>
+      </div>
       <div class="mapfoot"><p class="note tilenote" id="tileNote" hidden>Map tiles didn't load. This preview blocks outside images, so open <code>index.html</code> from the repo in a browser to see Streets, Satellite and Terrain. The Plain map always works.</p><span class="attr" id="attr"></span></div>
-      <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km.</div>
+      <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km. Press Play to watch the build years: pairs that are under construction at the same time light up.</div>
     </div>
     <div class="card">
       <h2><span id="listTitle">Coordination opportunities</span> <em id="cnt"></em></h2>
@@ -111,6 +118,10 @@
   </div>
 </div>
 <div class="tip" id="tip" hidden></div>
+<div class="brief-wrap" id="brief" hidden role="dialog" aria-modal="true" aria-label="Coordination brief">
+  <div class="brief-bar"><button type="button" class="btn primary" id="briefPrint">Print or save as PDF</button><button type="button" class="btn" id="briefCopy">Copy text</button><button type="button" class="btn" id="briefClose">Close</button></div>
+  <article class="brief" id="briefDoc"></article>
+</div>
 <div class="m3d" id="m3d" hidden role="dialog" aria-modal="true" aria-labelledby="m3dTitle">
   <div class="m3d-box">
     <div class="m3d-head">

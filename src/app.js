@@ -20,7 +20,7 @@ const BASEMAPS = {
   terrain: { label: "Terrain", url: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`, attr: "© Esri, HERE, Garmin, USGS" },
 };
 let tileErrors = 0;
-const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "" };
+const state = { basemap: "plain", utilA: "DESC", utilB: "GPC", D: 40, B: 0, mode: "near", view: "focus", sel: null, hover: null, tiers: new Set([0, 1, 2, 3, 4]), q: "", t: null, wi: null };
 
 const fmtD = (p, which) => {
   const d = new Date(p[which] + "T00:00:00Z");
@@ -81,6 +81,7 @@ function drawMap() {
   }
   g.selectAll(".sb").data(BASE.states).join("path").attr("d", d => path(d.g)).attr("fill", "none")
     .attr("stroke", bright ? "rgba(255,255,255,.7)" : css("--ink3")).attr("stroke-width", raster ? 1.5 : 1.1);
+  drawSeam(g, path, raster);
   const places = [["Augusta", 33.47, -81.97], ["Savannah", 32.08, -81.09], ["Atlanta", 33.75, -84.39], ["Columbia", 34.0, -81.03], ["Charleston", 32.78, -79.93], ["Macon", 32.84, -83.63], ["Thomson", 33.47, -82.50], ["Beaufort", 32.43, -80.67], ["Aiken", 33.60, -81.68]];
   const stl = BASE.states.map(s => { const c = d3.geoCentroid({ type: "Feature", geometry: s.g }); return [s.n.toUpperCase(), c[1], c[0], true]; });
   g.selectAll(".lb").data(stl.concat(places)).join("text").attr("x", d => proj([d[2], d[1]])[0]).attr("y", d => proj([d[2], d[1]])[1])
@@ -91,10 +92,17 @@ function drawMap() {
   eg.filter(d => d.coords.length > 1).append("path").attr("d", d => d3.line()(d.coords.map(pt))).attr("fill", "none").attr("stroke", css("--ink3")).attr("stroke-width", 2.5).attr("stroke-opacity", .6);
   eg.filter(d => d.coords.length === 1).append("path").attr("class", "dia").attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1])
     .attr("fill", css("--panel")).attr("stroke", d => uColor(d.utility)).attr("stroke-width", 1.5);
-  eg.filter(d => d.coords.length === 1).append("text").attr("class", "exl").attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1])
-    .attr("data-fs", 10).attr("fill", css("--ink2")).text(d => d.name.split(" (")[0]);
   z.append("g").attr("id", "links");
   z.append("g").attr("id", "projs");
+  z.append("g").attr("id", "sparks");
+  // existing-asset names sit above project lines, with a halo so a line never hides them
+  z.append("g").attr("id", "toplabels").selectAll("text").data(EXIST.filter(e => shownUtil(e.utility) && e.coords.length === 1)).join("text").attr("class", "exl")
+    .attr("data-x", d => pt(d.coords[0])[0]).attr("data-y", d => pt(d.coords[0])[1]).attr("data-fs", 10).attr("fill", css("--ink2"))
+    .attr("stroke", raster ? "rgba(255,255,255,.8)" : css("--land")).attr("stroke-width", 3).attr("paint-order", "stroke").attr("stroke-linejoin", "round").style("pointer-events", "none").text(d => d.name.split(" (")[0]);
+  // name the seam once, beside the river between Augusta and Savannah
+  const sm = SEAM[Math.floor(SEAM.length * 0.72)];
+  if (sm) z.select("#toplabels").append("text").attr("class", "exl").attr("data-x", sm.x + 4).attr("data-y", sm.y).attr("data-fs", 10).attr("font-weight", 600).attr("letter-spacing", ".16em")
+    .attr("fill", css("--seam")).attr("stroke", raster ? "rgba(255,255,255,.85)" : css("--land")).attr("stroke-width", 3).attr("paint-order", "stroke").style("pointer-events", "none").text("THE SEAM · SAVANNAH RIVER");
   svg.append("g").attr("id", "scale").attr("transform", `translate(24,${MH - 30})`);
   zoomBehavior = d3.zoom().scaleExtent([1, 20]).on("zoom", ev => { zoomK = ev.transform.k; z.attr("transform", ev.transform); renderTiles(ev.transform); applyK(); });
   if (raster) z.selectAll("text").attr("fill", bright ? "#fff" : css("--ink")).attr("stroke", bright ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.8)").attr("stroke-width", 3).attr("paint-order", "stroke");
@@ -104,6 +112,35 @@ function drawMap() {
   svg.call(zoomBehavior).on("dblclick.zoom", null);
   zoomK = 1;
 }
+// The Seam: the Georgia and South Carolina border (the Savannah River) drawn as stitched thread.
+// Built from the vertices both states' outlines share, so it follows the river exactly.
+let SEAM = [];
+function seamCoords() {
+  const st = n => BASE.states.find(x => x.n === n), ga = st("Georgia"), sc = st("South Carolina");
+  if (!ga || !sc) return null;
+  const rings = g => g.type === "MultiPolygon" ? g.coordinates.flat() : g.coordinates;
+  const inSC = new Set(rings(sc.g).flat().map(c => c.join()));
+  let best = [];
+  for (const ring of rings(ga.g)) {
+    let run = [];
+    for (const c of ring.concat(ring)) { if (inSC.has(c.join())) { run.push(c); if (run.length > best.length && run.length <= ring.length) best = run.slice(); } else run = []; }
+  }
+  return best.length > 3 ? best : null;
+}
+function drawSeam(g, path, raster) {
+  SEAM = [];
+  const cs = seamCoords(); if (!cs) return;
+  const line = { type: "LineString", coordinates: cs };
+  g.append("path").attr("d", path(line)).attr("fill", "none").attr("stroke", css("--seamglow")).attr("stroke-width", raster ? 9 : 7).attr("stroke-linecap", "round");
+  const base = g.append("path").attr("id", "seampath").attr("d", path(line)).attr("fill", "none").attr("stroke", css("--seam")).attr("stroke-width", 1.4);
+  const node = base.node(), L = node.getTotalLength();
+  for (let l = 4; l < L; l += 8) {
+    const a = node.getPointAtLength(Math.max(0, l - 0.5)), b = node.getPointAtLength(Math.min(L, l + 0.5)), d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    SEAM.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, tx: (b.x - a.x) / d, ty: (b.y - a.y) / d });
+  }
+  g.append("g").attr("id", "stitches").selectAll("line").data(SEAM).join("line").attr("stroke", css("--seam")).attr("stroke-width", 1.3).attr("stroke-linecap", "round");
+}
+
 // Web Mercator tiles aligned to the d3 projection: world spans 2πS px at scale S, offset by the projection translate.
 function renderTiles(t) {
   const bm = BASEMAPS[state.basemap], layer = d3.select("#tiles");
@@ -137,14 +174,21 @@ function applyK() {
   z.selectAll("text.exl").attr("x", function () { return +this.dataset.x + 9 / k; }).attr("y", function () { return +this.dataset.y + 4 / k; });
   z.selectAll("path.dia").attr("d", function () { const x = +this.dataset.x, y = +this.dataset.y, s = 6 / k; return `M${x},${y - s}L${x + s},${y}L${x},${y + s}L${x - s},${y}Z`; });
   z.selectAll("circle").attr("r", function () { return this.dataset.r / k; });
+  // cross-stitches: short slanted ticks across the seam, the same size at every zoom
+  const sl = 3.4 / k;
+  z.select("#stitches").selectAll("line").attr("x1", d => d.x - (d.ty + d.tx * 0.6) * sl).attr("y1", d => d.y + (d.tx - d.ty * 0.6) * sl)
+    .attr("x2", d => d.x + (d.ty + d.tx * 0.6) * sl).attr("y2", d => d.y - (d.tx - d.ty * 0.6) * sl);
   const sc = d3.select("#scale"); sc.selectAll("*").remove();
   const c = proj.invert([MW / 2, MH / 2]), a = proj(c), b = proj([c[0] + state.D / (111.32 * Math.cos(c[1] * Math.PI / 180)), c[1]]);
   const w = (b[0] - a[0]) * k;
   sc.append("rect").attr("width", Math.min(w, MW - 60)).attr("height", 4).attr("fill", css("--hot"));
   sc.append("text").attr("y", -6).attr("font-size", 11).attr("fill", css("--ink2")).text(`${state.D} km${w > MW - 60 ? " (wider than view)" : ""}`);
 }
+// Where a project stands at month t: not started, under construction, or in service.
+const phase = (p, t) => t == null ? "all" : t < mon(p.start) ? "planned" : t <= mon(p.in_service) ? "building" : "done";
+const live = (x, t) => phase(x.p, t) === "building" && phase(x.q, t) === "building";
 function renderMap() {
-  const shown = VIEW.slice(0, 60), sel = state.sel, hov = state.hover, pt = c => proj([c[1], c[0]]);
+  const shown = VIEW.slice(0, 60), sel = state.sel, hov = state.hover, pt = c => proj([c[1], c[0]]), t = state.t;
   const flagged = new Set(shown.flatMap(x => [x.p.id, x.q.id]));
   const focus = sel || hov;
   d3.select("#links").selectAll("g").data(shown, d => d.p.id + "|" + d.q.id)
@@ -153,19 +197,20 @@ function renderMap() {
       .attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", d => focus === d ? 3.5 : 1.5).attr("stroke-dasharray", "4 3"))
     .call(g => g.select("circle").attr("cx", d => pt(d.ca)[0]).attr("cy", d => pt(d.ca)[1]).attr("data-r", d => d.tier <= 1 ? (focus === d ? 12 : 8) : 0)
       .attr("fill", "none").attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", 2))
-    .attr("opacity", d => focus ? (d === focus ? 1 : .12) : d.sameWindow ? .9 : .45)
+    .attr("opacity", d => focus ? (d === focus ? 1 : .12) : t != null ? (live(d, t) ? 1 : .08) : d.sameWindow ? .9 : .45)
     .style("cursor", "pointer").on("click", (ev, d) => select(d));
   const rows = PROJECTS.filter(p => shownUtil(p.utility))
-    .map(p => ({ p, on: solo() || flagged.has(p.id), hi: focus && (focus.p === p || focus.q === p) }));
+    .map(p => ({ p, on: solo() || flagged.has(p.id), hi: focus && (focus.p === p || focus.q === p), ph: phase(p, t) }));
   const G = d3.select("#projs").selectAll("g.p").data(rows, d => d.p.id)
     .join(e => { const g = e.append("g").attr("class", "p"); g.append("path").attr("class", "casing"); g.append("path").attr("class", "line"); g.append("circle"); return g; });
   // Casing contrasts with the basemap: dark on light maps (streets, terrain), white on satellite.
   const raster = !!BASEMAPS[state.basemap].url, lightMap = state.basemap === "streets" || state.basemap === "terrain";
-  const wide = d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + (raster ? 1.5 : 0);
+  const wide = d => (d.p.kv >= 500 ? 4 : d.p.kv >= 230 ? 3 : 2) + (d.hi ? 2 : 0) + (raster ? 1.5 : 0) + (d.ph === "building" ? 1.5 : 0);
   G.select("path.casing").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
     .attr("fill", "none").attr("stroke", lightMap ? "rgba(20,24,28,.85)" : raster ? "rgba(255,255,255,.9)" : css("--panel")).attr("stroke-linecap", "round").attr("stroke-linejoin", "round")
     .attr("stroke-width", d => wide(d) + (raster ? 4 : 3));
-  G.attr("opacity", d => focus ? (d.hi ? 1 : .22) : d.on ? 1 : .3).style("cursor", "pointer")
+  const phaseOp = { all: 1, building: 1, done: .5, planned: .14 };
+  G.attr("opacity", d => focus ? (d.hi ? 1 : .22) : (d.on ? 1 : .3) * phaseOp[d.ph]).classed("building", d => d.ph === "building").style("cursor", "pointer")
     .on("mousemove", (ev, d) => showTip(ev, d.p)).on("mouseleave", hideTip)
     .on("click", (ev, d) => { if (solo()) return select({ p: d.p, solo: true }); const pr = VIEW.find(x => x.p === d.p || x.q === d.p); if (pr) select(pr); });
   G.select("path.line").attr("d", d => d.p.coords.length > 1 ? d3.line()(d.p.coords.map(pt)) : null)
@@ -175,7 +220,54 @@ function renderMap() {
   G.select("circle").attr("cx", d => pt(d.p.coords[0])[0]).attr("cy", d => pt(d.p.coords[0])[1])
     .attr("data-r", d => d.p.coords.length > 1 ? 0 : (d.hi ? 7 : 4.5))
     .attr("fill", d => d.p.loc === "low" ? css("--panel") : uColor(d.p.utility)).attr("stroke", d => raster && d.p.loc !== "low" ? (lightMap ? "rgba(20,24,28,.9)" : "#fff") : uColor(d.p.utility)).attr("stroke-width", 2);
+  // sparks: flagged pairs that are both under construction at the scrubbed month
+  const sp = t == null ? [] : shown.filter(x => live(x, t));
+  d3.select("#sparks").selectAll("circle").data(sp, d => d.p.id + "|" + d.q.id).join("circle").attr("class", "spark")
+    .attr("cx", d => (pt(d.ca)[0] + pt(d.cb)[0]) / 2).attr("cy", d => (pt(d.ca)[1] + pt(d.cb)[1]) / 2).attr("data-r", 11)
+    .attr("fill", d => tcol(Math.min(d.tier, 4))).attr("fill-opacity", .25).attr("stroke", d => tcol(Math.min(d.tier, 4))).attr("stroke-width", 2)
+    .style("cursor", "pointer").on("click", (ev, d) => select(d));
+  if (t != null) {
+    const nb = rows.filter(r => r.ph === "building").length;
+    $("#tlive").textContent = `${nb} project${nb === 1 ? "" : "s"} under construction` + (solo() ? "" : ` · ${sp.length} flagged pair${sp.length === 1 ? "" : "s"} building at once`);
+  }
   applyK();
+}
+
+// ---------- time scrubber ----------
+let playTimer = null;
+const monthLabel = m => new Date(Date.UTC(Math.floor(m / 12), Math.floor(m % 12), 1)).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+function setupScrub() {
+  const ps = PROJECTS.filter(p => shownUtil(p.utility));
+  if (!ps.length) return;
+  const lo = Math.floor(Math.min(...ps.map(p => mon(p.start)))), hi = Math.ceil(Math.max(...ps.map(p => mon(p.in_service))));
+  const r = $("#tslider"); r.min = lo; r.max = hi;
+  if (state.t != null) state.t = Math.min(hi, Math.max(lo, state.t));
+  r.value = state.t ?? lo;
+  const y0 = Math.ceil(lo / 12), y1 = Math.floor(hi / 12);
+  $("#tticks").innerHTML = Array.from({ length: y1 - y0 + 1 }, (_, i) => `<span style="left:${((y0 + i) * 12 - lo) / (hi - lo) * 100}%">${y0 + i}</span>`).join("");
+  scrubUI();
+}
+function scrubUI() {
+  const on = state.t != null;
+  $("#tyear").textContent = on ? monthLabel(state.t) : "All years";
+  $("#tlive").hidden = !on;
+  $("#tall").hidden = !on;
+  $("#scrub").classList.toggle("on", on);
+  $("#play").textContent = playTimer ? "Pause" : "Play";
+  $("#play").setAttribute("aria-pressed", !!playTimer);
+}
+function setT(t) { state.t = t; scrubUI(); renderMap(); moveCursor(); }
+function stopPlay() { clearInterval(playTimer); playTimer = null; scrubUI(); }
+function togglePlay() {
+  if (playTimer) return stopPlay();
+  const r = $("#tslider");
+  if (state.t == null || state.t >= +r.max) { r.value = r.min; setT(+r.min); }
+  playTimer = setInterval(() => {
+    const n = state.t + 1;
+    if (n > +r.max) return stopPlay();
+    r.value = n; setT(n);
+  }, 110);
+  scrubUI();
 }
 function tip(ev, html) { const t = $("#tip"); t.innerHTML = html; t.hidden = false; t.style.left = Math.min(ev.clientX + 12, innerWidth - 290) + "px"; t.style.top = (ev.clientY + 12) + "px"; }
 function showTip(ev, p) {
@@ -292,12 +384,133 @@ function renderDetail() {
   const imp = s.items.length
     ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated</td><td>${money(s.total)}</td></tr></tbody></table>`
     : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
-  el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="clr">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
+  const key = x.p.id + "|" + x.q.id;
+  if (!state.wi || state.wi.key !== key) state.wi = { key, who: "q", shift: 0 };
+  el.innerHTML = `<div class="detail"><div class="dh"><h3>Why this pair</h3><span class="row"><button type="button" class="btn primary" id="v3d">View in 3D</button><button type="button" class="btn" id="brf">Coordination brief</button><button type="button" class="btn" id="clr" aria-label="Close details">Close</button></span></div>${projBlock(x.p, s.ca)}${projBlock(x.q, s.cb)}
     <div class="advice" style="--c:${tcol(Math.min(x.tier, 4))}"><ul>${advice(x).map(a => `<li>${a}</li>`).join("")}</ul></div>
-    <div><h3>Cost and impact estimate</h3>${imp}</div></div>`;
+    <div class="whatif"><div class="dh"><h3>What if a schedule moved?</h3><span class="seg" role="group" aria-label="Project to move">
+      <button type="button" data-w="q" aria-pressed="${state.wi.who === "q"}">Move ${esc(short(x.q))}</button><button type="button" data-w="p" aria-pressed="${state.wi.who === "p"}">Move ${esc(short(x.p))}</button></span></div>
+      <div class="wi-ctl"><input type="range" id="wiShift" min="-36" max="36" step="1" value="${state.wi.shift}" aria-label="Months to move the project"><output id="wiOut"></output></div>
+      <svg id="wiChart" role="img" aria-label="Both build windows after the shift"></svg>
+      <p class="wi-res" id="wiRes" aria-live="polite"></p>
+      <div class="row"><button type="button" class="btn" id="wiRec"></button><button type="button" class="btn" id="wiReset">Reset</button></div></div>
+    <div><h3>Cost and impact estimate</h3><div id="impBox">${imp}</div></div></div>`;
   $("#clr").onclick = () => select(null);
   $("#v3d").onclick = () => open3d(x);
+  $("#brf").onclick = () => openBrief(x);
+  el.querySelectorAll(".whatif [data-w]").forEach(b => b.onclick = () => {
+    state.wi.who = b.dataset.w; state.wi.shift = 0; $("#wiShift").value = 0;
+    el.querySelectorAll(".whatif [data-w]").forEach(o => o.setAttribute("aria-pressed", o === b));
+    updateWhatIf(x);
+  });
+  $("#wiShift").oninput = e => { state.wi.shift = +e.target.value; updateWhatIf(x); };
+  $("#wiReset").onclick = () => { state.wi.shift = 0; $("#wiShift").value = 0; updateWhatIf(x); };
+  updateWhatIf(x);
 }
+
+// ---------- what-if schedule shift ----------
+const short = p => (lbl(p.utility).split(" (")[0].split(" ")[0]) + " project";
+const shiftISO = (iso, m) => { const d = new Date(iso + "T00:00:00Z"), day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + m); d.setUTCDate(Math.min(day, 28)); return d.toISOString().slice(0, 10); };
+// The pair recomputed with one project's whole build window moved by m months.
+function whatIf(x, who, m) {
+  if (!m) return x;
+  const moved = Object.assign({}, x[who], { start: shiftISO(x[who].start, m), in_service: shiftISO(x[who].in_service, m) });
+  const p = who === "p" ? moved : x.p, q = who === "q" ? moved : x.q, ov = Engine.windowOverlap(p, q);
+  const y = Object.assign({}, x, { p, q, ov: Math.max(0, ov), gap: Math.max(0, -ov), sameWindow: -ov <= state.B });
+  y.sav = Engine.savings(y);
+  return y;
+}
+// Smallest move that gives the two builds a real shared window: 6 months, or all of the shorter build.
+function recommendShift(x, who) {
+  const dur = p => mon(p.in_service) - mon(p.start), need = Math.min(6, dur(x.p), dur(x.q));
+  if (Engine.windowOverlap(x.p, x.q) >= need) return 0;
+  for (let a = 1; a <= 60; a++) for (const m of [-a, a]) if (Engine.windowOverlap(whatIf(x, who, m).p, whatIf(x, who, m).q) >= need) return m;
+  return null;
+}
+const moLabel = m => m === 0 ? "as planned" : `${Math.abs(m)} month${Math.abs(m) === 1 ? "" : "s"} ${m < 0 ? "earlier" : "later"}`;
+function updateWhatIf(x) {
+  const { who, shift } = state.wi, y = whatIf(x, who, shift), rec = recommendShift(x, who);
+  $("#wiOut").textContent = moLabel(shift);
+  // chart: both build windows, the moved one with a ghost of where it was
+  const svg = d3.select("#wiChart"), W = 460, H = 74, LW = 70; svg.selectAll("*").remove();
+  const all = [x.p, x.q, y.p, y.q], lo = Math.floor(d3.min(all, p => mon(p.start)) / 12) * 12, hi = Math.ceil(d3.max(all, p => mon(p.in_service)) / 12) * 12;
+  const X = d3.scaleLinear().domain([lo, hi]).range([LW, W - 8]);
+  svg.attr("viewBox", `0 0 ${W} ${H}`);
+  for (let m = lo; m <= hi; m += 12) {
+    svg.append("line").attr("x1", X(m)).attr("x2", X(m)).attr("y1", 12).attr("y2", H).attr("stroke", css("--grid"));
+    if (m < hi && (hi - lo) / 12 <= 12) svg.append("text").attr("x", X(m) + 3).attr("y", 9).attr("font-size", 9).attr("fill", css("--ink3")).attr("font-family", css("--mono")).text(m / 12);
+  }
+  const a = Math.max(mon(y.p.start), mon(y.q.start)), b = Math.min(mon(y.p.in_service), mon(y.q.in_service));
+  if (b > a) svg.append("rect").attr("x", X(a)).attr("width", X(b) - X(a)).attr("y", 14).attr("height", H - 14).attr("fill", css("--time")).attr("fill-opacity", .16);
+  [["p", 22], ["q", 50]].forEach(([k, yy]) => {
+    const o = x[k], n = y[k], c = uColor(o.utility);
+    svg.append("text").attr("x", LW - 8).attr("y", yy + 10).attr("text-anchor", "end").attr("font-size", 11).attr("fill", c).attr("font-weight", 600).text(short(o).split(" ")[0]);
+    if (n !== o) svg.append("rect").attr("x", X(mon(o.start))).attr("width", Math.max(2, X(mon(o.in_service)) - X(mon(o.start)))).attr("y", yy).attr("height", 14).attr("rx", 3)
+      .attr("fill", "none").attr("stroke", c).attr("stroke-dasharray", "3 3").attr("opacity", .6);
+    svg.append("rect").attr("x", X(mon(n.start))).attr("width", Math.max(2, X(mon(n.in_service)) - X(mon(n.start)))).attr("y", yy).attr("height", 14).attr("rx", 3).attr("fill", c).attr("fill-opacity", .85);
+  });
+  const d = y.sav.total - x.sav.total;
+  $("#wiRes").innerHTML = (y.ov > 0 ? `Build windows overlap <b>${Math.round(y.ov)} months</b>.` : `Build windows are <b>${Math.round(y.gap)} months apart</b>.`) +
+    ` Rough savings <b>${(y.sav.total ? money(y.sav.total) : "$0")}</b>` + (shift ? (d ? ` (<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${money(Math.abs(d))}</span> vs. as planned).` : " (no change from as planned).") : ".");
+  const recBtn = $("#wiRec");
+  recBtn.hidden = rec == null || rec === 0 && shift === 0;
+  if (rec != null) { recBtn.textContent = rec === 0 ? "Back to the plan (already aligned)" : `Try ${moLabel(rec)}`; recBtn.onclick = () => { state.wi.shift = rec; $("#wiShift").value = rec; updateWhatIf(x); }; }
+  $("#wiReset").hidden = !shift;
+  const s = y.sav;
+  $("#impBox").innerHTML = s.items.length
+    ? `<table class="imp"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<small>${esc(i.how)}</small></td><td>${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Rough savings if coordinated${shift ? " (with the move)" : ""}</td><td>${money(s.total)}</td></tr></tbody></table>`
+    : `<p class="note">No savings estimate yet: the build windows don't overlap, so crews and yards wouldn't be shared. Aligning the schedules would unlock the crew-sharing estimate.</p>`;
+}
+
+// ---------- coordination brief ----------
+// A one-page memo for one pair, addressed to both utilities' planners. Printable, or copy as plain text.
+function openBrief(x0) {
+  const x = whatIf(x0, state.wi.who, state.wi.shift), moved = state.wi.shift ? x[state.wi.who] : null, s = x.sav, T = TIERS[x.tier];
+  const uA = lbl(x.p.utility), uB = lbl(x.q.utility), today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const when = x.ov > 0 ? `Their build windows overlap by about ${Math.round(x.ov)} months${moved ? `, if ${esc(moved.name)} moves ${moLabel(state.wi.shift)}` : ""}.`
+    : `Their build windows are about ${Math.round(x.gap)} months apart.` + (() => { const r = recommendShift(x0, "q"); return r ? ` Moving ${esc(x0.q.name)} ${moLabel(r)} would give them a shared window.` : ""; })();
+  const steps = [
+    "Confirm both project locations and the closest-point distance with each utility's GIS team.",
+    x.tier === 0 && "Agree one outage window and crossing-structure design for where the projects meet.",
+    x.tier <= 1 && "Scope a shared right-of-way and access road, and file one joint permit package.",
+    x.tier <= 2 && "Site one laydown yard between the projects for material deliveries.",
+    "Compare contractor and crew plans; share mobilization where the windows overlap.",
+    "Name one coordinator at each utility and set a monthly check-in until both are in service.",
+  ].filter(Boolean);
+  const row = (p, c) => `<tr><td><b>${esc(p.name)}</b><br><span>${esc(lbl(p.utility))}</span></td><td>${p.kv} kV ${esc(TYPE[p.type] || "")}</td><td>${fmtD(p, "start")} to ${fmtD(p, "in_service")}${p === moved ? "<br><em>proposed</em>" : ""}</td><td>${c.est ? "est. " : ""}${money(c.v)}</td></tr>`;
+  $("#briefDoc").innerHTML = `
+    <header class="b-head"><div class="b-brand">SEAMLINE <span>Coordination brief</span></div><div class="b-date">${today}</div></header>
+    <dl class="b-memo"><dt>To</dt><dd>${esc(uA)} transmission planning<br>${esc(uB)} transmission planning</dd>
+      <dt>Re</dt><dd>Coordinating ${esc(x.p.name)} and ${esc(x.q.name)}</dd></dl>
+    <p class="b-lede">These two planned projects come within <b>${km(x.km)}</b> of each other at their closest points (<b>${esc(T.label.toLowerCase())}</b>). ${esc(T.means)}. ${when} Coordinating them could save roughly <b>${(s.total ? money(s.total) : "$0")}</b>.</p>
+    <div class="b-grid"><div>${briefMap(x)}</div>
+      <div class="b-kpis"><div><b>${km(x.km)}</b><span>apart at the closest points</span></div><div><b>${x.ov > 0 ? Math.round(x.ov) + " mo" : Math.round(x.gap) + " mo gap"}</b><span>${x.ov > 0 ? "of shared build window" : "between build windows"}</span></div><div><b>${(s.total ? money(s.total) : "$0")}</b><span>rough savings</span></div></div></div>
+    <h4>The projects</h4>
+    <table class="b-tab"><thead><tr><th>Project</th><th>Type</th><th>Build window</th><th>Cost</th></tr></thead><tbody>${row(x.p, s.ca)}${row(x.q, s.cb)}</tbody></table>
+    <h4>What they can share</h4>
+    <ul>${[T.means].concat(x.res.map(r => r[0].toUpperCase() + r.slice(1))).map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    ${s.items.length ? `<h4>Savings estimate</h4><table class="b-tab"><tbody>${s.items.map(i => `<tr><td>${esc(i.k)}<br><span>${esc(i.how)}</span></td><td class="n">${money(i.v)}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${money(s.total)}</td></tr></tbody></table>` : ""}
+    <h4>Proposed next steps</h4><ol>${steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+    <p class="b-foot">Prepared with Seamline from public plans (SCRTP and SERTP). Locations are placed by hand from substation names${x.p.loc === "low" || x.q.loc === "low" ? ", and at least one of these is approximate" : ""}; costs are planning-level estimates unless the plan lists one. Confirm with both utilities before acting.</p>`;
+  $("#brief").hidden = false;
+  $("#briefClose").focus();
+}
+// Small locator map for the brief: GA and SC outlines, the seam, both projects and the closest-point link.
+function briefMap(x) {
+  const W = 300, H = 210, feat = p => p.coords.length > 1 ? { type: "LineString", coordinates: p.coords.map(c => [c[1], c[0]]) } : { type: "Point", coordinates: [p.coords[0][1], p.coords[0][0]] };
+  const box = { type: "FeatureCollection", features: [x.p, x.q].map(p => ({ type: "Feature", geometry: feat(p) })) };
+  const pr = d3.geoMercator().fitExtent([[40, 40], [W - 40, H - 40]], box);
+  if (pr.scale() > 60000) pr.scale(60000).translate(pr.translate());
+  const path = d3.geoPath(pr).pointRadius(5), P = c => pr([c[1], c[0]]);
+  const st = BASE.states.filter(v => v.n === "Georgia" || v.n === "South Carolina").map(v => `<path d="${path(v.g)}" fill="#EEF1EF" stroke="#B9C3C1" stroke-width=".8"/>`).join("");
+  const sc = seamCoords(), seam = sc ? `<path d="${path({ type: "LineString", coordinates: sc })}" fill="none" stroke="#9A6B2F" stroke-width="1.4" stroke-dasharray="4 3"/>` : "";
+  const proj1 = (p, c) => p.coords.length > 1 ? `<path d="${path(feat(p))}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>` : `<circle cx="${P(p.coords[0])[0]}" cy="${P(p.coords[0])[1]}" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
+  const [a, b] = [P(x.ca), P(x.cb)];
+  return `<svg class="b-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Locator map"><rect width="${W}" height="${H}" fill="#DCE6EA"/>${st}${seam}${proj1(x.p, "#0E6F8C")}${proj1(x.q, "#B4560F")}
+    <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#B0183D" stroke-width="2" stroke-dasharray="3 2"/><circle cx="${(a[0] + b[0]) / 2}" cy="${(a[1] + b[1]) / 2}" r="7" fill="none" stroke="#B0183D" stroke-width="1.5"/>
+    <text x="10" y="${H - 10}" font-size="10" fill="#4A5B62">${esc(km(x.km))} at the closest points</text></svg>`;
+}
+function closeBrief() { $("#brief").hidden = true; }
 function open3d(x) {
   Scene3D.open(x, {
     title: `${x.p.name} and ${x.q.name}`,
@@ -309,15 +522,25 @@ function open3d(x) {
 }
 
 // ---------- timeline ----------
+let TLX = null;
+function moveCursor() {
+  const svg = d3.select("#tl"); svg.select("#tcur").remove();
+  if (state.t == null || !TLX) return;
+  const X = TLX.x(Math.min(TLX.x.domain()[1], Math.max(TLX.x.domain()[0], state.t)));
+  const c = svg.append("g").attr("id", "tcur").style("pointer-events", "none");
+  c.append("line").attr("x1", X).attr("x2", X).attr("y1", TLX.top - 10).attr("y2", TLX.H).attr("stroke", css("--seam")).attr("stroke-width", 2);
+  c.append("circle").attr("cx", X).attr("cy", TLX.top - 10).attr("r", 4).attr("fill", css("--seam"));
+}
 function renderTimeline() {
   const ids = new Set(solo() ? SOLO.slice(0, 60).map(p => p.id) : VIEW.slice(0, 60).flatMap(x => [x.p.id, x.q.id]));
   const rows = PROJECTS.filter(p => ids.has(p.id)).sort((a, b) => (a.utility === state.utilA ? 0 : 1) - (b.utility === state.utilA ? 0 : 1) || mon(a.start) - mon(b.start));
   const svg = d3.select("#tl"); svg.selectAll("*").remove();
   const W = 1340, LW = 300, RH = 16, top = 26, H = Math.max(80, top + rows.length * RH + 10);
   svg.attr("viewBox", `0 0 ${W} ${H}`).style("min-width", "820px");
-  if (!rows.length) { svg.append("text").attr("x", 16).attr("y", 40).attr("fill", css("--ink2")).text("No flagged projects."); return; }
+  if (!rows.length) { TLX = null; svg.append("text").attr("x", 16).attr("y", 40).attr("fill", css("--ink2")).text("No flagged projects."); return; }
   const lo = Math.floor(d3.min(rows, p => mon(p.start)) / 12) * 12, hi = Math.ceil(d3.max(rows, p => mon(p.in_service)) / 12) * 12;
   const x = d3.scaleLinear().domain([lo, hi]).range([LW, W - 16]);
+  TLX = { x, top, H };
   for (let m = lo; m <= hi; m += 12) {
     svg.append("line").attr("x1", x(m)).attr("x2", x(m)).attr("y1", top - 6).attr("y2", H).attr("stroke", css("--grid"));
     if (m < hi) svg.append("text").attr("x", x(m) + 4).attr("y", 14).attr("font-size", 11).attr("fill", css("--ink2")).attr("font-family", css("--mono")).text(m / 12);
@@ -336,6 +559,7 @@ function renderTimeline() {
   g.append("rect").attr("x", d => x(mon(d.start))).attr("width", d => Math.max(3, x(mon(d.in_service)) - x(mon(d.start)))).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
     .attr("fill", d => uColor(d.utility)).attr("fill-opacity", .35);
   g.append("rect").attr("x", d => x(mon(d.in_service)) - 3).attr("width", 3).attr("y", 2).attr("height", RH - 4).attr("fill", d => uColor(d.utility));
+  moveCursor();
 }
 
 // ---------- utilities, legend, datasets ----------
@@ -403,7 +627,7 @@ async function importFiles(files) {
 }
 
 // ---------- wiring ----------
-function select(x) { state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline(); }
+function select(x) { if (!x || !state.wi || state.wi.key !== (x.p && x.q ? x.p.id + "|" + x.q.id : "")) state.wi = null; state.sel = x; renderMap(); renderList(); renderDetail(); renderTimeline(); }
 function refresh() {
   $("#distv").textContent = `${state.D} km (${Math.round(state.D / 1.609)} mi)`;
   $("#bufv").textContent = `±${state.B} mo`;
@@ -411,7 +635,7 @@ function refresh() {
   if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   renderStats(); renderTiers(); renderMap(); renderList(); renderDetail(); renderTimeline();
 }
-function rebuild() { state.sel = null; renderPickers(); compute(); drawMap(); legend(); refresh(); }
+function rebuild() { state.sel = null; renderPickers(); compute(); drawMap(); legend(); setupScrub(); refresh(); }
 
 $("#utilA").onchange = e => { state.utilA = e.target.value; if (state.utilB === state.utilA) state.utilB = utilities().find(u => u !== state.utilA) || NONE; rebuild(); };
 $("#utilB").onchange = e => { state.utilB = e.target.value; rebuild(); };
@@ -427,9 +651,16 @@ for (const v of ["focus", "all"]) $("#v-" + v).onclick = () => {
 $("#basemap").innerHTML = Object.entries(BASEMAPS).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join("");
 $("#basemap").onchange = e => { state.basemap = e.target.value; try { localStorage.setItem("seamline.basemap", state.basemap); } catch (err) { /* storage blocked: keep the choice for this visit only */ } drawMap(); refresh(); };
 try { const b = localStorage.getItem("seamline.basemap"); if (BASEMAPS[b]) { state.basemap = b; $("#basemap").value = b; } } catch (err) { /* storage blocked: use the default map */ }
+$("#play").onclick = togglePlay;
+$("#tslider").oninput = e => { if (playTimer) stopPlay(); setT(+e.target.value); };
+$("#tall").onclick = () => { stopPlay(); setT(null); };
+$("#briefClose").onclick = closeBrief;
+$("#briefPrint").onclick = () => print();
+$("#briefCopy").onclick = () => navigator.clipboard.writeText($("#briefDoc").innerText).then(() => { $("#briefCopy").textContent = "Copied"; setTimeout(() => $("#briefCopy").textContent = "Copy text", 1500); }, () => getSelection().selectAllChildren($("#briefDoc")));
+$("#brief").addEventListener("click", e => { if (e.target.id === "brief") closeBrief(); });
 $("#m3dClose").onclick = () => Scene3D.close();
 $("#m3d").addEventListener("click", e => { if (e.target.id === "m3d") Scene3D.close(); });
-addEventListener("keydown", e => { if (e.key === "Escape" && !$("#m3d").hidden) Scene3D.close(); });
+addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!$("#brief").hidden) closeBrief(); else if (!$("#m3d").hidden) Scene3D.close(); });
 $("#zin").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1.6);
 $("#zout").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.6);
 $("#zreset").onclick = () => d3.select("#map").transition().duration(250).call(zoomBehavior.transform, d3.zoomIdentity);
