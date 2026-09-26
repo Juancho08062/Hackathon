@@ -909,7 +909,9 @@ window.SEAMLINE_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type
   }
   // Savings weighted by that chance: items that need both crews in the field together (yards, deliveries, crews,
   // cranes, contractors) count by the chance; outage, crossing, right-of-way, access roads and permits count in full.
+  // A pair with a likely built project has nothing left to share.
   function expectedSavings(x, chance) {
+    if (x.p.likely_built || x.q.likely_built) return { fixed: 0, windowed: 0, expected: 0 };
     const all = savings(Object.assign({}, x, { sameWindow: true })).items;
     const needs = new Set(SHARES.filter(s => s.window).flatMap(s => s.items));
     const fixed = all.filter(i => !needs.has(i.share)).reduce((s, i) => s + i.v, 0);

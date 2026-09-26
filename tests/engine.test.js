@@ -221,6 +221,7 @@ t("built-in slip model comes from the plans themselves", () => {
   const ovl2 = E.overlapChance(pair("DESC-12", "IRP-20277"), m.slips, { bufferMonths: 0, today: m.as_of });
   assert(ovl2.p > 0 && ovl2.p < 1, ovl2.p); // in one window on paper, but DESC usually slips
   assert.strictEqual(E.overlapChance(pair("DESCP-31", "IRP-20793"), m.slips, { bufferMonths: 0 }).p, 0);
+  assert.strictEqual(E.expectedSavings(pair("DESCP-31", "IRP-20793"), 0).expected, 0); // Hooks - Thurmond is likely built
 });
 t("plan drift: the latest plan updates opened and closed shared windows", () => {
   const { pairs } = E.findOverlaps(projects, { utilA: "DESC", utilB: "GPC", maxKm: 40, bufferMonths: 0, mode: "near" });
