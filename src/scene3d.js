@@ -184,32 +184,24 @@
     return g;
   }
 
-  function yardGroup(T, w, d) {
-    const g = new T.Group(), V = (x, y, z) => new T.Vector3(x, y, z);
+  // Place one work vehicle from Vehicles3D (modeled in meters, facing +x) at yard coordinates, rotated by `ry`.
+  function vehicleAt(T, kind, level, x, z, ry = 0, opts = {}) {
+    const v = root.Vehicles3D.build(T, kind, Object.assign({ level }, opts));
+    v.scale.setScalar(root.Vehicles3D.SCENE_SCALE); v.position.set(x, 0.12, z); v.rotation.y = ry;
+    v.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    return v;
+  }
+
+  function yardGroup(T, w, d, level) {
+    const g = new T.Group();
     const pad = mesh(T, new T.BoxGeometry(w, 0.12, d), pbr(T, PAL.gravel), false); pad.position.y = 0.06; g.add(pad);
     const reels = [];
     // cable reels in a row, spaced wider than their 1.04 diameter so they never touch
     for (let i = 0; i < 4; i++) { const x = -w * 0.34 + i * 1.2; for (const z of [-0.22, 0.22]) { const r = cylAt(T, 0.52, 0.52, 0.06, 12, 0, 0, 0); r.rotateX(Math.PI / 2); r.translate(x, 0.64, -d * 0.18 + z); reels.push(r); } const hub = cylAt(T, 0.3, 0.3, 0.4, 10, 0, 0, 0); hub.rotateX(Math.PI / 2); hub.translate(x, 0.64, -d * 0.18); reels.push(hub); }
     g.add(mesh(T, merge(T, reels), pbr(T, 0x8a6440)));
-    const trucks = [], cabs = [], tires = [], glass = [];
-    for (let i = 0; i < 3; i++) {
-      const x = -w * 0.34 + i * 1.6, z = d * 0.26;
-      trucks.push(boxAt(T, 0.95, 0.12, 0.55, x - 0.2, 0.3, z), boxAt(T, 0.95, 0.18, 0.04, x - 0.2, 0.44, z - 0.26), boxAt(T, 0.95, 0.18, 0.04, x - 0.2, 0.44, z + 0.26));
-      cabs.push(boxAt(T, 0.42, 0.42, 0.55, x + 0.5, 0.47, z));
-      glass.push(boxAt(T, 0.02, 0.16, 0.45, x + 0.72, 0.58, z));
-      wheels(T, tires, x + 0.1, z, 1.25, 0.56);
-    }
-    // bucket truck with a raised boom
-    const bx = -w * 0.3, bz = -d * 0.02;
-    trucks.push(boxAt(T, 1.2, 0.2, 0.55, bx, 0.33, bz), boxAt(T, 0.25, 0.2, 0.25, bx - 0.3, 0.52, bz));
-    cabs.push(boxAt(T, 0.42, 0.42, 0.55, bx + 0.78, 0.47, bz)); glass.push(boxAt(T, 0.02, 0.16, 0.45, bx + 1.0, 0.58, bz));
-    wheels(T, tires, bx + 0.2, bz, 1.5, 0.56);
-    const boom = [beam(T, V(bx - 0.3, 0.6, bz), V(bx + 0.4, 1.9, bz), 0.1), beam(T, V(bx + 0.4, 1.9, bz), V(bx + 1.1, 2.3, bz), 0.08), boxAt(T, 0.3, 0.3, 0.3, bx + 1.2, 2.3, bz)];
-    g.add(mesh(T, merge(T, trucks), pbr(T, 0x39434b)));
-    g.add(mesh(T, merge(T, cabs), pbr(T, 0xe6e0d0)));
-    g.add(mesh(T, merge(T, tires), pbr(T, 0x1d2226)));
-    g.add(mesh(T, merge(T, glass), pbr(T, 0x7fa9c4, { shininess: 90 })));
-    g.add(mesh(T, merge(T, boom), pbr(T, 0xe6e0d0)));
+    // crew pickups parked in a row, and a bucket truck with its boom raised
+    for (let i = 0; i < 3; i++) g.add(vehicleAt(T, "pickup", level, -w * 0.37 + i * 1.5, d * 0.26));
+    g.add(vehicleAt(T, "bucket", level, -w * 0.3, -d * 0.02));
     // site office trailer, portable toilets, cones
     const off = mesh(T, new T.BoxGeometry(1.8, 0.6, 0.7), pbr(T, 0xf0ede4)); off.position.set(-w * 0.32, 0.42, -d * 0.4 + 0.1); g.add(off);
     const offWin = mesh(T, merge(T, [boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 - 0.5, 0.5, -d * 0.4 + 0.46), boxAt(T, 0.35, 0.18, 0.02, -w * 0.32 + 0.4, 0.5, -d * 0.4 + 0.46)]), pbr(T, 0x7fa9c4)); g.add(offWin);
@@ -221,14 +213,8 @@
     const steel = [];
     for (let k = 0; k < 3; k++) for (let i = 0; i < 4 - k; i++) steel.push(boxAt(T, 2.2, 0.12, 0.12, w * 0.18, 0.18 + k * 0.13, -d * 0.02 + (i - 1.5 + k * 0.5) * 0.14));
     g.add(mesh(T, merge(T, steel), pbr(T, 0x7b8a96)));
-    // crawler crane with a lattice boom
-    const cr = [], cx = w * 0.34, cz = d * 0.1;
-    cr.push(boxAt(T, 1.1, 0.3, 0.9, cx, 0.3, cz), boxAt(T, 0.8, 0.55, 0.7, cx, 0.72, cz));
-    const b0 = V(cx - 0.2, 1.0, cz), b1 = V(cx - 2.6, 4.2, cz);
-    for (const dz of [-0.14, 0.14]) for (const dy of [-0.1, 0.1]) cr.push(beam(T, b0.clone().add(V(0, dy, dz)), b1.clone().add(V(0, dy, dz)), 0.05));
-    for (let i = 0; i < 8; i++) { const a = b0.clone().lerp(b1, i / 8), c = b0.clone().lerp(b1, (i + 1) / 8); cr.push(beam(T, a.clone().add(V(0, 0, -0.14)), c.clone().add(V(0, 0, 0.14)), 0.03)); }
-    cr.push(beam(T, b1, V(b1.x, 2.0, cz), 0.02));
-    g.add(mesh(T, merge(T, cr), pbr(T, PAL.crane)));
+    // crawler crane turned to swing its lattice boom back over the yard
+    g.add(vehicleAt(T, "crawlerCrane", level, w * 0.36, d * 0.16, Math.PI, { boom: 20, angle: 55 }));
     return g;
   }
 
@@ -247,7 +233,6 @@
       mesh(T, merge(T, head), pbr(T, 0xc99a74)), mesh(T, merge(T, hat), pbr(T, 0xffffff, { shininess: 50 })));
     return g;
   }
-  const wheels = (T, list, x, z, len, wid) => { for (const dx of [-len / 2 + 0.15, len / 2 - 0.15]) for (const dz of [-wid / 2, wid / 2]) { const w = cylAt(T, 0.13, 0.13, 0.08, 10, 0, 0, 0); w.rotateX(Math.PI / 2); w.translate(x + dx, 0.13, z + dz); list.push(w); } };
 
   // Tiling normal map for ripples on ponds: a few summed sine waves, converted to normals.
   function waterNormals(T) {
@@ -549,7 +534,7 @@
       labels.push(makeLabel("Shared right-of-way and access road", opts.tierColor, new T.Vector3(gm.x + perp.x * 5, gm.y + 0.4, gm.z + perp.z * 5), "small"));
     } else if (pair.tier <= 3) {
       // the yard goes on the nearest open ground beside the meeting point, clear of towers, substations and plants
-      const yd = yardGroup(T, 7, 4.6), yr = 4.4 * TS;
+      const yd = yardGroup(T, 7, 4.6, root.Vehicles3D.levelFor(opts.quality)), yr = 4.4 * TS;
       let spot = null;
       for (let rad = 6; rad <= R && !spot; rad += 2) for (let k = 0; k < 24 && !spot; k++) {
         const a = Math.atan2(perp.z, perp.x) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12;
