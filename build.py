@@ -1,8 +1,17 @@
-"""Inline data into src/app.html -> index.html (standalone page)."""
+"""Build the standalone app: inline styles, scripts and data from src/ and data/ into index.html."""
 import json, pathlib
 root = pathlib.Path(__file__).parent
-html = (root / "src/app.html").read_text()
-html = html.replace("/*BASEMAP*/null", (root / "data/basemap.json").read_text())
-html = html.replace("/*PROJECTS*/[]", json.dumps(json.load(open(root / "data/projects.json")), separators=(",", ":")))
+src = lambda p: (root / "src" / p).read_text()
+html = src("index.html")
+for key, text in {
+    "/*STYLES*/": src("styles.css"),
+    "/*ENGINE*/": src("engine.js"),
+    "/*INGEST*/": src("ingest.js"),
+    "/*APP*/": src("app.js"),
+    "/*BASEMAP*/null": (root / "data/basemap.json").read_text(),
+    "/*PROJECTS*/[]": json.dumps(json.load(open(root / "data/projects.json")), separators=(",", ":")),
+}.items():
+    assert key in html, key
+    html = html.replace(key, text, 1)
 (root / "index.html").write_text(html)
 print("wrote index.html", len(html) // 1024, "KB")

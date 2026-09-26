@@ -1,0 +1,113 @@
+<title>Seamline</title>
+<meta name="description" content="Compare neighboring utilities' planned transmission work and flag projects close enough to share crews, land and outages.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/*STYLES*/
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Seamline</h1>
+      <p class="tag">Finds where two utilities' planned construction comes within 40 km, ranks each match by how close it is and whether it's built in the same window, and estimates what coordinating would save.</p>
+    </div>
+    <div class="legend" id="legend"></div>
+  </header>
+
+  <section class="bar" aria-label="What to compare">
+    <div class="compare">
+      <label for="utilA">Compare</label>
+      <select id="utilA"></select>
+      <span class="vs">with</span>
+      <select id="utilB" aria-label="Second utility"></select>
+      <button type="button" class="btn primary" id="openImport" aria-expanded="false" aria-controls="import">Add a utility's plans</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="dist">Geographic threshold <output id="distv"></output></label><input id="dist" type="range" min="5" max="100" step="5" value="40"></div>
+      <div class="ctl"><label for="buf">Build-window buffer <output id="bufv"></output></label><input id="buf" type="range" min="0" max="24" step="1" value="0"></div>
+      <div class="ctl-group">
+        <span class="lbl">Show pairs that are</span>
+        <div class="seg" role="group" aria-label="Match rule">
+          <button type="button" id="m-near" aria-pressed="true">Near</button>
+          <button type="button" id="m-both" aria-pressed="false">Near, same window</button>
+          <button type="button" id="m-time" aria-pressed="false">Same window</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="import" id="import" hidden aria-label="Add a utility's plans">
+    <div class="import-grid">
+      <div>
+        <h2>Add a utility's plans</h2>
+        <p class="note">Drop a CSV, TSV, JSON or GeoJSON file. Column names are matched loosely (for example <code>owner</code>, <code>voltage</code>, <code>isd</code> or <code>latitude</code> all work). Lines need two points or a GeoJSON LineString; substations need one point. Year-only dates like <code>2029</code> are fine.</p>
+        <div class="fields">
+          <div><label for="impUtil">Utility name <span class="note">(used when the file has no utility column)</span></label><input id="impUtil" type="text" placeholder="e.g. Santee Cooper" autocomplete="off"></div>
+          <div><label for="impSrc">Source link <span class="note">(optional)</span></label><input id="impSrc" type="url" placeholder="https://… plan PDF or data page" autocomplete="off"></div>
+        </div>
+        <label class="drop" id="drop" for="file">
+          <input id="file" type="file" accept=".csv,.tsv,.txt,.json,.geojson" multiple>
+          <b>Drop files here</b> or click to choose
+        </label>
+        <div id="impReport" class="report" aria-live="polite"></div>
+      </div>
+      <div>
+        <h3>Template</h3>
+        <pre id="tpl"></pre>
+        <div class="row"><button type="button" class="btn" id="copyTpl">Copy template</button><button type="button" class="btn" id="pasteHelp">Paste CSV instead</button></div>
+        <textarea id="paste" rows="5" placeholder="Paste CSV rows here, then press Load pasted rows" hidden></textarea>
+        <button type="button" class="btn" id="loadPaste" hidden>Load pasted rows</button>
+        <h3>Loaded datasets</h3>
+        <ul id="datasets" class="datasets"></ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="stats" id="stats"></div>
+  <div class="tiers" id="tiers" role="group" aria-label="Filter by distance tier"></div>
+
+  <div class="main">
+    <div class="card">
+      <h2>Map
+        <span class="seg" role="group" aria-label="Map view"><button type="button" id="v-focus" aria-pressed="true">Overlap area</button><button type="button" id="v-all" aria-pressed="false">All projects</button></span>
+        <span class="zm"><button type="button" class="btn" id="zin" aria-label="Zoom in">+</button><button type="button" class="btn" id="zout" aria-label="Zoom out">−</button><button type="button" class="btn" id="zreset">Reset</button></span>
+      </h2>
+      <svg id="map" role="img" aria-label="Map of planned projects. Drag to pan, scroll or use the buttons to zoom."></svg>
+      <div class="note maphint">Drag to pan, scroll or pinch to zoom. Click a project or a dashed link to open the pair. Rings mark pairs under 1.6 km.</div>
+    </div>
+    <div class="card">
+      <h2>Coordination opportunities <em id="cnt"></em></h2>
+      <div class="search"><input id="q" type="search" placeholder="Filter by project or place" aria-label="Filter opportunities"><button type="button" class="btn" id="copy">Copy as CSV</button></div>
+      <span class="note msg" id="msg" aria-live="polite"></span>
+      <div id="detail"></div>
+      <div class="list" id="list"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Construction timeline <em>estimated start to planned in-service, flagged projects only</em></h2>
+    <div class="tlwrap"><svg id="tl" role="img" aria-label="Timeline of flagged projects"></svg></div>
+  </div>
+
+  <div class="foot">
+    <div><b>Built-in data.</b> DESC: <a href="https://www.scrtp.com/assets/pdfs/home/2026-2030-2million-and-above-project-descriptions.pdf" target="_blank" rel="noopener">SCRTP 2026 to 2030 project descriptions ($2M and above)</a>. Georgia: <a href="https://www.southeasternrtp.com/docs/general/2026/2026_SERTP_2nd_Qtr_Presentation.pdf" target="_blank" rel="noopener">SERTP 2026 preliminary expansion plan</a>, <a href="https://www.southeasternrtp.com/docs/general/2025/2025%20SERTP%20Preliminary%20Expansion%20Plan%20Report%20(Non-CEII).pdf" target="_blank" rel="noopener">2025 SERTP report</a>, and Georgia Power's pages for <a href="https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/callaway-thomson.html" target="_blank" rel="noopener">Callaway Road to Thomson</a> and <a href="https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/effingham-county.html" target="_blank" rel="noopener">Effingham County</a>. Georgia's grid is planned jointly by Georgia Power, Georgia Transmission and MEAG, so all three appear as one system.</div>
+    <div><b>Method.</b> Distance is measured between the closest points of two projects, not their centers. Pairs within 40 km are flagged and tiered: touching, under 1.6 km, under 8 km, under 40 km. Ranking is tier first, then whether the build windows overlap, then distance. Plans list in-service dates, so construction start is estimated from type, voltage and length unless a start date is given.</div>
+    <div><b>Assumptions.</b> Public plans name substations, not coordinates, so built-in locations are placed by hand; dashed lines are best guesses. Grey markers are existing assets for reference. Cost model: the plan's cost where listed; otherwise about $2.5M/km for new 500 kV line, $1.4M/km at 230 kV, $0.95M/km at 115 kV, half that for rebuilds, and $60M, $25M or $8M for 500, 230 or 115 kV substations. Savings are half of a 5% mobilization cost (same window, under 40 km), one $400K laydown yard (under 8 km), shared right-of-way and permits (under 1.6 km) and one $250K outage (touching).</div>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+window.SEAMLINE_DATA = { basemap: /*BASEMAP*/null, projects: /*PROJECTS*/[] };
+</script>
+<script>
+/*ENGINE*/
+</script>
+<script>
+/*INGEST*/
+</script>
+<script>
+/*APP*/
+</script>
