@@ -1166,6 +1166,14 @@ const ASK_COPY = {
     scopePair: (n, who, pairs) => `I answer from the data on this page: ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables as the map.`,
     scopeSolo: (n, who) => `I answer from the data on this page: ${n} planned projects from ${who}. Every figure comes from the same tables as the map.`,
     head: "Example questions",
+    canHead: "What I can do",
+    can: [
+      "Find the overlaps that matter: closest, most likely, within a distance you name, or sharing a build window.",
+      "Explain any pair: distance, build windows, what the two utilities could share and the math behind it.",
+      "Tell you why a pair is not on the list, and which reason applies.",
+      "Rank the projects by cost, length, voltage or date, and show how each plan's dates moved.",
+      "Propose date moves that raise the savings, and open the printable brief or proposal.",
+    ],
     foot: "These work with no API key. Connect one for open-ended questions.",
     placeholder: "e.g. Which three date moves would save the most?",
   },
@@ -1193,6 +1201,7 @@ function askWelcome() {
     <p class="ask-hero">${esc(C.hero)}</p>
     <p class="ask-sub">${esc(C.sub)}</p>
     <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
+    ${C.can ? `<p class="wl-head">${esc(C.canHead)}</p><ul class="wl">${C.can.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
     <div class="wsugs" role="group" aria-label="${esc(C.head)}">${SUGGEST().slice(0, 4).map(s => `<button type="button">${esc(s)}</button>`).join("")}</div>
     <p class="wl-foot">${esc(C.foot)}</p></div>`;
 }
