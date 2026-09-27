@@ -113,7 +113,7 @@ h1.logo{margin:0;font-size:14px}
 .rail>button:hover{color:var(--ink);background:var(--panel2)}
 .rail>button[aria-selected=true],.rail>button[aria-pressed=true]{background:var(--panel2);color:var(--accent);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
 .rail .n{display:none}
-.rail .badge{position:absolute;top:3px;right:9px;min-width:15px;height:15px;padding:0 4px;border-radius:var(--r-xs);background:var(--amber,#8A5A00);color:#fff;font-size:9.5px;font-weight:600;display:grid;place-items:center}
+.rail .badge{position:absolute;top:3px;right:9px;min-width:15px;height:15px;padding:0 4px;border-radius:var(--r-xs);background:var(--amber,#8A5A00);color:var(--bg);font-size:9.5px;font-weight:600;display:grid;place-items:center}
 .rail .grow{flex:1}
 .side{border-right:1px solid var(--line)}
 /* headline tiles at the top of the Overlaps view */
@@ -435,7 +435,7 @@ body.modal-open .app{visibility:hidden}
 .ask-key.set{display:flex;justify-content:space-between;align-items:center;font-size:12px}
 .ask-key input{flex:1;min-width:0}
 .ask-key form.ph-row{display:flex;gap:6px;align-items:center}
-.note.warn{color:#92400e}
+.note.warn{color:var(--amber)}
 .ask-log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
 .msg{max-width:92%;font-size:13px;line-height:1.5}
 .msg p{margin:0 0 6px} .msg p:last-child{margin-bottom:0}
@@ -481,8 +481,6 @@ body.modal-open .app{visibility:hidden}
 .wl-foot{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--grid)}
 .sugs{display:flex;gap:6px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:thin;flex:none}
 .sugs .chip{flex:none;height:auto;min-height:26px;padding:4px 9px;white-space:nowrap;max-width:44ch;overflow:hidden;text-overflow:ellipsis}
-.ask-hint{margin:8px 0 0;font-size:11.5px;color:var(--ink2);min-height:17px}
-.ask-hint b{font-weight:500;color:var(--ink)}
 .ask-in{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--panel)}
 .ask-in textarea{flex:1;font:inherit;font-size:13px;resize:none;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink)}
 .ask-key .chk{justify-self:start}

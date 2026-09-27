@@ -50,7 +50,7 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 
 ![The Optimize tab: date moves that raise expected savings](docs/screenshots/optimize.jpg)
 
-![Ask with no API key: why a pair is not flagged, and one pair explained](docs/screenshots/ask.jpg)
+![Geo with no API key: why a pair is not flagged, and one pair explained](docs/screenshots/ask.jpg)
 
 ## How overlap is defined
 

@@ -1,6 +1,6 @@
 # Nexxo: 3-minute demo
 
-Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Set **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Ask** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
+Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Set **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Geo** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
 
 ## 0:00 – The problem (20 s)
 
@@ -50,9 +50,9 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > And any view is a link: a planner pastes it into an email and the other utility opens exactly this.
 
-## 2:25 – Ask it (25 s)
+## 2:25 – Ask Geo (25 s)
 
-*Click the **Ask** button on the map, click the suggestion "Which three date moves would save the most?" or type "Which overlaps near Augusta are most likely to happen?". If time allows, type "Why is DESCP-10 not paired with IRP-19523?".*
+*Click **Geo** in the left rail, click the suggestion "Which three date moves would save the most?" or type "Which overlaps near Augusta are most likely to happen?". If time allows, type "Why is DESCP-10 not paired with IRP-19523?".*
 
 > Planners can just ask, in English or Spanish. With a key it's Claude with fourteen tools over the same data; without one, or if the network drops, the common questions are still answered straight from the plans, and it says so. It flies the map to what it's talking about, opens the printable briefs, and it can tell you why a pair is *not* on the list: this one is 40.4 km apart, just past the screen.
 
@@ -64,6 +64,6 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 - No imagery, terrain or grid: switch to **Plain**. Everything else works offline.
 - Walker lands in the wrong place: press **Walk** to switch to the orbit view, or close and drop it again.
-- Assistant errors: it falls back to answering without the model on its own; stick to the suggested questions. If even that fails, skip Ask and spend the time on Plan.
+- Assistant errors: it falls back to answering without the model on its own; stick to the suggested questions. If even that fails, skip Geo and spend the time on Plan.
 - Walker lands on the wrong pair: close the 3D view, open pair #4 from Overlaps first, then drop the figure on the blue line.
 - Numbers to remember: 262 official records · 10,304 pairs · 169 overlaps · 6 of 6 reference overlaps · 23 of 30 DESC projects slipped · +9 / −3 windows · 68% (Jasper–Okatie × McIntosh 12) · $13.6M → $16.1M with 8 moves · 10,092 existing lines.

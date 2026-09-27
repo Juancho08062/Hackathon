@@ -81,6 +81,7 @@ function risk(x) {
 }
 function inHorizon(p) {
   if (!state.horizon) return true;
+  if (p.undated) return false;
   const now = mon(TODAY);
   return mon(p.start) <= now + state.horizon && mon(p.in_service) >= now;
 }
@@ -514,7 +515,7 @@ function sourceLink(p) {
   return p.source.startsWith("http") ? `<a href="${esc(p.source)}" target="_blank" rel="noopener">${esc(txt)}${p.page ? ", " + esc(p.page) : ""}</a>` : `${esc(txt)}${p.page ? ", " + esc(p.page) : ""}`;
 }
 function windowText(p) {
-  return `${fmtD(p, "start")} → ${fmtD(p, "in_service")} <span class="muted">${p.start_published ? "" : "est."}</span>${p.likely_built ? ` <span class="amber">· likely built</span>` : isPast(p) ? ` <span class="amber">· date passed</span>` : ""}`;
+  return `${fmtD(p, "start")} → ${fmtD(p, "in_service")} <span class="muted">${p.start_published || p.date_precision === "estimated" ? "" : "est."}</span>${p.likely_built ? ` <span class="amber">· likely built</span>` : isPast(p) ? ` <span class="amber">· date passed</span>` : ""}`;
 }
 function driftText(p) {
   if (!p.drift || !p.drift.months) return p.drift ? "date unchanged since the previous plan" : "–";
@@ -761,7 +762,7 @@ function renderChecks(P) {
 // ---------- panel: assistant ----------
 // Claude answers questions using tools that read the same data the page shows (agent.js runs the loop).
 const CHAT = { messages: [], log: [], busy: false };
-const SYSTEM = `You are Geo, the assistant inside Nexxo. If asked your name, you are Geo. a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
+const SYSTEM = `You are Geo, the assistant inside Nexxo, a tool that compares two electric utilities' planned transmission construction (by default Dominion Energy South Carolina, "DESC", and Georgia's integrated transmission system, "GPC" / "Georgia ITS": Georgia Power, GTC and MEAG) and flags where the work overlaps.
 
 How Nexxo measures things:
 - Distance is between the closest points of two projects. Tiers: touching (0 km), under 1.6 km (can share right-of-way, access roads, permits), under 8 km (laydown yards, deliveries), under 40 km (crews, cranes, contractors).
@@ -1102,7 +1103,6 @@ function renderAsk(P) {
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = CHAT.log.length ? log.scrollHeight : 0; // the greeting reads from the top
-  cycleHint();
   P.querySelectorAll("[data-about]").forEach(b => b.onclick = () => openAbout(b.dataset.about));
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
@@ -1147,7 +1147,6 @@ function renderAsk(P) {
   P.querySelectorAll(".lang button").forEach(b => b.onclick = () => {
     if (b.dataset.lang === state.askLang) return;
     state.askLang = b.dataset.lang; store.set("askLang", state.askLang);
-    hintAt = 0;
     renderAsk(P);
   });
   P.querySelectorAll(".sugs .chip, .wsugs button").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
@@ -1181,7 +1180,7 @@ const ASK_COPY = {
     code: "ES", label: "Responder en español", you: "Tú", thinking: "Trabajando en ello",
     hero: "Hola, soy Geo",
     bar: "Geo · responde con los planes de esta página",
-    sub: "Preguntame qué solapes importan, qué podrían compartir las dos utilities, o por qué un par no está en la lista.",
+    sub: "Pregúntame qué solapes importan, qué podrían compartir las dos utilities, o por qué un par no está en la lista.",
     scopePair: (n, who, pairs) => `Respondo con los datos de esta página: ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que el mapa.`,
     scopeSolo: (n, who) => `Respondo con los datos de esta página: ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que el mapa.`,
     head: "Preguntas de ejemplo",
@@ -1242,7 +1241,7 @@ async function sendQuestion(q) {
   if (!apiKey()) {
     const offline = answerOffline(q, null, calls);
     const lang = askLang();
-    return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key above.`);
+    return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key below.`);
   }
 
   CHAT.messages.push({ role: "user", content: q });
@@ -1425,21 +1424,6 @@ const safeDiagram = (q, calls) => { try { return geoDiagram(q, calls); } catch (
 // One example question at a time, changing every few seconds while the field is untouched. It is the only motion in
 // the app that also teaches something: it shows the grammar the input accepts instead of describing it. It stops the
 // moment the user engages with the field, and under reduced motion it shows a single example and never changes it.
-let hintTimer = null, hintAt = 0;
-function cycleHint() {
-  clearInterval(hintTimer); hintTimer = null;
-  const el = $("#askHint"), q = $("#askQ");
-  if (!el) return;
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const paint = () => { const list = SUGGEST(); el.innerHTML = `${askLang() === "es" ? "Probá" : "Try"}: <b>${esc(list[hintAt % list.length])}</b>`; };
-  paint();
-  if (reduced) return;
-  hintTimer = setInterval(() => {
-    if (!$("#askHint") || CHAT.busy || (q && (q.value.trim() || document.activeElement === q))) return;
-    hintAt++; paint();
-  }, 3800);
-  if (q) q.addEventListener("focus", () => { clearInterval(hintTimer); hintTimer = null; el.textContent = ""; }, { once: true });
-}
 
 function openBrief(x0, narrative) {
   // the what-if applies only when it was set on this pair; the assistant can open a brief for a pair nobody selected
@@ -1690,7 +1674,9 @@ function measure3d(p) {
   const len = `${L < 10 ? +L.toFixed(1) : Math.round(L)} km · ${mi < 10 ? +mi.toFixed(1) : Math.round(mi)} mi ${p.miles ? "long" : "as mapped"}`;
   return [len, kv, `${row[0]} ft (${row[1]} m) typical right-of-way`].filter(Boolean).join(" · ");
 }
+let focus3d = null;
 function open3d(x, extra) {
+  if ($("#m3d").hidden) focus3d = document.activeElement;
   $("#m3dQ").value = quality3d();
   Scene3D.open(x, Object.assign({
     title: `${short(x.p)} and ${short(x.q)}`,
@@ -1702,7 +1688,11 @@ function open3d(x, extra) {
   }, extra || {}));
   $("#m3d").classList.add("settled"); document.body.classList.add("m3d-open");
 }
-function close3d() { $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close(); }
+function close3d() {
+  $("#m3d").classList.remove("settled"); document.body.classList.remove("m3d-open"); Scene3D.close();
+  if (focus3d && focus3d.focus && focus3d.offsetParent) focus3d.focus();
+  focus3d = null;
+}
 
 // ---------- drop-in walker ----------
 // Drag the orange figure onto a project: the 3D illustration opens at that spot in walk mode, with the project's
@@ -1913,7 +1903,7 @@ function writeHash() {
 
 // ---------- modals ----------
 function openModal(id) { const m = $("#" + id); returnFocus = document.activeElement; m.hidden = false; lockApp(true); const f = m.querySelector("input,select,button"); if (f) f.focus(); if (id === "import") $("#openImport").setAttribute("aria-expanded", "true"); }
-function closeModal(id) { $("#" + id).hidden = true; lockApp(false); if (returnFocus && returnFocus.focus) returnFocus.focus(); returnFocus = null; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
+function closeModal(id) { $("#" + id).hidden = true; lockApp(false); if (returnFocus && returnFocus.focus && returnFocus.offsetParent) returnFocus.focus(); else $("#moreBtn").focus(); returnFocus = null; if (id === "import") $("#openImport").setAttribute("aria-expanded", "false"); }
 
 // ---------- selection and refresh ----------
 function select(x) {
@@ -1930,7 +1920,7 @@ function refresh() {
   state.hover = null;
   compute();
   if (state.sel && state.sel.cluster) { const ids = state.sel.cluster.projects.map(p => p.id).join(); state.sel = (c => c ? { cluster: c } : null)(CLUSTERS.find(c => c.projects.map(p => p.id).join() === ids)); }
-  else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
+  else if (state.sel) state.sel = state.sel.solo ? (SOLO.includes(state.sel.p) ? state.sel : null) : VIEW.find(x => x.p === state.sel.p && x.q === state.sel.q) || RESULT.pairs.find(x => x.p === state.sel.p && x.q === state.sel.q) || null;
   const near = RESULT.pairs, exp = VIEW.reduce((s, x) => s + x.risk.expected, 0), plan = VIEW.reduce((s, x) => s + x.sav.total, 0);
   renderChips();
   $("#summary").innerHTML = solo() ? `${SOLO.length} projects` :
@@ -1939,7 +1929,7 @@ function refresh() {
   writeHash();
 }
 function rebuild() {
-  state.sel = null; chanceCache.clear(); optCache.key = null; driftCache.key = null;
+  state.sel = null; state.tiersSet = false; chanceCache.clear(); optCache.key = null; driftCache.key = null;
   renderPickers(); compute(); legend(); setupScrub(); refresh(); fitAll(0);
 }
 function setBasemap(b) {
@@ -2028,7 +2018,7 @@ addEventListener("keydown", e => {
   else if (!$("#import").hidden) closeModal("import");
   else if (!$("#assume").hidden) closeModal("assume");
   else if (!$("#about").hidden) closeModal("about");
-  else if (state.sel) select(null);
+  else if (state.sel && !(e.target.closest && e.target.closest("#askForm"))) select(null);
 });
 $("#openImport").onclick = () => openModal("import");
 $("#openAssume").onclick = () => openModal("assume");
