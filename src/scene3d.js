@@ -1215,7 +1215,7 @@
         }
         if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
         if (foot) foot.textContent = on ? (canLock ? "Click the view, then move the mouse to look around (Esc frees the mouse). W A S D or the arrow keys walk, Shift runs."
-          : "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run.") + " Orbit returns to the overview." : orbitNote;
+          : "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run.") + " Press Walking again to return to the overview." : orbitNote;
         if (!on && document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       };
       const typing = e => /input|select|textarea/i.test(e.target.tagName);

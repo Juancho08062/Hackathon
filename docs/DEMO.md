@@ -1,14 +1,14 @@
 # Nexxo: 3-minute demo
 
-Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Open http://localhost:8000 with nothing after it, so the page starts on the intro (a link with `#…` skips it). Inside the app: **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Geo** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
+Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Open http://localhost:8000 with nothing after it, so the page starts on the intro (a link with `#…` skips it). Inside the app: **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Geo** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practice the walker drag once so you know where the orange figure is (right edge of the map, just above the recenter and ruler buttons).
 
-## 0:00 – The problem (20 s)
+## 0:00 · The problem (20 s)
 
-> Utilities plan years ahead, each on its own. DESC and Georgia build right across the Savannah River from each other, and nobody lines up their crews, yards or outages. FERC Order 1920 exists because of this. Nexxo finds where their plans meet, and more importantly, which of those meetings will actually happen.
+> Utilities plan years ahead, each on its own. DESC and Georgia build right across the Savannah River from each other, and nobody lines up their crews, yards or outages. FERC Order 1920 pushes utilities toward exactly this kind of joint planning. Nexxo finds where their plans meet, and more importantly, which of those meetings will actually happen.
 
 *On screen: the intro page (open the bare address, without a `#`). Say the problem over it, then click **Open the map**. The thin grey lines underneath are today's grid, 10,092 real lines from OpenStreetMap; the bold ones are the plans.*
 
-## 0:20 – It reads the real plans (25 s)
+## 0:20 · It reads the real plans (25 s)
 
 > We didn't type coordinates in. A pipeline reads both PDFs from the challenge, 44 DESC projects and 218 Georgia projects, including every Georgia project's detail page, and places each substation from OpenStreetMap. 10,304 pairs checked, 169 within 40 km, and it reproduces all six overlaps in your reference table, measured between closest points like the spec asks.
 
@@ -16,7 +16,7 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > Every number traces back to a PDF page and a TEAMS number.
 
-## 0:45 – Plans move (40 s)
+## 0:45 · Plans move (40 s)
 
 *Click **Changes**.*
 
@@ -28,9 +28,9 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 *Scroll to **What they can share**.*
 
-> And every pair is priced item by item, with the math on screen: one laydown yard instead of two, combined deliveries, one crew mobilization. For pair #6, 0.6 km apart, that includes 11 acres of right-of-way they don't have to buy twice. Every unit cost is editable.
+> And every pair is priced item by item, with the math on screen: one laydown yard instead of two, combined deliveries, one crew mobilization. For the Okatie series reactor and McIntosh Unit 12, ranked #6 and 0.6 km apart, that includes 11 acres of right-of-way they don't have to buy twice. Every unit cost is editable.
 
-## 1:25 – Walk the site (35 s)
+## 1:25 · Walk the site (35 s)
 
 *Click **← Overlaps**, set **Sort** to **Chance of a shared window**, and open the top row (Urquhart – Aiken PSA 46 kV × Callaway Road – Thomson Primary 500 kV, 76%). The map flies to it. Drag the orange figure from the right edge of the map and drop it on the orange Callaway Road – Thomson line. (Use this pair, not Jasper–Okatie: the Jasper line runs through the Savannah River marsh, so the walker lands on water and the ground reads almost white. Keep the pair open: from the full-region view the lines are too thin to hit.)*
 
@@ -44,7 +44,7 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > And this is the real place: satellite imagery over real terrain, with a tower along the new 500 kV line.
 
-## 2:00 – What to do about it (25 s)
+## 2:00 · What to do about it (25 s)
 
 *Click **Plan** in the rail (the schedule optimizer).*
 
@@ -54,20 +54,20 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > And any view is a link: a planner pastes it into an email and the other utility opens exactly this.
 
-## 2:25 – Ask Geo (25 s)
+## 2:25 · Ask Geo (25 s)
 
 *Click **Geo** in the left rail, click the suggestion "Which three date moves would save the most?" or type "Which overlaps near Augusta are most likely to happen?". If time allows, type "Why is DESCP-10 not paired with IRP-19523?".*
 
 > Planners can just ask, in English or Spanish. With a key it's Claude with fourteen tools over the same data; without one, or if the network drops, the common questions are still answered straight from the plans, and it says so. It flies the map to what it's talking about, opens the printable briefs, and it can tell you why a pair is *not* on the list: this one is 40.4 km apart, just past the screen.
 
-## 2:50 – Close (10 s)
+## 2:50 · Close (10 s)
 
 > Nexxo: real plans, honest odds, a site you can walk, and a schedule both utilities can agree on. Thank you.
 
 ## If something breaks
 
 - No imagery, terrain or grid: switch to **Plain**. Everything else works offline.
-- Walker lands in the wrong place: press **Walk** to switch to the orbit view, or close and drop it again.
+- Walker lands in the wrong place: press **Walking** (the Walk button) to switch to the orbit view, or close and drop it again.
 - Assistant errors: it falls back to answering without the model on its own; stick to the suggested questions. If even that fails, skip Geo and spend the time on Plan.
 - Walker lands on the wrong pair: close the 3D view, open the Urquhart × Callaway Road – Thomson pair first (Sort: Chance, top row), then drop the figure on the orange line.
 - Numbers to remember: 262 official records · 10,304 pairs · 169 overlaps · 6 of 6 reference overlaps · 23 of 30 DESC projects slipped · +9 / −3 windows · 68% (Jasper–Okatie × McIntosh 12) · $13.6M → $16.1M with 8 moves · 10,092 existing lines.

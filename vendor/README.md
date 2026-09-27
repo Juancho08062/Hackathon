@@ -1,6 +1,6 @@
 # Vendored libraries
 
-Pinned copies of the third-party scripts Nexxo loads, so the site works offline and on static hosting. Each one is loaded from here first, with the CDN copy as a fallback (see `src/libs.js`).
+Pinned copies of the third-party scripts Nexxo loads, so the site works offline and on static hosting. Each one is loaded from here first, with the CDN copy as a fallback (see `src/libs.js`, and `src/index.html` for d3 and MapLibre).
 
 | file | library | version | license |
 |---|---|---|---|
@@ -15,4 +15,4 @@ Pinned copies of the third-party scripts Nexxo loads, so the site works offline 
 | `jszip.min.js` | [JSZip](https://stuk.github.io/jszip/) | 3.10.1 | MIT or GPL-3.0 |
 | `shp.min.js` | [shpjs](https://github.com/calvinmetcalf/shapefile-js) | 6.2.0 | MIT |
 
-To update one, replace the file and change its version in `src/libs.js` so the CDN fallback matches.
+To update one, replace the file and change its version in `src/libs.js` (d3 and MapLibre: in `src/index.html`) so the CDN fallback matches.

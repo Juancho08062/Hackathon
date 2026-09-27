@@ -649,7 +649,7 @@ body.intro-open .app{visibility:hidden}
     <div class="in-copy">
       <h1>Where two utilities' planned work meets, and which meetings will really happen.</h1>
       <p>Neighboring utilities plan their transmission work years ahead, each on its own. Nexxo reads both plans, finds the projects close enough to share crews, yards and land, weighs how likely they are to be built at the same time, and says which few date changes would help most.</p>
-      <div class="in-cta"><button type="button" class="btn primary in-go big" data-enter>Open the map</button><span class="muted">Works offline · no sign-in</span></div>
+      <div class="in-cta"><button type="button" class="btn primary in-go big" data-enter>Open the map</button><span class="muted">Core works offline · no sign-in</span></div>
     </div>
     <img src="docs/screenshots/overview.jpg?v=2" alt="Nexxo: overlaps ranked next to the map" class="in-shot">
   </section>
@@ -829,7 +829,7 @@ body.intro-open .app{visibility:hidden}
         <li>Existing lines: OpenStreetMap (ODbL). Elevation: AWS Terrain Tiles (USGS 3DEP, SRTM). Imagery and topographic maps: Esri and its partners.</li>
       </ul>
       <h3>Software</h3>
-      <p class="note">MapLibre GL JS (BSD-3-Clause), three.js (MIT), d3 (ISC), SheetJS Community Edition (Apache-2.0), @tmcw/togeojson (BSD-2-Clause), JSZip (MIT), shpjs (MIT), IBM Plex fonts (OFL). The optional assistant uses Anthropic's API with the viewer's own key.</p>
+      <p class="note">MapLibre GL JS (BSD-3-Clause), three.js (MIT), d3 (ISC), SheetJS Community Edition (Apache-2.0), @tmcw/togeojson (BSD-2-Clause), JSZip (MIT), shpjs (MIT), IBM Plex fonts (OFL), Anthropic TypeScript SDK (MIT, loaded only when a key is used). The optional assistant uses Anthropic's API with the viewer's own key.</p>
     </div>
     <div class="ab-pane" data-pane="terms" hidden>
       <p>Nexxo is a planning aid. Distances, chances, savings and schedule moves are estimates worked out from public plans and round unit costs you can edit under Costs. They are not engineering, legal or financial advice, and not quotes.</p>
@@ -843,7 +843,7 @@ body.intro-open .app{visibility:hidden}
       <h3>Sent to Anthropic</h3>
       <p>Only when you ask Geo an open-ended question with your own key: the question and the Nexxo data Geo looks up to answer it. The example questions are answered inside the page and send nothing.</p>
       <h3>Other services the page contacts</h3>
-      <p>Map tiles and imagery (Esri), the existing-grid and place layers (OpenStreetMap data), elevation tiles (AWS), fonts (Google Fonts) and, if the bundled copies fail, library CDNs (jsDelivr, cdnjs). Like any web map, they receive your IP address.</p>
+      <p>Map tiles and imagery (Esri), elevation tiles (AWS), fonts (Google Fonts), the Anthropic SDK from jsDelivr when you use a key, and, if the bundled copies fail, library CDNs (jsDelivr, cdnjs). Like any web map, they receive your IP address.</p>
       <h3>Files you import</h3>
       <p>Read in your browser. Nothing is uploaded.</p>
     </div>
@@ -3350,7 +3350,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
         }
         if (walkBtn) { walkBtn.setAttribute("aria-pressed", on); walkBtn.textContent = on ? "Walking" : "Walk"; }
         if (foot) foot.textContent = on ? (canLock ? "Click the view, then move the mouse to look around (Esc frees the mouse). W A S D or the arrow keys walk, Shift runs."
-          : "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run.") + " Orbit returns to the overview." : orbitNote;
+          : "Walk with W A S D or the arrow keys, drag to look around, hold Shift to run.") + " Press Walking again to return to the overview." : orbitNote;
         if (!on && document.pointerLockElement === renderer.domElement) document.exitPointerLock();
       };
       const typing = e => /input|select|textarea/i.test(e.target.tagName);
