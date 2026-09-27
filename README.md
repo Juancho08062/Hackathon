@@ -4,6 +4,8 @@ Nexxo compares the planned transmission construction of two neighboring utilitie
 
 The built-in example is **Dominion Energy South Carolina** against **Georgia** (Georgia Power, Georgia Transmission and MEAG) along the Savannah River, built from the challenge's own PDFs plus the newer published lists. Any other utility's plan can be loaded from the files utilities publish (Excel, CSV, KML/KMZ, shapefile, GeoJSON, GPX).
 
+![Nexxo's intro page: what it does for any two utilities, and Open the map](docs/screenshots/intro.jpg)
+
 ![Nexxo: overlaps ranked by expected savings next to the map](docs/screenshots/overview.jpg)
 
 ## What makes it different
@@ -27,6 +29,8 @@ npm start            # python3 -m http.server 8000, then open http://localhost:8
 The Plain map and everything except the imagery, the 3D terrain and open-ended assistant questions work offline. The existing-grid layer is a separate file the page fetches, so it shows when the folder is served (`npm start`, GitHub Pages), not when `index.html` is opened straight from disk. The imagery and the terrain need an internet connection; open-ended questions to the assistant also need an Anthropic API key (see Geo below). The common questions are answered without one.
 
 ## The screen
+
+The page opens on a short intro (what Nexxo does for any two utilities, how it works in four steps, and **Open the map**); the app loads behind it, so entering is instant, and a shared link opens straight on the app.
 
 One screen, laid out like the coordination tools planners already use (Esri Capital Project Coordination, one.network): a map, the ranked overlaps beside it, and the build windows underneath, all linked. A labeled rail on the left switches the panel between Overlaps (which opens with four headline numbers: overlaps, expected savings, the joint-schedule gain and checks to review, plus distance chips that choose which routes the map and the list show; it opens on all of them), Changes, Plan (the schedule optimizer), Checks and Geo, and unfolds the build-windows chart under the map; Import and Costs sit at the bottom of the rail. A filter bar over the map keeps the distance chips, the distance limit and the build period in view, with More filters for the rest; Share, Export CSV, Import, Unit costs and About, terms and privacy sit under More. A tab on the side panel's edge hides it, leaving the rail and the map, and double-clicking a route brings it back on that route's pair.
 
