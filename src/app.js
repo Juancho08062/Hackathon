@@ -1209,7 +1209,8 @@ const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searc
 // or null when the pattern matcher is not confident — a half-understood question answered confidently is worse than
 // saying the model is needed. reason, when given, is why the model was unavailable.
 function answerOffline(q, reason, calls) {
-  const lang = askLang(), plan = SeamOffline.interpret(q, { projects: PROJECTS,
+  // a question asked in Spanish is answered in Spanish whatever the panel is set to; otherwise the panel's language
+  const lang = SeamOffline.language(q) === "es" ? "es" : askLang(), plan = SeamOffline.interpret(q, { projects: PROJECTS,
     pairKey: (a, b) => { const x = findPair(`${a}|${b}`); return x ? keyOf(x) : null; }, pairRank: key => { const x = findPair(key); return x ? x.km : 0; } });
   if (!plan) return null;
   CHAT.log.push({ role: "tool", text: TOOL_NOTE[plan.tool] || plan.tool });
@@ -1236,8 +1237,8 @@ async function sendQuestion(q) {
   // No key: answer by pattern if the question is one the tools cover, otherwise ask for the key and say what does work.
   if (!apiKey()) {
     const offline = answerOffline(q, null, calls);
-    const lang = askLang();
-    return finish(offline || `${SeamOffline.capabilities(lang)}\n\nFor anything else, add an Anthropic API key below.`);
+    const lang = SeamOffline.language(q) === "es" ? "es" : askLang();
+    return finish(offline || `${SeamOffline.capabilities(lang)}\n\n${lang === "es" ? "Para cualquier otra pregunta, agrega una API key de Anthropic abajo." : "For anything else, add an Anthropic API key below."}`);
   }
 
   CHAT.messages.push({ role: "user", content: q });

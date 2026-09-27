@@ -1,6 +1,6 @@
 # Nexxo
 
-Nexxo compares the planned transmission construction of two neighboring utilities, flags where their work overlaps (within 40 km, measured between the closest points), and tells planners which of those overlaps are **likely to really happen**, what coordinating them would save, and which few date moves would save the most.
+Nexxo compares the planned transmission construction of two neighboring utilities, flags where their work overlaps (within 40 km, measured between the closest points), and tells planners which of those overlaps are **likely to really happen**, what coordinating them would save, and which few date moves would save the most. And planners don't have to learn the tool to use it: they can ask **Geo**, the built-in assistant, in plain English or Spanish.
 
 The built-in example is **Dominion Energy South Carolina** against **Georgia** (Georgia Power, Georgia Transmission and MEAG) along the Savannah River, built from the challenge's own PDFs plus the newer published lists. Any other utility's plan can be loaded from the files utilities publish (Excel, CSV, KML/KMZ, shapefile, GeoJSON, GPX).
 
@@ -8,13 +8,32 @@ The built-in example is **Dominion Energy South Carolina** against **Georgia** (
 
 ![Nexxo: overlaps ranked by expected savings next to the map](docs/screenshots/overview.jpg)
 
+## Meet Geo: ask the plans in plain language
+
+Transmission planners know their projects, not our menus. Geo lets them ask the way they would ask a colleague, and answers from the same numbers the map and the tables show.
+
+| You ask | Geo |
+|---|---|
+| "Which overlaps near Augusta are most likely to happen?" | Ranks the pairs there by the chance both crews are really in the field together, with a bar chart. |
+| "Why isn't DESCP-10 paired with IRP-19523?" | Explains a rejection: their closest points are 40.45 km apart, just past the 40 km screen. |
+| "Which three date moves would save the most?" | Runs the schedule optimizer and lists the three moves that add the most, with what each adds. |
+| "Compare DESC-11 and IRP-20277" | Puts both projects side by side with the distance and pair status between them. |
+| "Write the brief for DESC-12|GA-39" | Opens the printable coordination brief, ready to send to both utilities. |
+| "¿Qué cambió entre los dos últimos planes de DESC?" | Answers in Spanish: how many dates moved, by how much, and which shared windows opened or closed. |
+
+- **Grounded, never estimated.** Geo runs Claude (`claude-opus-5`, with server-side fallbacks) with **14 tools** over Nexxo's own engine: search and rank projects, list and explain overlaps, compare projects, say why a pair is *not* flagged, plan changes, the schedule optimizer, the data checks, and four that act on the page (fly the map to an answer, open a pair's brief, the joint schedule proposal, or a report). The model frames; the engine calculates.
+- **A picture with every answer.** Under each answer Geo draws the matching diagram: a mini map with the closest-point gap for a distance question, the build windows against today for a timing question, the savings breakdown for a cost question, ranked bars for a ranking. It is drawn from the tool results, not from the prose, so the picture and the numbers cannot disagree.
+- **Works offline, without a key.** Each viewer can add their own Anthropic API key, which stays in their browser. Without one, or when the network drops mid-demo, a pattern-matching layer answers the common questions from the same tools and says so, and anything it can't place with confidence asks for a key instead of guessing.
+
+![Geo answering "Which three date moves would save the most?" with a chart, no API key needed](docs/screenshots/ask.jpg)
+
 ## What makes it different
 
 1. **It reads the plans itself.** A reproducible pipeline extracts all 44 DESC and 218 Georgia projects from the challenge PDFs, including each Georgia project's detail page (published start date, description, miles), places every end point on OpenStreetMap substations, and runs 10 validation checks on every rebuild. Every number traces back to a PDF page, a TEAMS number and how its location was found. It reproduces **all 6** overlaps in the challenge's reference table.
 2. **It knows plans move.** Comparing two editions of each utility's plan shows 23 of 30 DESC projects slipped (median 12 months). Nexxo turns that into a **chance** that each pair is really in the field together, from today on, and ranks pairs by **expected savings**. Of the 41 pairs that overlap on paper, 23 are less than 50% likely to still overlap; 13 pairs that don't overlap on paper are 50% or more likely to. The last plan updates opened 9 shared windows and closed 3.
 3. **It says what to do.** A schedule optimizer finds the 8 date moves (at most 6 months, projects not yet started) that raise expected savings from $13.6M to $16.1M, and prints a joint proposal for both utilities.
 4. **It shows the real place.** The map tilts into 3D over real terrain and satellite imagery, with towers along each planned line, across the river that separates the two states.
-5. **You can ask it.** Geo, the built-in assistant, answers plain-language questions, in English or Spanish, from the same data, flies the map to what it's talking about and opens the printable briefs. The common questions work with no API key.
+5. **You can just ask.** Geo answers plain-language questions in English or Spanish from the same data, with a diagram under every answer, and works without an API key for the common questions (see [Meet Geo](#meet-geo-ask-the-plans-in-plain-language)).
 
 ![A pair on satellite imagery in 3D, with its chance and expected savings](docs/screenshots/pair.jpg)
 
@@ -57,7 +76,6 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 
 ![The Plan tab: date moves that raise expected savings, shown on the map](docs/screenshots/optimize.jpg)
 
-![Geo with no API key: the three date moves that save the most, with a chart](docs/screenshots/ask.jpg)
 
 ## How overlap is defined
 
@@ -242,6 +260,28 @@ The model assumes each project moves once more, by an amount like the moves alre
 ## Validation report
 
 `scripts/build_projects.py` writes a list of checks into `data/model.json` every time the data is rebuilt: every row of both PDFs read, detail pages matched, start dates before need dates, TEAMS numbers unique, projects in two plans counted once, OpenStreetMap namesakes rejected, line end points consistent with the plan's line length, projects not placed, in-service dates already passed and plan-change notes not understood. Each check lists the records it caught.
+
+## What we built and what we used
+
+Everything under `src/`, `scripts/` and `tests/` was written for this project during ShellHacks 2026: the PDF extraction and substation locating pipeline, the overlap engine (closest-point distance, tiers, chance from plan drift, item-by-item costs), the schedule optimizer, Geo's tools and its offline pattern layer, the brief and reports, the importers' mapping to Nexxo's project format, the map layers, and the 3D scene. Development was assisted by AI coding tools.
+
+Third-party code, data and services it relies on:
+
+| | used for | license / terms |
+|---|---|---|
+| [MapLibre GL JS](https://maplibre.org) 5.24.0 | the map, 3D terrain | BSD-3-Clause |
+| [three.js](https://threejs.org) r128 and its examples (OrbitControls, Sky, post-processing passes) | the 3D pair illustration | MIT |
+| [d3](https://d3js.org) 7.9.0 | charts, Geo's diagrams | ISC |
+| [SheetJS CE](https://sheetjs.com) 0.18.5, [@tmcw/togeojson](https://github.com/placemark/togeojson) 5.8.1, [JSZip](https://stuk.github.io/jszip/) 3.10.1, [shpjs](https://github.com/calvinmetcalf/shapefile-js) 6.2.0 | reading Excel, KML/KMZ/GPX and shapefiles on import | Apache-2.0, BSD-2-Clause, MIT, MIT |
+| [pypdf](https://pypi.org/project/pypdf/) | reading the challenge PDFs in `scripts/` | BSD-3-Clause |
+| [Anthropic Claude API](https://docs.anthropic.com) | Geo's open-ended answers, only with the user's own key | Anthropic terms |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright), fetched through the Overpass API | substation locations and today's grid | ODbL |
+| Esri World Imagery and World Topo Map | Satellite and Topo basemaps, brief locator map | Esri terms of use |
+| [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen Terrarium, USGS 3DEP) | Relief map and 3D terrain | public data |
+| [IBM Plex](https://github.com/IBM/plex) via Google Fonts | type | OFL-1.1 |
+| ESLint, @xmldom/xmldom | lint and tests only | MIT |
+
+Pinned copies of the libraries are in `vendor/` (versions and licenses in [vendor/README.md](vendor/README.md)). The utility plans themselves are public filings, listed below.
 
 ## Data sources and caveats
 

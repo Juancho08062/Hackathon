@@ -29,7 +29,7 @@
   const KM_PER_MILE = 1.609344;
   const CHECKS = ["how reliable", "data quality", "data checks", "trust the data", "validation", "qué tan confiable", "que tan confiable", "calidad del dato", "calidad de los datos", "validacion", "confiar en"];
   const CHANGES = ["what changed", "changed between", "plan change", "plan changes", "moved between", "last two plans", "que cambio", "qué cambió", "cambios del plan", "cambio entre planes", "entre los dos planes", "ultimos dos planes"];
-  const MOVES = ["date move", "date moves", "which moves", "reschedule", "shift dates", "optimize", "optimise", "move dates", "fechas mover", "mover fechas", "que fechas", "reprogramar", "optimizar", "correr fechas"];
+  const MOVES = ["date move", "date moves", "which moves", "reschedule", "shift dates", "optimize", "optimise", "move dates", "fechas mover", "mover fechas", "que fechas", "reprogramar", "optimizar", "correr fechas", "movimientos de fecha", "movimiento de fecha", "movimientos de fechas", "mover la fecha", "cambios de fecha", "cambiar fechas"];
   const OVERVIEW = ["how many pairs", "pairs checked", "how many projects", "summary", "overview", "total savings", "cuantos pares", "pares revisados", "cuantos proyectos", "resumen", "ahorro total"];
   // The bottom of a ranking is only reachable by reversing it, since a limited number of rows comes back.
   const WORST = ["least", "lowest", "worst", "smallest saving", "fewest", "bottom", "menos ahorro", "el menor", "mas bajo", "peor", "el ultimo del ranking"];
@@ -334,6 +334,7 @@
       savingsTotal: (e, h) => `Expected savings ${e}; ${h} if every date holds.`,
       asOf: "As of",
       moved: "How the dates moved between plans:",
+      movedLine: v => `${v.later} later, ${v.earlier} earlier, ${v.unchanged} unchanged (median ${v.median_months} months, ${v.projects_with_history} with history)`,
       opened: n => `${n} shared ${n === 1 ? "window" : "windows"} opened by the latest plan:`,
       closed: n => `${n} shared ${n === 1 ? "window" : "windows"} closed:`,
       noDrift: "No shared window opened or closed between the two plans.",
@@ -378,6 +379,7 @@
       savingsTotal: (e, h) => `Ahorro esperado ${e}; ${h} si todas las fechas se mantienen.`,
       asOf: "Al",
       moved: "Cómo se movieron las fechas entre planes:",
+      movedLine: v => `${v.later} más tarde, ${v.earlier} antes, ${v.unchanged} sin cambio (mediana ${v.median_months} meses, ${v.projects_with_history} con historial)`,
       opened: n => `${n} ${n === 1 ? "ventana compartida que abrió" : "ventanas compartidas que abrieron"} con el plan nuevo:`,
       closed: n => `${n} ${n === 1 ? "ventana compartida que cerró" : "ventanas compartidas que cerraron"}:`,
       noDrift: "Ninguna ventana compartida abrió ni cerró entre los dos planes.",
@@ -449,7 +451,7 @@
 
   function renderChanges(r, L) {
     const out = [L.moved];
-    Object.entries(r.how_dates_moved || {}).forEach(([u, v]) => out.push(`  ${u}: ${v.later} later, ${v.earlier} earlier, ${v.unchanged} unchanged (median ${v.median_months} months, ${v.projects_with_history} with history)`));
+    Object.entries(r.how_dates_moved || {}).forEach(([u, v]) => out.push(`  ${u}: ${L.movedLine(v)}`));
     const opened = r.windows_opened || [], closed = r.windows_closed || [];
     if (!opened.length && !closed.length) out.push(L.noDrift);
     if (opened.length) { out.push(L.opened(opened.length)); opened.forEach(x => out.push(`  ${x.key} · ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
@@ -510,9 +512,29 @@
   };
 
   // Deterministic prose for a tool result: the same input always renders the same text.
+  // The tools return their data phrases in English (the model translates those itself). Without the model, a Spanish
+  // answer runs them through this table so no English is left in the reply.
+  const ES_DATA = [
+    [/\bmoved (.+?) (\d+) months? later\b/g, "movió $1 $2 meses más tarde"],
+    [/\bmoved (.+?) (\d+) months? earlier\b/g, "adelantó $1 $2 meses"],
+    [/\b(\d+) months? shared\b/g, "$1 meses compartidos"],
+    [/\b(\d+) (?:mo|months?) apart\b/g, "$1 meses de separación"],
+    [/\bsame window on paper\b/g, "misma ventana en el papel"],
+    [/\bin service\b/g, "entra en servicio"],
+    [/\bcost not published in the filing\b/g, "el filing no publica el costo"],
+    [/\blocation confidence (high|medium|low)\b/g, (m, c) => "confianza de ubicación " + ({ high: "alta", medium: "media", low: "baja" })[c]],
+    [/\bchance (\d+)% to (\d+)%/g, "probabilidad $1% a $2%"],
+    [/\blikely built\b/g, "probablemente ya construido"],
+    [/\bdate passed\b/g, "fecha pasada"],
+    [/\bnew line\b/g, "línea nueva"], [/\brebuild\b/g, "reconstrucción"], [/\bsubstation\b/g, "subestación"],
+    [/\bupgrade\b/g, "mejora"], [/\bgeneration\b/g, "generación"],
+    [/\b(\d+) months?\b/g, "$1 meses"],
+  ];
+  const toEs = text => ES_DATA.reduce((t, [re, to]) => t.replace(re, to), text);
   function render(tool, result, lang, input) {
     const L = T[lang === "es" ? "es" : "en"], fn = RENDER[tool];
-    return fn ? fn(result, L, lang === "es" ? "es" : "en", input) : JSON.stringify(result);
+    const text = fn ? fn(result, L, lang === "es" ? "es" : "en", input) : JSON.stringify(result);
+    return lang === "es" ? toEs(text) : text;
   }
   const note = (lang, reason) => T[lang === "es" ? "es" : "en"].offline(reason);
   const capabilities = lang => T[lang === "es" ? "es" : "en"].can;

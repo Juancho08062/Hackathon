@@ -356,3 +356,12 @@ t("the offline note names why the model was skipped", () => {
 });
 
 Promise.all(promises).then(() => console.log(`\n${n} tests passed`), err => { console.error(err); process.exit(1); });
+
+// A Spanish question is routed like its English twin, and a Spanish answer carries no English data phrases.
+t("Spanish questions route like English ones and Spanish answers translate the tools' data phrases", () => {
+  assert.strictEqual(O.language("¿Qué tres movimientos de fecha ahorrarían más?"), "es");
+  assert.strictEqual(O.interpret("¿Qué tres movimientos de fecha ahorrarían más?").tool, "optimize_schedule");
+  const text = O.render("no_such_tool", "moved DESC-12 11 months later; 4 months shared; 6 mo apart; in service; location confidence high", "es");
+  for (const en of ["moved", "months shared", "mo apart", "in service", "confidence high"]) assert(!text.includes(en), `${en} in: ${text}`);
+  assert(text.includes("11 meses más tarde") && text.includes("confianza de ubicación alta"), text);
+});
