@@ -51,6 +51,8 @@ One screen, laid out like the coordination tools planners already use (Esri Capi
 
 ![The 3D pair illustration: Plant McIntosh's combined-cycle unit, the shared laydown yard and the new line's towers](docs/screenshots/illustration.jpg)
 
+![Dropped in at ground level beside the Callaway Road - Thomson 500 kV line: the tower, the shared crew staging yard and the crew](docs/screenshots/walk.jpg)
+
 ![The Changes tab: how each utility's dates moved, and the shared windows the latest plans opened](docs/screenshots/changes.jpg)
 
 ![The Plan tab: date moves that raise expected savings, shown on the map](docs/screenshots/optimize.jpg)
