@@ -6,7 +6,7 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > Utilities plan years ahead, each on its own. DESC and Georgia build right across the Savannah River from each other, and nobody lines up their crews, yards or outages. FERC Order 1920 exists because of this. Nexxo finds where their plans meet, and more importantly, which of those meetings will actually happen.
 
-*On screen: the map. The grey and coloured lines underneath are today's grid, 10,092 real lines from OpenStreetMap; the bold ones are the plans.*
+*On screen: the map. The thin grey lines underneath are today's grid, 10,092 real lines from OpenStreetMap; the bold ones are the plans.*
 
 ## 0:20 – It reads the real plans (25 s)
 
@@ -26,13 +26,17 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 > So Nexxo turns that history into a chance. This pair is six months apart on paper, but there's a 68% chance both crews are in the field together, because DESC usually runs late. Pairs are ranked by expected savings, not by the plan's optimism.
 
+*Scroll to **What they can share**.*
+
+> And every pair is priced item by item, with the math on screen: one laydown yard instead of two, combined deliveries, one crew mobilization. For pair #6, 0.6 km apart, that includes 11 acres of right-of-way they don't have to buy twice. Every unit cost is editable.
+
 ## 1:25 – Walk the site (35 s)
 
 *With the pair still open, drag the orange figure from the right edge of the map and drop it on the blue Jasper–Okatie line. (Keep the pair open: from the full-region view the lines are too thin to hit and the figure lands on whatever is nearest.)*
 
 > Like Street View: drop the walker on any project and you're standing on the site.
 
-*In the 3D view hold **W** to walk toward the towers, drag to look at the substation and the shared yard.*
+*In the 3D view click once, hold **W** to walk toward the towers and move the mouse to look at the plant and the shared yard (Esc frees the mouse).*
 
 > Towers, the other utility's work, the shared yard where one crew could stage both jobs. Distances on the ground are to scale.
 

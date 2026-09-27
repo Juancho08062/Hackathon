@@ -4822,12 +4822,8 @@ function compute() {
     RESULT.pairs.forEach(x => { x.risk = risk(x); });
     // one yard serves sites within a day's drive, so clusters always use 40 km whatever the distance filter says
     CLUSTERS = Engine.clusters(RESULT.pairs, EXIST.filter(e => !e.backdrop), 40);
-    // The map opens on the closest distance band that has any pairs, so it starts uncluttered; each band chip
-    // pressed after that adds its routes.
-    if (!state.tiersSet && RESULT.pairs.length) {
-      const k = [0, 1, 2, 3].find(i => RESULT.pairs.some(x => x.tier === i));
-      state.tiers = new Set(k == null ? [0, 1, 2, 3, 4] : [k]); state.tiersSet = true;
-    }
+    // Every comparison opens on all distance bands, so the headline numbers and the ranked list are the whole result.
+    if (!state.tiersSet) { state.tiers = new Set([0, 1, 2, 3, 4]); state.tiersSet = true; }
   }
   VIEW = RESULT.pairs.filter(x => state.tiers.has(Math.min(x.tier, 4)) &&
     (state.past || (!isPast(x.p) && !isPast(x.q))) && inHorizon(x.p) && inHorizon(x.q) &&
