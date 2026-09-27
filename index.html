@@ -617,6 +617,26 @@ body.intro-open .app{visibility:hidden}
   .in-link{display:none}
 }
 
+/* ---------- button motion: a short lift on hover, eased out ---------- */
+.btn,.in-go,.wsugs button,button.kpi,.menu button{transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .3s,border-color .3s,box-shadow .3s,color .2s}
+.btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--ink3);box-shadow:0 6px 14px rgba(28,33,38,.12)}
+.btn.primary:hover:not(:disabled){transform:translateY(-2px);background:#2A6296;border-color:#2A6296;opacity:1;box-shadow:0 8px 18px rgba(31,78,121,.28)}
+.btn.big:hover:not(:disabled){transform:translateY(-3px)}
+.btn.light:hover{background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.wsugs button:hover,button.kpi:hover{transform:translateY(-2px)}
+.btn:active:not(:disabled),.wsugs button:active{transform:translateY(0);box-shadow:none;transition-duration:.08s}
+/* the header link gets an underline that grows from the left */
+.in-link{position:relative}
+.in-link::after{content:"";position:absolute;left:0;right:100%;bottom:-3px;height:1px;background:var(--accent);transition:right .25s cubic-bezier(.22,1,.36,1)}
+.in-link:hover::after{right:0}
+/* the 3D view and the printable brief keep their buttons still */
+.m3d-head .btn:hover:not(:disabled),.brief-bar .btn:hover:not(:disabled){transform:none;box-shadow:none}
+.m3d-head .btn:hover:not(:disabled){border-color:rgba(255,255,255,.25)}
+.brief-bar .btn:hover:not(:disabled){border-color:var(--line)}
+.brief-bar .btn.primary:hover:not(:disabled){background:var(--ink);border-color:var(--ink)}
+:root[data-theme="dark"] .btn.primary:hover:not(:disabled){background:#9BBCD9;border-color:#9BBCD9}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary:hover:not(:disabled){background:#9BBCD9;border-color:#9BBCD9}}
+
 </style>
 
 <div class="intro" id="intro" role="region" aria-label="About Nexxo">
@@ -631,7 +651,7 @@ body.intro-open .app{visibility:hidden}
       <p>Neighboring utilities plan their transmission work years ahead, each on its own. Nexxo reads both plans, finds the projects close enough to share crews, yards and land, weighs how likely they are to be built at the same time, and says which few date changes would help most.</p>
       <div class="in-cta"><button type="button" class="btn primary in-go big" data-enter>Open the map</button><span class="muted">Works offline · no sign-in</span></div>
     </div>
-    <img src="docs/screenshots/overview.jpg" alt="Nexxo: overlaps ranked next to the map" class="in-shot">
+    <img src="docs/screenshots/overview.jpg?v=2" alt="Nexxo: overlaps ranked next to the map" class="in-shot">
   </section>
   <div class="in-facts">
     <div><b>Any two utilities</b><span>Built-in example: Dominion Energy SC and Georgia along the Savannah River</span></div>
@@ -641,10 +661,10 @@ body.intro-open .app{visibility:hidden}
   </div>
   <section class="in-how" id="in-how">
     <h2 class="in-kicker">How it works</h2>
-    <div class="in-step"><i>01</i><div><h3>It reads the plans</h3><p>Project lists come straight from the published filings or any file a utility shares. Each project is placed on real substations, and validation checks flag what needs a human.</p></div><img src="docs/screenshots/overview.jpg" alt="" class="in-shot r"></div>
-    <div class="in-step"><i>02</i><div><h3>It knows plans move</h3><p>Distance is measured between the closest points, in four tiers from touching to 40 km. Comparing editions of each plan shows how dates slip, and turns that into the chance both crews are really in the field together.</p></div><img src="docs/screenshots/pair.jpg" alt="" class="in-shot"></div>
-    <div class="in-step"><i>03</i><div><h3>It says what to do</h3><p>Every opportunity is priced item by item: shared right-of-way, one laydown yard instead of two, combined deliveries and crews. A schedule optimizer finds the few date moves that add the most, and prints a proposal for both teams.</p></div><img src="docs/screenshots/optimize.jpg" alt="" class="in-shot"></div>
-    <div class="in-step"><i>04</i><div><h3>It shows the real place</h3><p>Satellite imagery over real terrain, today's grid underneath, and a 3D site you can walk. Geo, the built-in assistant, answers questions in English or Spanish.</p></div><img src="docs/screenshots/illustration.jpg" alt="" class="in-shot"></div>
+    <div class="in-step"><i>01</i><div><h3>It reads the plans</h3><p>Project lists come straight from the published filings or any file a utility shares. Each project is placed on real substations, and validation checks flag what needs a human.</p></div><img src="docs/screenshots/overview.jpg?v=2" alt="" class="in-shot r"></div>
+    <div class="in-step"><i>02</i><div><h3>It knows plans move</h3><p>Distance is measured between the closest points, in four tiers from touching to 40 km. Comparing editions of each plan shows how dates slip, and turns that into the chance both crews are really in the field together.</p></div><img src="docs/screenshots/pair.jpg?v=2" alt="" class="in-shot"></div>
+    <div class="in-step"><i>03</i><div><h3>It says what to do</h3><p>Every opportunity is priced item by item: shared right-of-way, one laydown yard instead of two, combined deliveries and crews. A schedule optimizer finds the few date moves that add the most, and prints a proposal for both teams.</p></div><img src="docs/screenshots/optimize.jpg?v=2" alt="" class="in-shot"></div>
+    <div class="in-step"><i>04</i><div><h3>It shows the real place</h3><p>Satellite imagery over real terrain, today's grid underneath, and a 3D site you can walk. Geo, the built-in assistant, answers questions in English or Spanish.</p></div><img src="docs/screenshots/illustration.jpg?v=2" alt="" class="in-shot"></div>
   </section>
   <section class="in-end">
     <div><b>See the overlaps on the map.</b><span>Start with the built-in example, or import your own plans.</span></div>

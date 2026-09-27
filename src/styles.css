@@ -607,3 +607,23 @@ body.intro-open .app{visibility:hidden}
   .in-end{flex-direction:column;align-items:flex-start}
   .in-link{display:none}
 }
+
+/* ---------- button motion: a short lift on hover, eased out ---------- */
+.btn,.in-go,.wsugs button,button.kpi,.menu button{transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .3s,border-color .3s,box-shadow .3s,color .2s}
+.btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--ink3);box-shadow:0 6px 14px rgba(28,33,38,.12)}
+.btn.primary:hover:not(:disabled){transform:translateY(-2px);background:#2A6296;border-color:#2A6296;opacity:1;box-shadow:0 8px 18px rgba(31,78,121,.28)}
+.btn.big:hover:not(:disabled){transform:translateY(-3px)}
+.btn.light:hover{background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.wsugs button:hover,button.kpi:hover{transform:translateY(-2px)}
+.btn:active:not(:disabled),.wsugs button:active{transform:translateY(0);box-shadow:none;transition-duration:.08s}
+/* the header link gets an underline that grows from the left */
+.in-link{position:relative}
+.in-link::after{content:"";position:absolute;left:0;right:100%;bottom:-3px;height:1px;background:var(--accent);transition:right .25s cubic-bezier(.22,1,.36,1)}
+.in-link:hover::after{right:0}
+/* the 3D view and the printable brief keep their buttons still */
+.m3d-head .btn:hover:not(:disabled),.brief-bar .btn:hover:not(:disabled){transform:none;box-shadow:none}
+.m3d-head .btn:hover:not(:disabled){border-color:rgba(255,255,255,.25)}
+.brief-bar .btn:hover:not(:disabled){border-color:var(--line)}
+.brief-bar .btn.primary:hover:not(:disabled){background:var(--ink);border-color:var(--ink)}
+:root[data-theme="dark"] .btn.primary:hover:not(:disabled){background:#9BBCD9;border-color:#9BBCD9}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary:hover:not(:disabled){background:#9BBCD9;border-color:#9BBCD9}}
