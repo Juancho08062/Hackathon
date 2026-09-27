@@ -304,7 +304,7 @@
   // ---------- render ----------
   const T = {
     en: {
-      none: "No pairs match that. Most planned projects genuinely do not overlap — widen the distance or the dates, or ask about a specific pair.",
+      none: "No pairs match that. Most planned projects do not overlap. Widen the distance or the dates, or ask about a specific pair.",
       pairs: n => `${n} flagged ${n === 1 ? "pair" : "pairs"}:`,
       pairsOf: (n, all) => `The first ${n} of ${all} flagged pairs:`,
       projectsOf: (n, all) => `The first ${n} of ${all} matching projects:`,
@@ -348,7 +348,7 @@
       can: "Without a model I can answer: the top overlaps, pairs within a distance you name, the most likely ones, pairs in the same build window, what is planned near a place, one project by id, one pair by key, what changed between plans, which date moves pay most, how many pairs were checked, and the data checks.",
     },
     es: {
-      none: "Ningún par cumple eso. La mayoría de los proyectos planeados de verdad no se solapan — amplía la distancia o las fechas, o pregunta por un par concreto.",
+      none: "Ningún par cumple eso. La mayoría de los proyectos planeados no se solapan. Amplía la distancia o las fechas, o pregunta por un par concreto.",
       pairs: n => `${n} ${n === 1 ? "par marcado" : "pares marcados"}:`,
       pairsOf: (n, all) => `Los primeros ${n} de ${all} pares marcados:`,
       projectsOf: (n, all) => `Los primeros ${n} de ${all} proyectos que coinciden:`,
@@ -402,7 +402,7 @@
     if (!rows.length) return L.none;
     const out = [`**${r.matching_pairs != null && r.matching_pairs > rows.length ? L.pairsOf(rows.length, r.matching_pairs) : L.pairs(rows.length)}**`, ""];
     rows.forEach((x, i) => {
-      out.push(`- **${i + 1}. ${x.key}** — ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` · *${L.ref}*` : ""}`);
+      out.push(`- **${i + 1}. ${x.key}** · ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` · *${L.ref}*` : ""}`);
       out.push(`  - ${x.project_a}`);
       out.push(`  - ${x.project_b}`);
       out.push(`  - ${x.windows_on_paper} · ${L.chance} **${pct(x.chance_of_shared_window)}** · ${L.expected} **${money(x.expected_savings_usd)}** (${money(x.savings_if_dates_hold_usd)} ${L.ifHold})`);
@@ -411,7 +411,7 @@
   }
 
   function renderProjectLine(p, L) {
-    return `**${p.id}** ${p.name} — ${p.utility}, ${p.kv} kV ${p.type}, ${L.inService} ${p.in_service}, ${p.cost_usd ? `${L.cost} ${money(p.cost_usd)}` : L.costRedacted}, ${L.confidence} ${p.location_confidence}`;
+    return `**${p.id}** ${p.name} · ${p.utility}, ${p.kv} kV ${p.type}, ${L.inService} ${p.in_service}, ${p.cost_usd ? `${L.cost} ${money(p.cost_usd)}` : L.costRedacted}, ${L.confidence} ${p.location_confidence}`;
   }
 
   function renderProject(p, L, lang) {
@@ -420,20 +420,20 @@
     out.push(`\`${p.construction}\` · ${p.source}`);
     if (p.overlaps) {
       out.push("", `**${L.overlapsWith(p.overlaps)}**`);
-      (p.top_overlaps || []).slice(0, 5).forEach(x => out.push(`- **${x.key}** — ${x.distance_km} km, ${tier(x.tier, lang)}, ${L.expected} ${money(x.expected_savings_usd)}`));
+      (p.top_overlaps || []).slice(0, 5).forEach(x => out.push(`- **${x.key}** · ${x.distance_km} km, ${tier(x.tier, lang)}, ${L.expected} ${money(x.expected_savings_usd)}`));
     }
     return out.join("\n");
   }
 
   function renderOverlap(x, L, lang) {
-    const out = [`${x.key} — ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` (${L.ref})` : ""}`];
+    const out = [`${x.key} · ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` (${L.ref})` : ""}`];
     out.push(renderProjectLine(x.project_a, L));
     out.push(renderProjectLine(x.project_b, L));
     out.push(`${L.window}: ${x.windows_on_paper}; ${L.chance} ${pct(x.chance_of_shared_window)}; ${L.expected} ${money(x.expected_savings_usd)}`);
     if ((x.shareable_items || []).length) {
       out.push("", `#### ${L.shareable}`, "", `| ${L.line || "Item"} | ${L.amount || "Saving"} |`, "| --- | --- |");
       x.shareable_items.forEach(it => out.push(`| ${it.item} | **${money(it.saving_usd)}** |`));
-      out.push("", ...x.shareable_items.map(it => `- *${it.item}* — ${it.math}`));
+      out.push("", ...x.shareable_items.map(it => `- *${it.item}*: ${it.math}`));
     }
     if (x.shared_yard) out.push(`${L.yard} ${x.shared_yard.near} (${x.shared_yard.km_to_sites.join(", ")} km)`);
     return out.join("\n");
@@ -452,8 +452,8 @@
     Object.entries(r.how_dates_moved || {}).forEach(([u, v]) => out.push(`  ${u}: ${v.later} later, ${v.earlier} earlier, ${v.unchanged} unchanged (median ${v.median_months} months, ${v.projects_with_history} with history)`));
     const opened = r.windows_opened || [], closed = r.windows_closed || [];
     if (!opened.length && !closed.length) out.push(L.noDrift);
-    if (opened.length) { out.push(L.opened(opened.length)); opened.forEach(x => out.push(`  ${x.key} — ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
-    if (closed.length) { out.push(L.closed(closed.length)); closed.forEach(x => out.push(`  ${x.key} — ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
+    if (opened.length) { out.push(L.opened(opened.length)); opened.forEach(x => out.push(`  ${x.key} · ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
+    if (closed.length) { out.push(L.closed(closed.length)); closed.forEach(x => out.push(`  ${x.key} · ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
     return out.join("\n");
   }
 
@@ -463,7 +463,7 @@
     const out = [L.movesHead(money(r.expected_savings_before_usd), money(r.after_usd))];
     const show = input && input.show;
     if (show && show < moves.length) { out.push(L.movesShown(show, moves.length)); moves = moves.slice().sort((a, b) => b.adds_usd - a.adds_usd).slice(0, show); }
-    moves.forEach(m => out.push(`  ${m.id} ${m.project} (${m.utility}): ${m.months > 0 ? "+" : ""}${m.months} months, ${m.in_service_from} → ${m.in_service_to}, +${money(m.adds_usd)}${m.strongest_effect ? ` — ${m.strongest_effect}` : ""}`));
+    moves.forEach(m => out.push(`  ${m.id} ${m.project} (${m.utility}): ${m.months > 0 ? "+" : ""}${m.months} months, ${m.in_service_from} → ${m.in_service_to}, +${money(m.adds_usd)}${m.strongest_effect ? `; ${m.strongest_effect}` : ""}`));
     return out.join("\n");
   }
 
@@ -478,7 +478,7 @@
     (r.projects || []).forEach(p => out.push(`- ${renderProjectLine(p, L)}`));
     out.push("");
     (r.between || []).forEach(b => {
-      out.push(`**${b.projects}** — ${b.distance_km} km, ${tier(b.tier, lang)} · ${b.windows}`);
+      out.push(`**${b.projects}** · ${b.distance_km} km, ${tier(b.tier, lang)} · ${b.windows}`);
       out.push(b.flagged_pair
         ? `  - ${L.flagged} \`${b.flagged_pair}\` · ${L.expected} **${money(b.expected_savings_usd)}**`
         : `  - ${b.why_not_flagged}`);

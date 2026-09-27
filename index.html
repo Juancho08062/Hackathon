@@ -14,15 +14,16 @@
    blue and orange are the two utilities, red to grey is how close a pair is, green is a shared build window,
    amber marks something to check. */
 :root{
-  --bg:#FFFFFF; --panel:#FFFFFF; --panel2:#F6F8FA; --ink:#1B1F23; --ink2:#57606A; --ink3:#6E7781;
-  --line:#D0D7DE; --grid:#EAEEF2; --land:#F4F4F1; --water:#E4EBEF; --river:#8FB6CC;
+  --bg:#F2F3F0; --panel:#FAFAF8; --panel2:#ECEEEA; --ink:#1C2126; --ink2:#545C63; --ink3:#6E767D;
+  --line:#D5D8D2; --grid:#E3E5E0; --land:#F1F1EC; --water:#E4EBEF; --river:#8FB6CC;
   --u0:#1668A8; --u1:#C4540E;
   --hot:#B42318; --hotsoft:#FFF5F4;
   --t0:#8F1D14; --t1:#C2410C; --t2:#D98014; --t3:#8C99A4;
-  --time:#1A7F37; --amber:#9A6700; --amberbg:#FFF8C5; --blue:#0969DA;
+  --time:#1D6B34; --amber:#8A5A00; --amberbg:#F6EFD9; --blue:#1F4E79;
+  --accent:#1F4E79; --on-accent:#FFFFFF;
   --seam:#8A5A1E;
-  --shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.12);
-  --r:6px; --r-sm:4px;
+  --shadow:0 1px 2px rgba(28,33,38,.10),0 2px 6px rgba(28,33,38,.08);
+  --r:4px; --r-sm:4px; --r-xs:2px;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --display:var(--body);
@@ -36,8 +37,9 @@
     --u0:#4C9BE0; --u1:#F0883E;
     --hot:#F85149; --hotsoft:#2A1618;
     --t0:#F85149; --t1:#F0883E; --t2:#D29922; --t3:#8B949E;
-    --time:#3FB950; --amber:#D29922; --amberbg:#2B2410; --blue:#58A6FF; --seam:#D6A460;
-    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.4);
+    --time:#3FB950; --amber:#D29922; --amberbg:#2B2410; --blue:#7FA7C9; --seam:#D6A460;
+    --accent:#7FA7C9; --on-accent:#0D1117;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.3);
   }
 }
 :root[data-theme="dark"]{
@@ -47,7 +49,8 @@
   --u0:#4C9BE0; --u1:#F0883E;
   --hot:#F85149; --hotsoft:#2A1618;
   --t0:#F85149; --t1:#F0883E; --t2:#D29922; --t3:#8B949E;
-  --time:#3FB950; --amber:#D29922; --amberbg:#2B2410; --blue:#58A6FF; --seam:#D6A460;
+  --time:#3FB950; --amber:#D29922; --amberbg:#2B2410; --blue:#7FA7C9; --seam:#D6A460;
+  --accent:#7FA7C9; --on-accent:#0D1117;
 }
 
 /* ---------- base ---------- */
@@ -69,16 +72,16 @@ select{padding-right:4px}
 .btn{font:inherit;font-size:12px;font-weight:500;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .btn:hover{background:var(--panel2)}
 .btn.sm{height:26px;padding:0 8px}
-.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-.btn.primary:hover{opacity:.9;background:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{opacity:.9;background:var(--accent)}
 .btn:disabled{opacity:.5;cursor:default}
-.btn.tog[aria-pressed=true],.btn[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.tog[aria-pressed=true],.btn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .link{font:inherit;font-size:12px;border:0;background:none;padding:0;color:var(--blue);cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:var(--panel)}
 .seg button{font:inherit;font-size:12px;border:0;border-left:1px solid var(--line);background:none;color:var(--ink);padding:0 9px;height:26px;cursor:pointer;white-space:nowrap}
 .seg button:first-child{border-left:0}
 .seg button:hover{background:var(--panel2)}
-.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:500}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);font-weight:500}
 .seg.sm button{height:24px;font-size:11px}
 .chk{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
 .chk input{margin:0}
@@ -101,11 +104,11 @@ h1.logo{margin:0;font-size:14px}
 .compare .vs{color:var(--ink3)}
 .asof{color:var(--ink2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* filters fold into a popover under the Filters button; the extra actions into the More menu */
-.filterbar{position:absolute;z-index:30;top:43px;right:92px;width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
+.filterbar{position:absolute;z-index:30;top:43px;right:92px;width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow)}
 .filterbar .grow{display:none}
 .filterbar .summary{flex-basis:100%;border-top:1px solid var(--grid);padding-top:8px}
 .morewrap{position:relative}
-.menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:180px;display:grid;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel);box-shadow:0 1px 3px rgba(27,31,35,.12),0 8px 24px rgba(27,31,35,.14)}
+.menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:180px;display:grid;padding:4px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow)}
 .menu button{font:inherit;text-align:left;border:0;background:none;color:var(--ink);padding:7px 10px;border-radius:4px;cursor:pointer}
 .menu button:hover,.menu button:focus-visible{background:var(--panel2)}
 .filterbar.off>*:not(.summary){opacity:.45;pointer-events:none}
@@ -114,19 +117,20 @@ h1.logo{margin:0;font-size:14px}
 /* option D: a labeled tool rail, one results panel that opens with headline numbers, then the map */
 .work{display:grid;grid-template-columns:64px minmax(400px,470px) minmax(0,1fr);min-height:0}
 .rail{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;overflow-x:hidden}
-.rail>button{position:relative;font:inherit;font-size:10.5px;width:56px;border:0;border-radius:6px;background:none;color:var(--ink2);padding:7px 0 6px;display:grid;justify-items:center;gap:3px;cursor:pointer}
-.rail>button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail>button{position:relative;font:inherit;font-size:10.5px;width:56px;border:0;border-radius:var(--r);background:none;color:var(--ink2);padding:7px 0 6px;display:grid;justify-items:center;gap:3px;cursor:pointer}
+.rail>button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter}
 .rail>button:hover{color:var(--ink);background:var(--panel2)}
-.rail>button[aria-selected=true],.rail>button[aria-pressed=true]{background:var(--panel2);color:var(--ink);font-weight:600}
+.rail>button[aria-selected=true],.rail>button[aria-pressed=true]{background:var(--panel2);color:var(--accent);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
 .rail .n{display:none}
-.rail .badge{position:absolute;top:3px;right:9px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--amber,#9A6700);color:#fff;font-size:9.5px;font-weight:600;display:grid;place-items:center}
+.rail .badge{position:absolute;top:3px;right:9px;min-width:15px;height:15px;padding:0 4px;border-radius:var(--r-xs);background:var(--amber,#8A5A00);color:#fff;font-size:9.5px;font-weight:600;display:grid;place-items:center}
 .rail .grow{flex:1}
 .side{border-right:1px solid var(--line)}
 /* headline tiles at the top of the Overlaps view */
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.kpi{font:inherit;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:8px 10px;display:grid;gap:1px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:-10px -12px 0;border-bottom:1px solid var(--line)}
+.kpi{font:inherit;text-align:left;border:0;border-left:1px solid var(--grid);border-radius:0;background:none;color:var(--ink);padding:10px 10px 10px 12px;white-space:nowrap;min-width:0;display:grid;gap:1px;align-content:start}
+.kpi:first-child{border-left:0}
 button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
-.kpi b{font-size:20px;font-weight:600;line-height:1.2}
+.kpi b{font-size:19px;font-weight:600;line-height:1.2;white-space:nowrap}
 .kpi span{font-size:12px;font-weight:500}
 .kpi small{font-size:11px;color:var(--ink2)}
 .left{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0;border-right:1px solid var(--line)}
@@ -137,14 +141,14 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 #map{position:absolute;inset:0;background:var(--water)}
 .maptools{position:absolute;top:10px;right:10px;left:10px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;z-index:2;pointer-events:none}
 .maptools>*{pointer-events:auto}
-.maptools .seg,.maptools .btn{box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.maptools .seg,.maptools .btn{box-shadow:0 1px 2px rgba(0,0,0,.10)}
 /* ---------- Geo, the assistant: its chat mark ---------- */
 .geo-ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
 .geo-ico circle{fill:currentColor;stroke:none}
 .rail .ask-tab .spark.geo-ico{fill:none;stroke:currentColor}
 .ask-sub{margin:-2px 0 8px;color:var(--ink2)}
 
-.legend{position:absolute;left:10px;bottom:10px;z-index:2;display:grid;gap:5px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);font-size:11.5px;box-shadow:0 1px 3px rgba(0,0,0,.12);max-width:calc(100% - 140px)}
+.legend{position:absolute;left:10px;bottom:10px;z-index:2;display:grid;gap:5px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);font-size:11.5px;box-shadow:0 1px 2px rgba(0,0,0,.08);max-width:calc(100% - 140px)}
 .lg-row{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
 .lg-row span{display:inline-flex;align-items:center;gap:5px}
 .ln{display:inline-block;width:20px;height:3px;border-radius:2px}
@@ -166,7 +170,7 @@ button.kpi{cursor:pointer} button.kpi:hover{background:var(--panel2)}
 .seam-tools button[aria-pressed=true] svg{color:#fff}
 /* both scale bars share one row (km left of mi) so the corner stack stays short and covers fewer map labels */
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale{margin-top:4px}.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale+.maplibregl-ctrl-scale{clear:none;margin-right:6px}
-.mread{position:absolute;z-index:3;left:50%;top:58px;transform:translateX(-50%);background:#fff;color:#1f2a30;border-radius:999px;padding:5px 14px;font:13px var(--body);box-shadow:0 1px 4px rgba(0,0,0,.3);white-space:nowrap}
+.mread{position:absolute;z-index:3;left:50%;top:58px;transform:translateX(-50%);background:#fff;color:#1f2a30;border-radius:var(--r);padding:5px 12px;font:13px var(--body);box-shadow:0 1px 2px rgba(0,0,0,.2);white-space:nowrap}
 .mread b{font-variant-numeric:tabular-nums}
 .ml-gap{display:none;pointer-events:none;font:600 11px var(--body);color:#1f2a30;background:rgba(255,255,255,.88);padding:1px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)}
 .ml-gap.on,.gaps-all .ml-gap,.ml-gap.ml-leg{display:block}
@@ -188,7 +192,7 @@ svg text{font-family:var(--body)}
    the assistant's mark, and pulses until the panel has been opened once. */
 .rail .ask-tab .spark{width:19px;height:19px;color:var(--blue);fill:currentColor;stroke:none}
 .rail .ask-tab[aria-selected=true] .spark{color:var(--ink)}
-.rail .ask-tab.nudge{color:var(--ink);animation:nudge 1.9s ease-in-out 4}
+.rail .ask-tab.nudge{color:var(--ink)}
 .panel{flex:1;overflow:auto;min-height:0;scroll-padding-top:34px}
 .ph{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .ph-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -196,7 +200,7 @@ svg text{font-family:var(--body)}
 .chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .chip{font:inherit;font-size:12px;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap}
 .chip:hover{background:var(--panel2)}
-.chip[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:500}
+.chip[aria-pressed=true]{border-color:var(--accent);background:var(--accent);color:var(--on-accent);font-weight:500}
 .chip i{width:8px;height:8px;border-radius:50%}
 .chips{flex-wrap:nowrap;gap:4px;flex:1;min-width:0}
 .ph-row .grow{display:none}
@@ -214,7 +218,7 @@ svg text{font-family:var(--body)}
 .tr .r b{font-weight:600}
 .dist{display:grid;gap:2px;justify-items:start}
 .sev{font-size:11px;font-weight:600;padding:0 5px;border-radius:3px;white-space:nowrap}
-.sev.s0{background:var(--t0);color:#fff} .sev.s1{background:#FEE4E2;color:#912018} .sev.s2{background:#FEF0C7;color:#93370D} .sev.s3,.sev.s4{background:var(--grid);color:var(--ink2)}
+.sev.s0{background:var(--t0);color:#fff} .sev.s1{background:none;color:var(--t1);box-shadow:inset 0 0 0 1px currentColor} .sev.s2{background:none;color:#9A5A00;box-shadow:inset 0 0 0 1px currentColor} .sev.s3,.sev.s4{background:var(--grid);color:var(--ink2)}
 .pair{display:grid;gap:1px;min-width:0}
 .pp{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pp i,.cmp i,.items i{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:0;background:var(--ua)}
@@ -239,7 +243,7 @@ svg text{font-family:var(--body)}
 .detail p{margin:0}
 .tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
 .tag{font-size:11px;font-weight:600;padding:0 5px;border-radius:3px}
-.tag.green{background:#DAFBE1;color:#116329}
+.tag.green{background:none;color:var(--time);box-shadow:inset 0 0 0 1px currentColor}
 .facts{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-sm)}
 .facts div{padding:7px 10px;border-left:1px solid var(--grid)} .facts div:first-child{border-left:0}
 .facts dt{font-size:11px;color:var(--ink2)} .facts dd{margin:0;font-size:15px;font-weight:600}
@@ -272,7 +276,7 @@ svg text{font-family:var(--body)}
 .hist{display:grid;gap:4px;font-size:12px}
 .hist svg{max-width:100%;height:auto}
 .check .st{font-size:11px;font-weight:600;padding:1px 5px;border-radius:3px;text-align:center;justify-self:start}
-.st.pass{background:#DAFBE1;color:#116329} .st.fixed{background:#DDF4FF;color:#0A4A7A} .st.warn{background:#FFF8C5;color:#7D4E00}
+.st.pass{background:none;color:var(--time);box-shadow:inset 0 0 0 1px currentColor} .st.fixed{background:none;color:var(--blue);box-shadow:inset 0 0 0 1px currentColor} .st.warn{background:none;color:var(--amber);box-shadow:inset 0 0 0 1px currentColor}
 .recs{margin:0;padding:6px 12px 10px 86px;list-style:none;display:grid;gap:3px;font-size:11.5px;color:var(--ink2);border-bottom:1px solid var(--grid);background:var(--panel2)}
 .recs b{color:var(--ink);font-weight:500}
 
@@ -345,7 +349,7 @@ svg text{font-family:var(--body)}
 .b-tab .tot td{font-weight:600;border-bottom:0}
 .brief ul,.brief ol{margin:0;padding-left:20px;display:grid;gap:3px}
 /* The just-outside band under the ranked list: deliberately quiet, since these pairs were rejected. */
-.band{margin:10px 12px 0;padding:8px 10px;border-left:2px solid var(--ink3);background:var(--panel2);font-size:11.5px;color:var(--ink2);line-height:1.5}
+.band{margin:10px 12px 0;padding:8px 10px;border:1px solid var(--grid);border-radius:var(--r);background:var(--panel2);font-size:11.5px;color:var(--ink2);line-height:1.5}
 .b-yard{margin:8px 0 0;padding:6px 10px;border-left:2px solid #8A5A1E;background:#F7F2EA}
 /* The assistant's framing paragraph. Marked apart from the rest of the brief on purpose: everything else on the
    page is filed or computed, and a reader is entitled to see which sentences a model wrote. */
@@ -432,7 +436,7 @@ body.modal-open .app{visibility:hidden}
    what it selects. */
 .ask-bar{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:11.5px}
 .flag{display:inline-flex;align-items:center;gap:4px;font:600 11px var(--body);letter-spacing:.04em;color:var(--ink2);
-  background:none;border:1px solid transparent;border-radius:999px;padding:3px 8px;cursor:pointer}
+  background:none;border:1px solid transparent;border-radius:var(--r-xs);padding:3px 8px;cursor:pointer}
 .flag span{font-size:13px;line-height:1}
 .flag:hover{color:var(--ink);border-color:var(--line)}
 .flag.on{color:var(--ink);background:var(--panel2);border-color:var(--line)}
@@ -445,11 +449,12 @@ body.modal-open .app{visibility:hidden}
 .msg{max-width:92%;font-size:13px;line-height:1.5}
 .msg p{margin:0 0 6px} .msg p:last-child{margin-bottom:0}
 .msg ul{margin:4px 0;padding-left:18px}
-.msg.user{align-self:flex-end;background:var(--ink);color:var(--bg);padding:7px 11px;border-radius:10px 10px 2px 10px;white-space:pre-wrap}
-.msg.assistant{align-self:flex-start;background:var(--panel2);border:1px solid var(--grid);padding:9px 12px;border-radius:10px 10px 10px 2px}
+.msg.user{align-self:stretch;max-width:100%;white-space:pre-wrap;padding:0 2px}
+.msg.user::before,.msg.assistant::before{content:attr(data-who);display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+.msg.assistant{align-self:stretch;max-width:100%;background:var(--panel2);padding:9px 12px;border-radius:var(--r)}
 /* Answer formatting. The assistant's replies are mostly ranked lists and figures, so the numbers get tabular alignment
    and the structure gets real lists and tables instead of one paragraph of line breaks. */
-.geo-fig{margin:8px 0 2px;padding:8px 8px 6px;background:var(--panel);border:1px solid var(--grid);border-radius:8px}
+.geo-fig{margin:8px 0 2px;padding:8px 8px 6px;background:var(--panel);border:1px solid var(--grid);border-radius:var(--r)}
 .geo-fig figcaption{font-size:11px;font-weight:600;color:var(--ink2);margin:0 0 4px}
 .geo-fig svg{display:block;width:100%;height:auto;font-family:var(--body);font-size:9.5px;fill:var(--ink)}
 .geo-fig .gf-num{font-family:var(--mono);font-size:9px;fill:var(--ink2)}
@@ -479,15 +484,14 @@ body.modal-open .app{visibility:hidden}
 .wl-head{margin:10px 0 4px;font-weight:600;color:var(--ink);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .wl{margin:0;padding:0;list-style:none;display:grid;gap:5px}
 .wl li{padding-left:13px;position:relative;line-height:1.45}
-.wl li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--blue);opacity:.55}
+.wl li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:0;background:var(--ink3)}
 .wl b{color:var(--ink);font-weight:600}
 .wl em{font-style:normal;text-decoration:underline;text-decoration-color:var(--ink3)}
 .wl-foot{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--grid)}
 .sugs{display:flex;gap:6px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:thin;flex:none}
 .sugs .chip{flex:none;height:auto;min-height:26px;padding:4px 9px;white-space:nowrap;max-width:44ch;overflow:hidden;text-overflow:ellipsis}
 .ask-hint{margin:8px 0 0;font-size:11.5px;color:var(--ink2);min-height:17px}
-.ask-hint b{font-weight:500;color:var(--ink);animation:hintin .45s ease-out}
-@keyframes hintin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ask-hint b{font-weight:500;color:var(--ink)}
 .ask-in{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--panel)}
 .ask-in textarea{flex:1;font:inherit;font-size:13px;resize:none;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink)}
 .ask-key .chk{justify-self:start}
@@ -502,21 +506,13 @@ body.modal-open .app{visibility:hidden}
 .peg.ghost{position:fixed;left:0;top:0;right:auto;bottom:auto;z-index:40;pointer-events:none;background:none;border:0;box-shadow:none;width:28px;height:46px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
 .peg.ghost.ok svg{fill:#FBB13C;stroke:#1A7F37;stroke-width:2}
 
-/* pastel chips re-toned for the dark theme so they don't glare on dark panels */
+/* badges are outlined in the tier or status colour, so the dark theme only needs the solid "touching" badge re-inked */
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) .sev.s0{color:#1B0A10}
-  :root:not([data-theme="light"]) .sev.s1{background:#4A1D1B;color:#FFB4A8}
-  :root:not([data-theme="light"]) .sev.s2{background:#43300F;color:#F2C774}
-  :root:not([data-theme="light"]) .tag.green,:root:not([data-theme="light"]) .st.pass{background:#12351F;color:#7EE2A0}
-  :root:not([data-theme="light"]) .st.fixed{background:#0F2E45;color:#8CC8FF}
-  :root:not([data-theme="light"]) .st.warn{background:#3A2E0B;color:#F2C774}
+  :root:not([data-theme="light"]) .sev.s2{color:#D29922}
 }
 :root[data-theme="dark"] .sev.s0{color:#1B0A10}
-:root[data-theme="dark"] .sev.s1{background:#4A1D1B;color:#FFB4A8}
-:root[data-theme="dark"] .sev.s2{background:#43300F;color:#F2C774}
-:root[data-theme="dark"] .tag.green,:root[data-theme="dark"] .st.pass{background:#12351F;color:#7EE2A0}
-:root[data-theme="dark"] .st.fixed{background:#0F2E45;color:#8CC8FF}
-:root[data-theme="dark"] .st.warn{background:#3A2E0B;color:#F2C774}
+:root[data-theme="dark"] .sev.s2{color:#D29922}
 
 /* Side panel hidden: the rail, the filter bar and the map fill the window. The column shrinks to nothing rather than
    leaving the grid, so the map keeps its column. */
@@ -524,7 +520,7 @@ body.modal-open .app{visibility:hidden}
 .work.min{grid-template-columns:64px 0 minmax(0,1fr)}
 .work.min .side{overflow:hidden;border:0;visibility:hidden}
 .paneltog{position:absolute;left:0;top:50%;z-index:4;transform:translateY(-50%);width:18px;height:44px;padding:0;display:grid;place-items:center;
-  border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;background:var(--panel);color:var(--ink2);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  border:1px solid var(--line);border-left:0;border-radius:0 var(--r) var(--r) 0;background:var(--panel);color:var(--ink2);cursor:pointer}
 .paneltog svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .paneltog:hover{color:var(--ink);background:var(--panel2)}
 .paneltog:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
@@ -543,12 +539,37 @@ body.modal-open .app{visibility:hidden}
 .mapbar{column-gap:16px}
 /* the strip under the map and the legend can both be closed */
 .left.tl-hidden .timeline{display:none}
-.xbtn,.lg-x{border:0;background:none;color:var(--ink2);font-size:18px;line-height:1;width:26px;height:26px;border-radius:6px;cursor:pointer;flex:none}
+.xbtn,.lg-x{border:0;background:none;color:var(--ink2);font-size:18px;line-height:1;width:26px;height:26px;border-radius:var(--r);cursor:pointer;flex:none}
 .xbtn:hover,.lg-x:hover{background:var(--panel2);color:var(--ink)}
 .legend{padding-right:30px}
 .lg-x{position:absolute;right:3px;top:3px;width:22px;height:22px;font-size:16px}
 .legend-show{position:absolute;left:10px;bottom:10px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .legend-show[hidden],.legend[hidden]{display:none}
+
+/* ---------- Geo: example questions, working state ---------- */
+.wsugs{display:grid;gap:4px;margin:10px 0 0}
+.wsugs button{font:inherit;font-size:12.5px;text-align:left;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);padding:6px 10px;cursor:pointer}
+.wsugs button:hover{background:var(--panel2)}
+.ask-bar .lang button{min-width:32px;font-weight:600;letter-spacing:.04em}
+/* While Geo works: the step it is on, a working bar, and placeholder lines where the answer will land. */
+.msg.busy{align-self:stretch;max-width:100%;display:grid;gap:6px;padding:9px 12px;border:1px solid var(--grid);border-radius:var(--r);font-size:12px;color:var(--ink2)}
+.pbar{display:block;height:3px;background:var(--grid);overflow:hidden;position:relative}
+.pbar i{position:absolute;inset:0 auto 0 0;width:35%;background:var(--accent);animation:pbar 1.4s ease-in-out infinite}
+@keyframes pbar{from{left:-35%}to{left:100%}}
+.skel{display:block;height:9px;width:88%;background:var(--grid);border-radius:var(--r-xs)}
+.skel.s2{width:64%}
+@media (prefers-reduced-motion: reduce){.pbar i{animation:none;width:100%;opacity:.5}}
+.mload{position:absolute;z-index:3;left:50%;top:12px;transform:translateX(-50%);display:grid;gap:5px;min-width:170px;padding:7px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);font-size:12px;color:var(--ink2)}
+.mload[hidden]{display:none}
+/* ---------- about, terms and privacy ---------- */
+.ab-tabs{justify-self:start}
+.ab-pane{display:grid;gap:8px;font-size:13px;line-height:1.55;max-width:68ch}
+.ab-pane[hidden]{display:none}
+.ab-pane p{margin:0}
+.ab-pane h3{margin:6px 0 0;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2)}
+.ab-pane ul{margin:0;padding-left:18px;display:grid;gap:4px}
+/* the brief's own toolbar keeps its original look */
+.brief-bar .btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 
 </style>
 
@@ -570,6 +591,7 @@ body.modal-open .app{visibility:hidden}
         <button type="button" role="menuitem" id="copy">Export CSV</button>
         <button type="button" role="menuitem" data-go="openImport">Import plans</button>
         <button type="button" role="menuitem" data-go="openAssume">Unit costs</button>
+        <button type="button" role="menuitem" id="aboutBtn">About, terms and privacy</button>
       </div>
     </div>
   </header>
@@ -597,7 +619,7 @@ body.modal-open .app{visibility:hidden}
       <button type="button" role="tab" id="tab-optimize" aria-selected="false" data-tab="optimize"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9"/></svg>Plan<span class="n" id="n-optimize"></span></button>
       <button type="button" id="railTl" aria-pressed="false" title="Show the build-windows chart under the map"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Windows</button>
       <button type="button" role="tab" id="tab-checks" aria-selected="false" data-tab="checks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Checks<span class="n" id="n-checks"></span><span class="badge" id="b-checks" hidden></span></button>
-      <button type="button" role="tab" id="tab-ask" aria-selected="false" data-tab="ask" class="ask-tab" title="Chat with Geo, the assistant — press again to close it"><svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>Geo</button>
+      <button type="button" role="tab" id="tab-ask" aria-selected="false" data-tab="ask" class="ask-tab" title="Chat with Geo, the assistant. Press again to close it."><svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>Geo</button>
       <span class="grow"></span>
       <button type="button" id="openImport" aria-expanded="false" aria-controls="import"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Import</button>
       <button type="button" id="openAssume"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v10c0 1.7 3 3 7 3s7-1.3 7-3V7"/></svg>Costs</button>
@@ -684,6 +706,43 @@ body.modal-open .app{visibility:hidden}
     <div class="sheet-head"><h2 id="asmTitle">Unit costs</h2><button type="button" class="btn" id="asmReset" hidden>Reset to defaults</button><button type="button" class="btn" data-close="assume">Close</button></div>
     <p class="note">Planning estimates, not quotes. Each shared item's saving is worked out from these numbers, and every pair updates when one changes. When one utility's cost is shared, each side saves its share (50% by default); a coordinated outage and a crossing designed once count in full. Check them against USDA NASS land values, the MISO Transmission Cost Estimation Guide, and local crane and heavy-haul rates.</p>
     <div class="asm-wrap" id="asmBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="about" hidden role="dialog" aria-modal="true" aria-labelledby="abTitle">
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="abTitle">About Nexxo</h2><button type="button" class="btn" data-close="about">Close</button></div>
+    <div class="seg ab-tabs" role="group" aria-label="Section">
+      <button type="button" data-pane="about" aria-pressed="true">About and sources</button><button type="button" data-pane="terms" aria-pressed="false">Terms</button><button type="button" data-pane="privacy" aria-pressed="false">Privacy</button>
+    </div>
+    <div class="ab-pane" data-pane="about">
+      <p>Nexxo compares the planned transmission construction of two neighboring utilities and flags the projects close enough, and soon enough, to share crews, yards, deliveries and outages. Built at ShellHacks 2026 for the Sperry Tech GridLock challenge.</p>
+      <h3>Data</h3>
+      <ul>
+        <li>Dominion Energy South Carolina: SCRTP project lists 2024-2028 and 2026-2030.</li>
+        <li>Georgia (Georgia Power, Georgia Transmission, MEAG): Georgia Power 2025 IRP, Volume 3, ten-year transmission plan; SERTP 2026.</li>
+        <li>Locations: OpenStreetMap substation and plant names (&copy; OpenStreetMap contributors, ODbL), the challenge's reference table, and hand placement. Each project records how it was placed.</li>
+        <li>Existing lines: OpenStreetMap (ODbL). Elevation: AWS Terrain Tiles (USGS 3DEP, SRTM). Imagery and topographic maps: Esri and its partners.</li>
+      </ul>
+      <h3>Software</h3>
+      <p class="note">MapLibre GL JS (BSD-3-Clause), three.js (MIT), d3 (ISC), SheetJS Community Edition (Apache-2.0), @tmcw/togeojson (BSD-2-Clause), JSZip (MIT), shpjs (MIT), IBM Plex fonts (OFL). The optional assistant uses Anthropic's API with the viewer's own key.</p>
+    </div>
+    <div class="ab-pane" data-pane="terms" hidden>
+      <p>Nexxo is a planning aid. Distances, chances, savings and schedule moves are estimates worked out from public plans and round unit costs you can edit under Costs. They are not engineering, legal or financial advice, and not quotes.</p>
+      <p>Plan data is shown as published, with the corrections the Checks tab lists. Confirm any figure with the utilities involved before acting on it.</p>
+      <p>The page is provided as is, without warranty of any kind. Map data, imagery and elevation remain subject to their providers' own terms.</p>
+    </div>
+    <div class="ab-pane" data-pane="privacy" hidden>
+      <p>Nexxo is a static web page. There is no Nexxo server and no account.</p>
+      <h3>Stored in your browser</h3>
+      <p>Your view settings (basemap, filters, language, the coordination status you set on pairs). An Anthropic API key, only if you add one: kept for this tab, or on this device if you tick Remember. Change key removes it.</p>
+      <h3>Sent to Anthropic</h3>
+      <p>Only when you ask Geo an open-ended question with your own key: the question and the Nexxo data Geo looks up to answer it. The example questions are answered inside the page and send nothing.</p>
+      <h3>Other services the page contacts</h3>
+      <p>Map tiles and imagery (Esri), the existing-grid and place layers (OpenStreetMap data), elevation tiles (AWS), fonts (Google Fonts) and, if the bundled copies fail, library CDNs (jsDelivr, cdnjs). Like any web map, they receive your IP address.</p>
+      <h3>Files you import</h3>
+      <p>Read in your browser. Nothing is uploaded.</p>
+    </div>
   </div>
 </div>
 
@@ -3783,9 +3842,10 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
         { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
         { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
-        // existing lines by voltage, kept quiet under the plans: grey 115, violet 161, magenta 230, teal 500 kV
+        // existing lines by voltage, kept quiet under the plans: one grey family, darker and wider as the voltage rises,
+        // so the only saturated colours on the map are the two utilities' plans and the tier rings
         { id: "grid", type: "line", source: "grid", layout: { "line-join": "round" }, paint: {
-          "line-color": ["step", ["get", "kv"], "#8E9AA6", 161, "#8E7CB8", 230, "#A05BA8", 500, "#0097A7"],
+          "line-color": ["step", ["get", "kv"], "#A3AAB0", 161, "#8F979E", 230, "#7A838B", 500, "#5E6870"],
           "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["step", ["get", "kv"], 0.5, 230, 0.8, 500, 1.2], 12, ["step", ["get", "kv"], 1.2, 230, 1.8, 500, 2.6]],
           "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 11, 0.6] } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
@@ -3913,6 +3973,14 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     is3d = on;
     // The Southeast is low (sea level to a few hundred metres), so relief is exaggerated 3× to be seen.
     try { map.setTerrain(on ? { source: "dem", exaggeration: 3 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
+    // the elevation tiles take a moment to arrive; say so until the map has drawn them
+    if (on) {
+      const box = map.getContainer();
+      let note = box.querySelector(".mload");
+      if (!note) { note = document.createElement("div"); note.className = "mload"; note.setAttribute("role", "status"); box.appendChild(note); }
+      note.innerHTML = `<span>Loading elevation</span><span class="pbar"><i></i></span>`; note.hidden = false;
+      map.once("idle", () => { note.hidden = true; });
+    } else { const note = map.getContainer().querySelector(".mload"); if (note) note.hidden = true; }
     try { map.setSky(on ? SKY : null); } catch (err) { /* sky is decoration only */ }
     shade();
     map.setLayoutProperty("towers", "visibility", on ? "visible" : "none");
@@ -4436,7 +4504,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
   // ---------- render ----------
   const T = {
     en: {
-      none: "No pairs match that. Most planned projects genuinely do not overlap — widen the distance or the dates, or ask about a specific pair.",
+      none: "No pairs match that. Most planned projects do not overlap. Widen the distance or the dates, or ask about a specific pair.",
       pairs: n => `${n} flagged ${n === 1 ? "pair" : "pairs"}:`,
       pairsOf: (n, all) => `The first ${n} of ${all} flagged pairs:`,
       projectsOf: (n, all) => `The first ${n} of ${all} matching projects:`,
@@ -4480,7 +4548,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
       can: "Without a model I can answer: the top overlaps, pairs within a distance you name, the most likely ones, pairs in the same build window, what is planned near a place, one project by id, one pair by key, what changed between plans, which date moves pay most, how many pairs were checked, and the data checks.",
     },
     es: {
-      none: "Ningún par cumple eso. La mayoría de los proyectos planeados de verdad no se solapan — amplía la distancia o las fechas, o pregunta por un par concreto.",
+      none: "Ningún par cumple eso. La mayoría de los proyectos planeados no se solapan. Amplía la distancia o las fechas, o pregunta por un par concreto.",
       pairs: n => `${n} ${n === 1 ? "par marcado" : "pares marcados"}:`,
       pairsOf: (n, all) => `Los primeros ${n} de ${all} pares marcados:`,
       projectsOf: (n, all) => `Los primeros ${n} de ${all} proyectos que coinciden:`,
@@ -4534,7 +4602,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     if (!rows.length) return L.none;
     const out = [`**${r.matching_pairs != null && r.matching_pairs > rows.length ? L.pairsOf(rows.length, r.matching_pairs) : L.pairs(rows.length)}**`, ""];
     rows.forEach((x, i) => {
-      out.push(`- **${i + 1}. ${x.key}** — ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` · *${L.ref}*` : ""}`);
+      out.push(`- **${i + 1}. ${x.key}** · ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` · *${L.ref}*` : ""}`);
       out.push(`  - ${x.project_a}`);
       out.push(`  - ${x.project_b}`);
       out.push(`  - ${x.windows_on_paper} · ${L.chance} **${pct(x.chance_of_shared_window)}** · ${L.expected} **${money(x.expected_savings_usd)}** (${money(x.savings_if_dates_hold_usd)} ${L.ifHold})`);
@@ -4543,7 +4611,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
   }
 
   function renderProjectLine(p, L) {
-    return `**${p.id}** ${p.name} — ${p.utility}, ${p.kv} kV ${p.type}, ${L.inService} ${p.in_service}, ${p.cost_usd ? `${L.cost} ${money(p.cost_usd)}` : L.costRedacted}, ${L.confidence} ${p.location_confidence}`;
+    return `**${p.id}** ${p.name} · ${p.utility}, ${p.kv} kV ${p.type}, ${L.inService} ${p.in_service}, ${p.cost_usd ? `${L.cost} ${money(p.cost_usd)}` : L.costRedacted}, ${L.confidence} ${p.location_confidence}`;
   }
 
   function renderProject(p, L, lang) {
@@ -4552,20 +4620,20 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     out.push(`\`${p.construction}\` · ${p.source}`);
     if (p.overlaps) {
       out.push("", `**${L.overlapsWith(p.overlaps)}**`);
-      (p.top_overlaps || []).slice(0, 5).forEach(x => out.push(`- **${x.key}** — ${x.distance_km} km, ${tier(x.tier, lang)}, ${L.expected} ${money(x.expected_savings_usd)}`));
+      (p.top_overlaps || []).slice(0, 5).forEach(x => out.push(`- **${x.key}** · ${x.distance_km} km, ${tier(x.tier, lang)}, ${L.expected} ${money(x.expected_savings_usd)}`));
     }
     return out.join("\n");
   }
 
   function renderOverlap(x, L, lang) {
-    const out = [`${x.key} — ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` (${L.ref})` : ""}`];
+    const out = [`${x.key} · ${x.distance_km} km, ${tier(x.tier, lang)}${x.challenge_reference ? ` (${L.ref})` : ""}`];
     out.push(renderProjectLine(x.project_a, L));
     out.push(renderProjectLine(x.project_b, L));
     out.push(`${L.window}: ${x.windows_on_paper}; ${L.chance} ${pct(x.chance_of_shared_window)}; ${L.expected} ${money(x.expected_savings_usd)}`);
     if ((x.shareable_items || []).length) {
       out.push("", `#### ${L.shareable}`, "", `| ${L.line || "Item"} | ${L.amount || "Saving"} |`, "| --- | --- |");
       x.shareable_items.forEach(it => out.push(`| ${it.item} | **${money(it.saving_usd)}** |`));
-      out.push("", ...x.shareable_items.map(it => `- *${it.item}* — ${it.math}`));
+      out.push("", ...x.shareable_items.map(it => `- *${it.item}*: ${it.math}`));
     }
     if (x.shared_yard) out.push(`${L.yard} ${x.shared_yard.near} (${x.shared_yard.km_to_sites.join(", ")} km)`);
     return out.join("\n");
@@ -4584,8 +4652,8 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     Object.entries(r.how_dates_moved || {}).forEach(([u, v]) => out.push(`  ${u}: ${v.later} later, ${v.earlier} earlier, ${v.unchanged} unchanged (median ${v.median_months} months, ${v.projects_with_history} with history)`));
     const opened = r.windows_opened || [], closed = r.windows_closed || [];
     if (!opened.length && !closed.length) out.push(L.noDrift);
-    if (opened.length) { out.push(L.opened(opened.length)); opened.forEach(x => out.push(`  ${x.key} — ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
-    if (closed.length) { out.push(L.closed(closed.length)); closed.forEach(x => out.push(`  ${x.key} — ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
+    if (opened.length) { out.push(L.opened(opened.length)); opened.forEach(x => out.push(`  ${x.key} · ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
+    if (closed.length) { out.push(L.closed(closed.length)); closed.forEach(x => out.push(`  ${x.key} · ${x.pair} (${x.distance_km} km): ${x.moved.join("; ")}`)); }
     return out.join("\n");
   }
 
@@ -4595,7 +4663,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     const out = [L.movesHead(money(r.expected_savings_before_usd), money(r.after_usd))];
     const show = input && input.show;
     if (show && show < moves.length) { out.push(L.movesShown(show, moves.length)); moves = moves.slice().sort((a, b) => b.adds_usd - a.adds_usd).slice(0, show); }
-    moves.forEach(m => out.push(`  ${m.id} ${m.project} (${m.utility}): ${m.months > 0 ? "+" : ""}${m.months} months, ${m.in_service_from} → ${m.in_service_to}, +${money(m.adds_usd)}${m.strongest_effect ? ` — ${m.strongest_effect}` : ""}`));
+    moves.forEach(m => out.push(`  ${m.id} ${m.project} (${m.utility}): ${m.months > 0 ? "+" : ""}${m.months} months, ${m.in_service_from} → ${m.in_service_to}, +${money(m.adds_usd)}${m.strongest_effect ? `; ${m.strongest_effect}` : ""}`));
     return out.join("\n");
   }
 
@@ -4610,7 +4678,7 @@ window.NEXXO_DATA = { basemap: {"states":[{"id":"04","n":"Arizona","g":{"type":"
     (r.projects || []).forEach(p => out.push(`- ${renderProjectLine(p, L)}`));
     out.push("");
     (r.between || []).forEach(b => {
-      out.push(`**${b.projects}** — ${b.distance_km} km, ${tier(b.tier, lang)} · ${b.windows}`);
+      out.push(`**${b.projects}** · ${b.distance_km} km, ${tier(b.tier, lang)} · ${b.windows}`);
       out.push(b.flagged_pair
         ? `  - ${L.flagged} \`${b.flagged_pair}\` · ${L.expected} **${money(b.expected_savings_usd)}**`
         : `  - ${b.why_not_flagged}`);
@@ -4927,7 +4995,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
-    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#A3AAB0;height:1px"></i>115</span><span><i class="ln" style="background:#8F979E;height:2px"></i>161</span><span><i class="ln" style="background:#7A838B;height:2px"></i>230</span><span><i class="ln" style="background:#5E6870;height:3px"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     `<button type="button" class="lg-x" aria-label="Close the legend" title="Close the legend">×</button>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
@@ -5043,10 +5111,10 @@ function renderKpis() {
   const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
   const gain = o && o.moves.length ? o.after - o.before : 0;
   const part = VIEW.length !== RESULT.pairs.length;
-  el.innerHTML = `<div class="kpi"><b>${VIEW.length}</b><span>${part ? "overlaps shown" : "overlaps"}</span><small>${part ? `of ${RESULT.pairs.length} flagged · ${RESULT.checked.toLocaleString()} checked` : `of ${RESULT.checked.toLocaleString()} pairs checked`}</small></div>
-    <div class="kpi"><b>${money(exp)}</b><span>expected savings</span><small>${money(plan)} if every date held</small></div>
-    <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " suggested date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
-    <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks to review</small></button>`;
+  el.innerHTML = `<div class="kpi"><b>${VIEW.length}</b><span>${part ? "shown" : "overlaps"}</span><small>${part ? `of ${RESULT.pairs.length} flagged` : `of ${RESULT.checked.toLocaleString()} pairs`}</small></div>
+    <div class="kpi"><b>${money(exp)}</b><span>expected</span><small>${money(plan)} if dates hold</small></div>
+    <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
+    <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks</small></button>`;
   el.querySelectorAll("[data-kt]").forEach(b => b.onclick = () => goTab(b.dataset.kt));
 }
 function renderPanel() {
@@ -5137,7 +5205,7 @@ function renderOverlaps(P) {
   const band = borderline();
   if (band.length) {
     const close = band.slice(0, 3).map(x => `${esc(short(x.p))} / ${esc(short(x.q))} at ${x.km.toFixed(1)} km`).join("; ");
-    R.insertAdjacentHTML("beforeend", `<p class="band">${band.length} more pair${band.length === 1 ? "" : "s"} sit just outside the ${state.D} km screen &mdash; closest ${close}. Kept out of the ranking and the totals; shown because ${state.D} km is a chosen threshold, not a cliff.</p>`);
+    R.insertAdjacentHTML("beforeend", `<p class="band">${band.length} more pair${band.length === 1 ? "" : "s"} sit just outside the ${state.D} km screen. Closest: ${close}. Kept out of the ranking and the totals; shown because ${state.D} km is a chosen threshold, not a cliff.</p>`);
   }
 }
 function renderSoloRows() {
@@ -5425,12 +5493,13 @@ How Nexxo measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version — open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves — and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.
+The section below the prompt tells you what is loaded (counts, filters, totals and the five strongest pairs), so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it, but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes (the biggest, longest, highest-voltage, earliest or latest project), use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version (open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves), and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.
 
-The page draws a diagram under each answer from the tools you called this turn: a mini map with the closest-point gap for a distance question, the build windows against today for a timing question, the savings breakdown for a cost question, ranked bars for a list. So call the tool that holds the data for what was asked (get_overlap for one pair, list_overlaps or search_projects for a list), even when the summary already has the figure, and never draw diagrams in text yourself.`;
+The page draws a diagram under each answer from the tools you called this turn: a mini map with the closest-point gap for a distance question, the build windows against today for a timing question, the savings breakdown for a cost question, ranked bars for a list. So call the tool that holds the data for what was asked (get_overlap for one pair, list_overlaps or search_projects for a list), even when the summary already has the figure, and never draw diagrams in text yourself.
+Write plainly: no em dashes (use a comma, colon or full stop), no emoji, no exclamation marks.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
-  { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
+  { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes: the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
     query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'. Omit to rank everything." },
     utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" },
     sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to order the results. cost covers Dominion only; kv and length_km cover both utilities." },
@@ -5439,7 +5508,7 @@ const TOOLS = [
   { name: "get_project", description: "Everything Nexxo knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
   { name: "list_overlaps", description: "Ranked flagged pairs of projects (one from each utility). Filter and sort them; each row has a key for get_overlap and show_on_map.", input_schema: { type: "object", properties: {
     sort: { type: "string", enum: ["expected", "chance", "distance"], description: "expected = expected savings (default), chance = chance of a shared window, distance = closest first" },
-    order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking — the least valuable pairs, or the farthest apart — since only `limit` rows come back." },
+    order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking (the least valuable pairs, or the farthest apart), since only `limit` rows come back." },
     max_distance_km: { type: "number", description: "Only pairs at most this far apart" },
     min_chance: { type: "number", description: "Only pairs with at least this chance (0 to 1)" },
     same_window_on_paper: { type: "boolean", description: "true: only pairs whose planned windows overlap; false: only pairs that don't" },
@@ -5451,7 +5520,7 @@ const TOOLS = [
   { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
   { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
   { name: "show_on_map", description: "Select a pair or a project in Nexxo so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
-  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Nexxo flagged them as a coordination pair. Use this for any question of the form 'compare A and B' — reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
+  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Nexxo flagged them as a coordination pair. Use this for any question of the form 'compare A and B'; reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
     project_ids: { type: "array", items: { type: "string" }, description: "Two to five project ids, e.g. ['DESC-11', 'IRP-20277']" } }, required: ["project_ids"] } },
   { name: "why_not", description: "Why two specific projects are NOT flagged as an opportunity: too far apart, the same utility, a location that could not be established, or one of them already likely built. Most pairs do not overlap, so use this whenever the user asks about a pair that is missing from the list rather than guessing at the reason.", input_schema: { type: "object", properties: {
     project_id_a: { type: "string", description: "A project id, e.g. DESC-12" },
@@ -5460,7 +5529,7 @@ const TOOLS = [
     key: { type: "string", description: "Pair key from list_overlaps, 'PROJECTID|PROJECTID'" },
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing why this pair is worth coordinating. This is the only text in the brief you write; every figure in it is computed from the plans." } }, required: ["key"] } },
   { name: "open_report", description: "Open a printable report over the whole comparison rather than one pair: the totals, the projects ranked by whichever measure the user asked for, the strongest coordination opportunities, and what the data does and does not cover. The reader can save it as PDF from the document. Use it when someone asks for a report, a list they can keep, or something to send that is not about a single pair.", input_schema: { type: "object", properties: {
-    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to rank the project table. Default cost, which only Dominion publishes — prefer kv or length_km when the question covers both utilities." },
+    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to rank the project table. Default cost, which only Dominion publishes; prefer kv or length_km when the question covers both utilities." },
     order: { type: "string", enum: ["desc", "asc"] },
     utility: { type: "string", description: "Optional: restrict the project table to one utility code, e.g. DESC" },
     limit: { type: "integer", description: "Rows in the project table, default 20, at most 40" },
@@ -5478,7 +5547,7 @@ function dataDigest() {
   const priced = PROJECTS.filter(p => p.cost);
   const dates = PROJECTS.map(p => p.in_service).filter(Boolean).sort();
   const top = RESULT.pairs.slice(0, 5).map(x =>
-    `  ${keyOf(x)} — ${x.km.toFixed(1)} km, ${TIERS[Math.min(x.tier, 4)].label}, ${x.sameWindow ? "same window on paper" : `${Math.round(x.gap)} mo apart`}, expected ${Engine.fmtMoney(x.risk.expected)}`).join("\n");
+    `  ${keyOf(x)} · ${x.km.toFixed(1)} km, ${TIERS[Math.min(x.tier, 4)].label}, ${x.sameWindow ? "same window on paper" : `${Math.round(x.gap)} mo apart`}, expected ${Engine.fmtMoney(x.risk.expected)}`).join("\n");
   const lines = [
     `As of ${TODAY}. Comparing ${utilities().map(u => `${lblLong(u)} (${u}, ${PROJECTS.filter(p => p.utility === u).length} projects)`).join(" against ")}.`,
     `In-service dates run ${dates[0]} to ${dates[dates.length - 1]}. ${priced.length} of ${PROJECTS.length} projects publish a cost; the rest are redacted in their filing, so no figure may be attributed to them.`,
@@ -5743,22 +5812,23 @@ function renderAsk(P) {
       ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
         <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
-        <span class="note">Geo runs in your browser and sends your question, plus the Nexxo data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
-      : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
+        <span class="note">Geo runs in your browser and sends your question, plus the Nexxo data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else. <button type="button" class="link" data-about="privacy">Privacy</button></span>`
+      : `<span><button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button> · <button type="button" class="link" data-about="privacy">Privacy</button></span>`;
   const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
     <div class="ask-bar">
       <span class="muted">${esc(C.bar)}</span><span class="grow"></span>
-      ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
+      <span class="seg sm lang" role="group" aria-label="Answer language">${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}">${c.code}</button>`).join("")}</span>
     </div>
-    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text) + (m.fig || "")}</div>`).join("")
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}"${m.role === "user" ? ` data-who="${esc(C.you)}"` : m.role === "assistant" ? ' data-who="Geo"' : ""}>${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text) + (m.fig || "")}</div>`).join("")
       : askWelcome()}
-      ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
-    <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
+      ${CHAT.busy ? `<div class="msg busy" role="status"><span>${esc((CHAT.log.length && CHAT.log[CHAT.log.length - 1].role === "tool" && CHAT.log[CHAT.log.length - 1].text) || C.thinking)}</span><span class="pbar"><i></i></span><span class="skel"></span><span class="skel s2"></span></div>` : ""}</div>
+    ${CHAT.log.length ? `<div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>` : ""}
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = CHAT.log.length ? log.scrollHeight : 0; // the greeting reads from the top
   cycleHint();
+  P.querySelectorAll("[data-about]").forEach(b => b.onclick = () => openAbout(b.dataset.about));
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
   // asking: is this key good? The panel is mutated in place rather than re-rendered while the check runs, so the typed
@@ -5792,20 +5862,20 @@ function renderAsk(P) {
       saveKey(k, $("#kRem").checked);
       state.askKey = false;
       state.keyNote = null;
-      CHAT.log.push({ role: "tool", text: `Key saved but not verified — ${r.reason} It will be used as soon as the API is reachable.` });
+      CHAT.log.push({ role: "tool", text: `Key saved but not verified: ${r.reason} It will be used as soon as the API is reachable.` });
       renderAsk(P); $("#askQ").focus();
       return;
     }
     say(r.reason, "warn");
   };
   if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("nexxo.key"); localStorage.removeItem("nexxo.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
-  P.querySelectorAll(".flag").forEach(b => b.onclick = () => {
+  P.querySelectorAll(".lang button").forEach(b => b.onclick = () => {
     if (b.dataset.lang === state.askLang) return;
     state.askLang = b.dataset.lang; store.set("askLang", state.askLang);
     hintAt = 0;
     renderAsk(P);
   });
-  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
+  P.querySelectorAll(".sugs .chip, .wsugs button").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
@@ -5814,47 +5884,25 @@ function renderAsk(P) {
 // pairs it rejected.
 const ASK_COPY = {
   en: {
-    flag: "🇺🇸", code: "EN", label: "Answer in English",
+    code: "EN", label: "Answer in English", you: "You", thinking: "Working on it",
     hero: "Hey, I'm Geo",
     bar: "Geo · answers from the plans on this page",
     sub: "Ask me which overlaps matter, what the two utilities could share, or why a pair is not on the list.",
-    scopePair: (n, who, pairs) => `I answer from the data on this page — ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
-    scopeSolo: (n, who) => `I answer from the data on this page — ${n} planned projects from ${who}. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
-    head: "What I can do for you",
-    items: [
-      ["Find the overlaps that matter.", "The closest pairs, the ones most likely to actually happen, anything within a distance you name, or only pairs that share a build window."],
-      ["Explain any pair.", "How far apart at their closest points, both build windows, everything the two utilities could share with the arithmetic behind each figure, and where one staging yard would serve both."],
-      ["Tell you why a pair is <em>not</em> on the list.", "Too far, same utility, or a location that could not be established. Most planned projects do not overlap, and I will say which reason applies."],
-      ["Rank the projects themselves.", "The biggest by cost, the longest, the highest voltage, the first or last to be built — and which measure I ranked by."],
-      ["Show what changed.", "How each utility's dates moved between its last two published plans, and which shared build windows that opened or closed."],
-      ["Propose a schedule.", "The few date moves that most raise the expected savings, and what each one adds."],
-      ["Write the report.", "I can open the printable coordination brief for a pair, or the joint schedule proposal, ready to print or send — with a paragraph framing why it matters."],
-      ["Check the data.", "What the pipeline validated, what it caught and fixed, and what still needs a human."],
-      ["Put it on the map.", "When an answer is about one pair or project, the map flies to it."],
-    ],
-    foot: "Everything above works with no API key. Connect one for open-ended questions.",
+    scopePair: (n, who, pairs) => `I answer from the data on this page: ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables as the map.`,
+    scopeSolo: (n, who) => `I answer from the data on this page: ${n} planned projects from ${who}. Every figure comes from the same tables as the map.`,
+    head: "Example questions",
+    foot: "These work with no API key. Connect one for open-ended questions.",
     placeholder: "e.g. Which three date moves would save the most?",
   },
   es: {
-    flag: "🇪🇸", code: "ES", label: "Responder en español",
+    code: "ES", label: "Responder en español", you: "Tú", thinking: "Trabajando en ello",
     hero: "Hola, soy Geo",
     bar: "Geo · responde con los planes de esta página",
     sub: "Preguntame qué solapes importan, qué podrían compartir las dos utilities, o por qué un par no está en la lista.",
-    scopePair: (n, who, pairs) => `Respondo con los datos de esta página — ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
-    scopeSolo: (n, who) => `Respondo con los datos de esta página — ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
-    head: "Qué puedo hacer por vos",
-    items: [
-      ["Encontrar los solapes que importan.", "Los pares más cercanos, los más probables, los que estén a menos de la distancia que digas, o solo los que comparten ventana de obra."],
-      ["Explicar cualquier par.", "A qué distancia están en sus puntos más cercanos, las dos ventanas de obra, todo lo que las dos utilities podrían compartir con la aritmética de cada cifra, y dónde un solo patio serviría a ambas."],
-      ["Decirte por qué un par <em>no</em> está en la lista.", "Muy lejos, misma utility, o una ubicación que no se pudo establecer. La mayoría de los proyectos planeados no se solapan, y te digo cuál es el motivo."],
-      ["Rankear los proyectos.", "El más grande por costo, el más largo, el de mayor voltaje, el primero o el último en construirse — y con qué medida los ordené."],
-      ["Mostrar qué cambió.", "Cómo se movieron las fechas de cada utility entre sus dos últimos planes publicados, y qué ventanas compartidas abrió o cerró eso."],
-      ["Proponer un cronograma.", "Los pocos movimientos de fecha que más suben el ahorro esperado, y cuánto agrega cada uno."],
-      ["Escribir el informe.", "Puedo abrir el brief de coordinación imprimible de un par, o la propuesta conjunta de cronograma, listos para imprimir o enviar — con un párrafo que encuadra por qué importa."],
-      ["Revisar el dato.", "Qué validó el pipeline, qué atrapó y corrigió, y qué todavía necesita un humano."],
-      ["Ponerlo en el mapa.", "Cuando la respuesta es sobre un par o un proyecto, el mapa vuela ahí."],
-    ],
-    foot: "Todo lo de arriba funciona sin API key. Conectá una para preguntas abiertas.",
+    scopePair: (n, who, pairs) => `Respondo con los datos de esta página: ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que el mapa.`,
+    scopeSolo: (n, who) => `Respondo con los datos de esta página: ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que el mapa.`,
+    head: "Preguntas de ejemplo",
+    foot: "Estas funcionan sin API key. Conecta una para preguntas abiertas.",
     placeholder: "ej. ¿Qué tres movimientos de fecha ahorrarían más?",
   },
 };
@@ -5867,17 +5915,13 @@ function askWelcome() {
   const n = PROJECTS.length, pairs = RESULT.pairs.length;
   const who = solo() ? esc(lblLong(state.utilA)) : `${esc(lblLong(state.utilA))} ${askLang() === "es" ? "y" : "and"} ${esc(lblLong(state.utilB))}`;
   return `<div class="msg hint welcome">
-    <p class="ask-hero">${SPARK}${esc(C.hero)}</p>
+    <p class="ask-hero">${esc(C.hero)}</p>
     <p class="ask-sub">${esc(C.sub)}</p>
     <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
-    <p class="wl-head">${esc(C.head)}</p>
-    <ul class="wl">${C.items.map(([b, rest]) => `<li><b>${b}</b> ${esc(rest)}</li>`).join("")}</ul>
-    <p class="wl-foot">${esc(C.foot)}</p>
-    <p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`;
+    <div class="wsugs" role="group" aria-label="${esc(C.head)}">${SUGGEST().slice(0, 4).map(s => `<button type="button">${esc(s)}</button>`).join("")}</div>
+    <p class="wl-foot">${esc(C.foot)}</p></div>`;
 }
 
-// The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
-const SPARK = `<svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
   open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal",
@@ -6699,10 +6743,22 @@ addEventListener("keydown", e => {
   else if (!$("#m3d").hidden) close3d();
   else if (!$("#import").hidden) closeModal("import");
   else if (!$("#assume").hidden) closeModal("assume");
+  else if (!$("#about").hidden) closeModal("about");
   else if (state.sel) select(null);
 });
 $("#openImport").onclick = () => openModal("import");
 $("#openAssume").onclick = () => openModal("assume");
+// About, terms and privacy: one dialog, three panes
+function openAbout(pane) {
+  document.querySelectorAll("#about .ab-tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pane === pane));
+  document.querySelectorAll("#about .ab-pane").forEach(d => { d.hidden = d.dataset.pane !== pane; });
+  openModal("about");
+}
+$("#aboutBtn").onclick = () => openAbout("about");
+document.querySelectorAll("#about .ab-tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#about .ab-tabs button").forEach(o => o.setAttribute("aria-pressed", o === b));
+  document.querySelectorAll("#about .ab-pane").forEach(d => { d.hidden = d.dataset.pane !== b.dataset.pane; });
+});
 $("#asmReset").onclick = () => saveAssume({});
 $("#tpl").textContent = Ingest.TEMPLATE;
 $("#copyTpl").onclick = () => navigator.clipboard.writeText(Ingest.TEMPLATE).then(() => { $("#impReport").innerHTML = `<p class="ok">Template copied.</p>`; }, () => { getSelection().selectAllChildren($("#tpl")); });

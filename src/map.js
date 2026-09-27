@@ -69,9 +69,10 @@
         { id: "states-line", type: "line", source: "states", paint: { "line-color": "#AEB6BC", "line-width": 1 } },
         { id: "relief", type: "color-relief", source: "shade", layout: vis(false), paint: { "color-relief-color": RELIEF, "color-relief-opacity": 1 } },
         { id: "hillshade", type: "hillshade", source: "shade", layout: vis(false), paint: { "hillshade-method": "multidirectional", "hillshade-exaggeration": 0.55, "hillshade-shadow-color": "#3F4A52", "hillshade-highlight-color": "#FFFFFF" } },
-        // existing lines by voltage, kept quiet under the plans: grey 115, violet 161, magenta 230, teal 500 kV
+        // existing lines by voltage, kept quiet under the plans: one grey family, darker and wider as the voltage rises,
+        // so the only saturated colours on the map are the two utilities' plans and the tier rings
         { id: "grid", type: "line", source: "grid", layout: { "line-join": "round" }, paint: {
-          "line-color": ["step", ["get", "kv"], "#8E9AA6", 161, "#8E7CB8", 230, "#A05BA8", 500, "#0097A7"],
+          "line-color": ["step", ["get", "kv"], "#A3AAB0", 161, "#8F979E", 230, "#7A838B", 500, "#5E6870"],
           "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["step", ["get", "kv"], 0.5, 230, 0.8, 500, 1.2], 12, ["step", ["get", "kv"], 1.2, 230, 1.8, 500, 2.6]],
           "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 11, 0.6] } },
         { id: "seam", type: "line", source: "seam", paint: { "line-color": "#8FB6CC", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 6], "line-opacity": 0.9 } },
@@ -199,6 +200,14 @@
     is3d = on;
     // The Southeast is low (sea level to a few hundred metres), so relief is exaggerated 3× to be seen.
     try { map.setTerrain(on ? { source: "dem", exaggeration: 3 } : null); } catch (err) { return void map.once("style.load", () => set3D(is3d)); }
+    // the elevation tiles take a moment to arrive; say so until the map has drawn them
+    if (on) {
+      const box = map.getContainer();
+      let note = box.querySelector(".mload");
+      if (!note) { note = document.createElement("div"); note.className = "mload"; note.setAttribute("role", "status"); box.appendChild(note); }
+      note.innerHTML = `<span>Loading elevation</span><span class="pbar"><i></i></span>`; note.hidden = false;
+      map.once("idle", () => { note.hidden = true; });
+    } else { const note = map.getContainer().querySelector(".mload"); if (note) note.hidden = true; }
     try { map.setSky(on ? SKY : null); } catch (err) { /* sky is decoration only */ }
     shade();
     map.setLayoutProperty("towers", "visibility", on ? "visible" : "none");

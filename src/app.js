@@ -270,7 +270,7 @@ function hideTip() { $("#tip").hidden = true; }
 function legend() {
   const us = solo() ? [state.utilA] : [state.utilA, state.utilB];
   $("#legend").innerHTML = `<div class="lg-row">${us.map(u => `<span><i class="ln" style="background:${uColor(u)}"></i>${esc(lbl(u))}</span>`).join("")}<span><i class="ln" style="background:var(--ink3);opacity:.6"></i>Existing</span></div>
-    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#8E9AA6"></i>115</span><span><i class="ln" style="background:#8E7CB8"></i>161</span><span><i class="ln" style="background:#A05BA8"></i>230</span><span><i class="ln" style="background:#0097A7"></i>500 kV</span></div>` : ""}
+    ${state.grid ? `<div class="lg-row muted"><span>Existing grid</span><span><i class="ln" style="background:#A3AAB0;height:1px"></i>115</span><span><i class="ln" style="background:#8F979E;height:2px"></i>161</span><span><i class="ln" style="background:#7A838B;height:2px"></i>230</span><span><i class="ln" style="background:#5E6870;height:3px"></i>500 kV</span></div>` : ""}
     <div class="lg-row muted"><span>Width = kV</span><span><i class="ln dash"></i>approx. location</span><span><i class="ln fade"></i>date passed</span></div>` +
     `<button type="button" class="lg-x" aria-label="Close the legend" title="Close the legend">×</button>` +
     (solo() ? "" : `<div class="lg-row muted">${[0, 1, 2, 3].map(i => `<span><i class="rg t${i}" style="border-color:${tcol(i)};border-width:${i ? 1.8 : 2.6}px"></i>${SEV[i]}</span>`).join("")}<span><i class="sq"></i>shared yard</span></div>`);
@@ -386,10 +386,10 @@ function renderKpis() {
   const review = (MODEL.checks || []).filter(c => c.status === "warn").length;
   const gain = o && o.moves.length ? o.after - o.before : 0;
   const part = VIEW.length !== RESULT.pairs.length;
-  el.innerHTML = `<div class="kpi"><b>${VIEW.length}</b><span>${part ? "overlaps shown" : "overlaps"}</span><small>${part ? `of ${RESULT.pairs.length} flagged · ${RESULT.checked.toLocaleString()} checked` : `of ${RESULT.checked.toLocaleString()} pairs checked`}</small></div>
-    <div class="kpi"><b>${money(exp)}</b><span>expected savings</span><small>${money(plan)} if every date held</small></div>
-    <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " suggested date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
-    <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks to review</small></button>`;
+  el.innerHTML = `<div class="kpi"><b>${VIEW.length}</b><span>${part ? "shown" : "overlaps"}</span><small>${part ? `of ${RESULT.pairs.length} flagged` : `of ${RESULT.checked.toLocaleString()} pairs`}</small></div>
+    <div class="kpi"><b>${money(exp)}</b><span>expected</span><small>${money(plan)} if dates hold</small></div>
+    <button type="button" class="kpi" data-kt="optimize"><b style="color:var(--time)">${gain ? "+" + money(gain) : "–"}</b><span>joint schedule</span><small>${o && o.moves.length ? o.moves.length + " date move" + (o.moves.length === 1 ? "" : "s") : "no move helps"}</small></button>
+    <button type="button" class="kpi" data-kt="checks"><b style="color:var(--amber)">${review}</b><span>to check</span><small>data checks</small></button>`;
   el.querySelectorAll("[data-kt]").forEach(b => b.onclick = () => goTab(b.dataset.kt));
 }
 function renderPanel() {
@@ -480,7 +480,7 @@ function renderOverlaps(P) {
   const band = borderline();
   if (band.length) {
     const close = band.slice(0, 3).map(x => `${esc(short(x.p))} / ${esc(short(x.q))} at ${x.km.toFixed(1)} km`).join("; ");
-    R.insertAdjacentHTML("beforeend", `<p class="band">${band.length} more pair${band.length === 1 ? "" : "s"} sit just outside the ${state.D} km screen &mdash; closest ${close}. Kept out of the ranking and the totals; shown because ${state.D} km is a chosen threshold, not a cliff.</p>`);
+    R.insertAdjacentHTML("beforeend", `<p class="band">${band.length} more pair${band.length === 1 ? "" : "s"} sit just outside the ${state.D} km screen. Closest: ${close}. Kept out of the ranking and the totals; shown because ${state.D} km is a chosen threshold, not a cliff.</p>`);
   }
 }
 function renderSoloRows() {
@@ -768,12 +768,13 @@ How Nexxo measures things:
 - "Same window on paper" means the planned construction periods overlap. "Chance" is the share of 2,000 schedule draws, from today on, in which both are in the field together, moving each date the way that utility's dates moved between its last two published plans. "Expected savings" weights the items that need a shared window by that chance. "Savings if dates hold" assumes every date holds. These are planning estimates, not quotes.
 - Data: DESC's SCRTP 2024-2028 and 2026-2030 project lists, Georgia Power's 2025 IRP ten-year plan (Table 2 and each project's detail page) and SERTP 2026. Locations come from OpenStreetMap substation names, the challenge's reference table, or hand placement; each project records how.
 
-The section below the prompt tells you what is loaded — counts, filters, totals and the five strongest pairs — so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it — but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes — the biggest, longest, highest-voltage, earliest or latest project — use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version — open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves — and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.
+The section below the prompt tells you what is loaded (counts, filters, totals and the five strongest pairs), so a question about those needs no tool call. For anything more specific than that summary, call a tool: it is the data, and the summary is only a summary. Answer only from what the tools and that summary give you. If the data doesn't cover something, say so. Name projects the way the tools do, give numbers with units, and cite the source page or TEAMS number when it helps. Keep answers short: a sentence or two, then a few bullets if needed. Answer in the language the user writes in. When the user asks where something is, or to see or show something, or when your answer is about one specific pair or project, call show_on_map for it, but always name the project or pair in your reply as well, with its id and its figures. Moving the map is not an answer on its own. For questions about extremes (the biggest, longest, highest-voltage, earliest or latest project), use search_projects with sort, and say which measure you ranked by. To compare two named projects, call compare_projects rather than reading each one: it is the only tool that gives you the distance between them and whether they are a flagged pair. When an answer is a list or a summary someone might want to keep, end by offering the printable version (open_report for a list of projects or the comparison as a whole, open_brief for one pair, open_schedule_brief for the date moves), and say it can be saved as PDF from the document's own button. Offer it in one short sentence; do not open a document unless the user asks for one. When they ask for a brief, a memo, a write-up or something to print or send, call open_brief (one pair) or open_schedule_brief (rescheduling) and pass a short narrative paragraph; the rest of the document is built from the plans, so put only the framing in narrative and never a figure you were not given.
 
-The page draws a diagram under each answer from the tools you called this turn: a mini map with the closest-point gap for a distance question, the build windows against today for a timing question, the savings breakdown for a cost question, ranked bars for a list. So call the tool that holds the data for what was asked (get_overlap for one pair, list_overlaps or search_projects for a list), even when the summary already has the figure, and never draw diagrams in text yourself.`;
+The page draws a diagram under each answer from the tools you called this turn: a mini map with the closest-point gap for a distance question, the build windows against today for a timing question, the savings breakdown for a cost question, ranked bars for a list. So call the tool that holds the data for what was asked (get_overlap for one pair, list_overlaps or search_projects for a list), even when the summary already has the figure, and never draw diagrams in text yourself.
+Write plainly: no em dashes (use a comma, colon or full stop), no emoji, no exclamation marks.`;
 const TOOLS = [
   { name: "get_overview", description: "The current comparison: which utilities, the filters in effect, how many pairs were checked and flagged, counts per distance tier, total expected savings and savings if dates hold, and the data sources and as-of date.", input_schema: { type: "object", properties: {} } },
-  { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes — the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
+  { name: "search_projects", description: "Find and rank planned projects. Match words in their name, description, substation names, TEAMS number or source page, and/or sort them to answer questions about extremes: the biggest, longest, highest-voltage, earliest or latest project. Leave query out to rank the whole list. Note that 'biggest' is ambiguous here: only Dominion publishes costs, Georgia's filing redacts every one, so sort by cost only when the user means money and say so; kv or length_km are the measures that cover both utilities.", input_schema: { type: "object", properties: {
     query: { type: "string", description: "Words to match, e.g. 'McIntosh', 'Okatie', '20277', 'Augusta'. Omit to rank everything." },
     utility: { type: "string", description: "Optional utility code to limit to, e.g. DESC or GPC" },
     sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to order the results. cost covers Dominion only; kv and length_km cover both utilities." },
@@ -782,7 +783,7 @@ const TOOLS = [
   { name: "get_project", description: "Everything Nexxo knows about one project: description, dates, cost, plan drift, how each end point was located, source, and the nearby projects of the other utility it overlaps with.", input_schema: { type: "object", properties: { id: { type: "string", description: "Project id from search_projects, e.g. DESC-12 or IRP-20277" } }, required: ["id"] } },
   { name: "list_overlaps", description: "Ranked flagged pairs of projects (one from each utility). Filter and sort them; each row has a key for get_overlap and show_on_map.", input_schema: { type: "object", properties: {
     sort: { type: "string", enum: ["expected", "chance", "distance"], description: "expected = expected savings (default), chance = chance of a shared window, distance = closest first" },
-    order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking — the least valuable pairs, or the farthest apart — since only `limit` rows come back." },
+    order: { type: "string", enum: ["desc", "asc"], description: "desc (default) puts the strongest first: most savings, best chance, closest. asc reverses it, which is the only way to reach the bottom of the ranking (the least valuable pairs, or the farthest apart), since only `limit` rows come back." },
     max_distance_km: { type: "number", description: "Only pairs at most this far apart" },
     min_chance: { type: "number", description: "Only pairs with at least this chance (0 to 1)" },
     same_window_on_paper: { type: "boolean", description: "true: only pairs whose planned windows overlap; false: only pairs that don't" },
@@ -794,7 +795,7 @@ const TOOLS = [
   { name: "optimize_schedule", description: "The few date moves (projects not yet started, never before today) that most raise total expected savings, with each move's gain and its strongest effect.", input_schema: { type: "object", properties: { max_shift_months: { type: "integer", enum: [3, 6, 12], description: "Largest move allowed, default 6" }, utility: { type: "string", description: "Optional: only move this utility's projects (DESC or GPC)" } } } },
   { name: "get_data_checks", description: "The data pipeline's validation report: each check, its result and status (passed, fixed, review), with a few example records.", input_schema: { type: "object", properties: {} } },
   { name: "show_on_map", description: "Select a pair or a project in Nexxo so the map flies to it and the side panel shows its details.", input_schema: { type: "object", properties: { key: { type: "string", description: "Pair key 'PROJECTID|PROJECTID'" }, project_id: { type: "string", description: "A project id, when no pair is meant" } } } },
-  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Nexxo flagged them as a coordination pair. Use this for any question of the form 'compare A and B' — reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
+  { name: "compare_projects", description: "Put two or more projects side by side, with the relationship between them worked out: how far apart their closest points are, which distance tier that falls in, whether their build windows overlap, and whether Nexxo flagged them as a coordination pair. Use this for any question of the form 'compare A and B'; reading each project separately does not give you the distance or the pair status between them.", input_schema: { type: "object", properties: {
     project_ids: { type: "array", items: { type: "string" }, description: "Two to five project ids, e.g. ['DESC-11', 'IRP-20277']" } }, required: ["project_ids"] } },
   { name: "why_not", description: "Why two specific projects are NOT flagged as an opportunity: too far apart, the same utility, a location that could not be established, or one of them already likely built. Most pairs do not overlap, so use this whenever the user asks about a pair that is missing from the list rather than guessing at the reason.", input_schema: { type: "object", properties: {
     project_id_a: { type: "string", description: "A project id, e.g. DESC-12" },
@@ -803,7 +804,7 @@ const TOOLS = [
     key: { type: "string", description: "Pair key from list_overlaps, 'PROJECTID|PROJECTID'" },
     narrative: { type: "string", description: "One short paragraph, in the user's language, framing why this pair is worth coordinating. This is the only text in the brief you write; every figure in it is computed from the plans." } }, required: ["key"] } },
   { name: "open_report", description: "Open a printable report over the whole comparison rather than one pair: the totals, the projects ranked by whichever measure the user asked for, the strongest coordination opportunities, and what the data does and does not cover. The reader can save it as PDF from the document. Use it when someone asks for a report, a list they can keep, or something to send that is not about a single pair.", input_schema: { type: "object", properties: {
-    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to rank the project table. Default cost, which only Dominion publishes — prefer kv or length_km when the question covers both utilities." },
+    sort: { type: "string", enum: ["cost", "kv", "length_km", "in_service", "name"], description: "How to rank the project table. Default cost, which only Dominion publishes; prefer kv or length_km when the question covers both utilities." },
     order: { type: "string", enum: ["desc", "asc"] },
     utility: { type: "string", description: "Optional: restrict the project table to one utility code, e.g. DESC" },
     limit: { type: "integer", description: "Rows in the project table, default 20, at most 40" },
@@ -821,7 +822,7 @@ function dataDigest() {
   const priced = PROJECTS.filter(p => p.cost);
   const dates = PROJECTS.map(p => p.in_service).filter(Boolean).sort();
   const top = RESULT.pairs.slice(0, 5).map(x =>
-    `  ${keyOf(x)} — ${x.km.toFixed(1)} km, ${TIERS[Math.min(x.tier, 4)].label}, ${x.sameWindow ? "same window on paper" : `${Math.round(x.gap)} mo apart`}, expected ${Engine.fmtMoney(x.risk.expected)}`).join("\n");
+    `  ${keyOf(x)} · ${x.km.toFixed(1)} km, ${TIERS[Math.min(x.tier, 4)].label}, ${x.sameWindow ? "same window on paper" : `${Math.round(x.gap)} mo apart`}, expected ${Engine.fmtMoney(x.risk.expected)}`).join("\n");
   const lines = [
     `As of ${TODAY}. Comparing ${utilities().map(u => `${lblLong(u)} (${u}, ${PROJECTS.filter(p => p.utility === u).length} projects)`).join(" against ")}.`,
     `In-service dates run ${dates[0]} to ${dates[dates.length - 1]}. ${priced.length} of ${PROJECTS.length} projects publish a cost; the rest are redacted in their filing, so no figure may be attributed to them.`,
@@ -1086,22 +1087,23 @@ function renderAsk(P) {
       ? `<label for="kIn"><b>Anthropic API key</b></label><form class="ph-row" id="kForm"><input id="kIn" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="submit" class="btn sm primary" id="kSave">Use key</button></form>
         <label class="chk"><input type="checkbox" id="kRem"> Remember on this device</label>
         <span class="note${state.keyNote ? " warn" : ""}" id="kNote">${esc(state.keyNote || "")}</span>
-        <span class="note">Geo runs in your browser and sends your question, plus the Nexxo data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else.</span>`
-      : `<button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button>`;
+        <span class="note">Geo runs in your browser and sends your question, plus the Nexxo data it looks up, to Anthropic's API with this key. The key is kept in this browser only (for this tab, unless you tick Remember) and never goes anywhere else. <button type="button" class="link" data-about="privacy">Privacy</button></span>`
+      : `<span><button type="button" class="link" id="kShow">Connect an Anthropic key for open-ended questions</button> · <button type="button" class="link" data-about="privacy">Privacy</button></span>`;
   const C = ASK_COPY[askLang()] || ASK_COPY.en;
   P.innerHTML = `<div class="ask">
     <div class="ask-bar">
       <span class="muted">${esc(C.bar)}</span><span class="grow"></span>
-      ${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" class="flag${code === askLang() ? " on" : ""}" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}"><span aria-hidden="true">${c.flag}</span>${c.code}</button>`).join("")}
+      <span class="seg sm lang" role="group" aria-label="Answer language">${Object.entries(ASK_COPY).map(([code, c]) => `<button type="button" data-lang="${code}" aria-pressed="${code === askLang()}" aria-label="${esc(c.label)}" title="${esc(c.label)}">${c.code}</button>`).join("")}</span>
     </div>
-    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text) + (m.fig || "")}</div>`).join("")
+    <div class="ask-log" id="askLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="Geo's answers">${CHAT.log.length ? CHAT.log.map(m => `<div class="msg ${m.role}"${m.role === "user" ? ` data-who="${esc(C.you)}"` : m.role === "assistant" ? ' data-who="Geo"' : ""}>${m.role === "user" ? esc(m.text) : m.role === "tool" ? esc(m.text) : md(m.text) + (m.fig || "")}</div>`).join("")
       : askWelcome()}
-      ${CHAT.busy ? `<div class="msg tool">Thinking<span class="dots"><i></i><i></i><i></i></span></div>` : ""}</div>
-    <div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>
+      ${CHAT.busy ? `<div class="msg busy" role="status"><span>${esc((CHAT.log.length && CHAT.log[CHAT.log.length - 1].role === "tool" && CHAT.log[CHAT.log.length - 1].text) || C.thinking)}</span><span class="pbar"><i></i></span><span class="skel"></span><span class="skel s2"></span></div>` : ""}</div>
+    ${CHAT.log.length ? `<div class="sugs" id="sugs" role="group" aria-label="Suggested questions">${SUGGEST().map(s => `<button type="button" class="chip">${esc(s)}</button>`).join("")}</div>` : ""}
     <form class="ask-in" id="askForm"><textarea id="askQ" rows="2" placeholder="${esc(C.placeholder)}" aria-label="Question"></textarea><button type="submit" class="btn primary"${CHAT.busy ? " disabled" : ""}>Ask</button></form>
     <div class="ask-key${has ? " set" : ""}">${keyForm}</div></div>`;
   const log = $("#askLog"); log.scrollTop = CHAT.log.length ? log.scrollHeight : 0; // the greeting reads from the top
   cycleHint();
+  P.querySelectorAll("[data-about]").forEach(b => b.onclick = () => openAbout(b.dataset.about));
   if ($("#kShow")) $("#kShow").onclick = () => { state.askKey = true; renderAsk(P); $("#kIn").focus(); };
   // The key is checked against the API before it is accepted, so "Use key" answers the question the user is actually
   // asking: is this key good? The panel is mutated in place rather than re-rendered while the check runs, so the typed
@@ -1135,20 +1137,20 @@ function renderAsk(P) {
       saveKey(k, $("#kRem").checked);
       state.askKey = false;
       state.keyNote = null;
-      CHAT.log.push({ role: "tool", text: `Key saved but not verified — ${r.reason} It will be used as soon as the API is reachable.` });
+      CHAT.log.push({ role: "tool", text: `Key saved but not verified: ${r.reason} It will be used as soon as the API is reachable.` });
       renderAsk(P); $("#askQ").focus();
       return;
     }
     say(r.reason, "warn");
   };
   if ($("#kChange")) $("#kChange").onclick = () => { saveKey("", false); try { sessionStorage.removeItem("nexxo.key"); localStorage.removeItem("nexxo.key"); } catch (err) { /* nothing stored */ } state.askKey = true; state.keyNote = null; CHAT.log.push({ role: "tool", text: "API key removed. The common questions are still answered from the plans." }); renderAsk(P); };
-  P.querySelectorAll(".flag").forEach(b => b.onclick = () => {
+  P.querySelectorAll(".lang button").forEach(b => b.onclick = () => {
     if (b.dataset.lang === state.askLang) return;
     state.askLang = b.dataset.lang; store.set("askLang", state.askLang);
     hintAt = 0;
     renderAsk(P);
   });
-  P.querySelectorAll(".sugs .chip").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
+  P.querySelectorAll(".sugs .chip, .wsugs button").forEach(b => b.onclick = () => { if (!CHAT.busy) sendQuestion(b.textContent); });
   $("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askQ").value.trim(); if (q) sendQuestion(q); };
   $("#askQ").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#askForm").requestSubmit(); } };
 }
@@ -1157,47 +1159,25 @@ function renderAsk(P) {
 // pairs it rejected.
 const ASK_COPY = {
   en: {
-    flag: "🇺🇸", code: "EN", label: "Answer in English",
+    code: "EN", label: "Answer in English", you: "You", thinking: "Working on it",
     hero: "Hey, I'm Geo",
     bar: "Geo · answers from the plans on this page",
     sub: "Ask me which overlaps matter, what the two utilities could share, or why a pair is not on the list.",
-    scopePair: (n, who, pairs) => `I answer from the data on this page — ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
-    scopeSolo: (n, who) => `I answer from the data on this page — ${n} planned projects from ${who}. Every figure comes from the same tables the map shows; I read them, I never estimate.`,
-    head: "What I can do for you",
-    items: [
-      ["Find the overlaps that matter.", "The closest pairs, the ones most likely to actually happen, anything within a distance you name, or only pairs that share a build window."],
-      ["Explain any pair.", "How far apart at their closest points, both build windows, everything the two utilities could share with the arithmetic behind each figure, and where one staging yard would serve both."],
-      ["Tell you why a pair is <em>not</em> on the list.", "Too far, same utility, or a location that could not be established. Most planned projects do not overlap, and I will say which reason applies."],
-      ["Rank the projects themselves.", "The biggest by cost, the longest, the highest voltage, the first or last to be built — and which measure I ranked by."],
-      ["Show what changed.", "How each utility's dates moved between its last two published plans, and which shared build windows that opened or closed."],
-      ["Propose a schedule.", "The few date moves that most raise the expected savings, and what each one adds."],
-      ["Write the report.", "I can open the printable coordination brief for a pair, or the joint schedule proposal, ready to print or send — with a paragraph framing why it matters."],
-      ["Check the data.", "What the pipeline validated, what it caught and fixed, and what still needs a human."],
-      ["Put it on the map.", "When an answer is about one pair or project, the map flies to it."],
-    ],
-    foot: "Everything above works with no API key. Connect one for open-ended questions.",
+    scopePair: (n, who, pairs) => `I answer from the data on this page: ${n} planned projects across ${who}, with ${pairs} pair${pairs === 1 ? "" : "s"} flagged as close enough to coordinate on. Every figure comes from the same tables as the map.`,
+    scopeSolo: (n, who) => `I answer from the data on this page: ${n} planned projects from ${who}. Every figure comes from the same tables as the map.`,
+    head: "Example questions",
+    foot: "These work with no API key. Connect one for open-ended questions.",
     placeholder: "e.g. Which three date moves would save the most?",
   },
   es: {
-    flag: "🇪🇸", code: "ES", label: "Responder en español",
+    code: "ES", label: "Responder en español", you: "Tú", thinking: "Trabajando en ello",
     hero: "Hola, soy Geo",
     bar: "Geo · responde con los planes de esta página",
     sub: "Preguntame qué solapes importan, qué podrían compartir las dos utilities, o por qué un par no está en la lista.",
-    scopePair: (n, who, pairs) => `Respondo con los datos de esta página — ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
-    scopeSolo: (n, who) => `Respondo con los datos de esta página — ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que dibuja el mapa; las leo, no las estimo.`,
-    head: "Qué puedo hacer por vos",
-    items: [
-      ["Encontrar los solapes que importan.", "Los pares más cercanos, los más probables, los que estén a menos de la distancia que digas, o solo los que comparten ventana de obra."],
-      ["Explicar cualquier par.", "A qué distancia están en sus puntos más cercanos, las dos ventanas de obra, todo lo que las dos utilities podrían compartir con la aritmética de cada cifra, y dónde un solo patio serviría a ambas."],
-      ["Decirte por qué un par <em>no</em> está en la lista.", "Muy lejos, misma utility, o una ubicación que no se pudo establecer. La mayoría de los proyectos planeados no se solapan, y te digo cuál es el motivo."],
-      ["Rankear los proyectos.", "El más grande por costo, el más largo, el de mayor voltaje, el primero o el último en construirse — y con qué medida los ordené."],
-      ["Mostrar qué cambió.", "Cómo se movieron las fechas de cada utility entre sus dos últimos planes publicados, y qué ventanas compartidas abrió o cerró eso."],
-      ["Proponer un cronograma.", "Los pocos movimientos de fecha que más suben el ahorro esperado, y cuánto agrega cada uno."],
-      ["Escribir el informe.", "Puedo abrir el brief de coordinación imprimible de un par, o la propuesta conjunta de cronograma, listos para imprimir o enviar — con un párrafo que encuadra por qué importa."],
-      ["Revisar el dato.", "Qué validó el pipeline, qué atrapó y corrigió, y qué todavía necesita un humano."],
-      ["Ponerlo en el mapa.", "Cuando la respuesta es sobre un par o un proyecto, el mapa vuela ahí."],
-    ],
-    foot: "Todo lo de arriba funciona sin API key. Conectá una para preguntas abiertas.",
+    scopePair: (n, who, pairs) => `Respondo con los datos de esta página: ${n} proyectos planeados entre ${who}, con ${pairs} ${pairs === 1 ? "par marcado" : "pares marcados"} como lo bastante cerca para coordinarse. Cada cifra sale de las mismas tablas que el mapa.`,
+    scopeSolo: (n, who) => `Respondo con los datos de esta página: ${n} proyectos planeados de ${who}. Cada cifra sale de las mismas tablas que el mapa.`,
+    head: "Preguntas de ejemplo",
+    foot: "Estas funcionan sin API key. Conecta una para preguntas abiertas.",
     placeholder: "ej. ¿Qué tres movimientos de fecha ahorrarían más?",
   },
 };
@@ -1210,17 +1190,13 @@ function askWelcome() {
   const n = PROJECTS.length, pairs = RESULT.pairs.length;
   const who = solo() ? esc(lblLong(state.utilA)) : `${esc(lblLong(state.utilA))} ${askLang() === "es" ? "y" : "and"} ${esc(lblLong(state.utilB))}`;
   return `<div class="msg hint welcome">
-    <p class="ask-hero">${SPARK}${esc(C.hero)}</p>
+    <p class="ask-hero">${esc(C.hero)}</p>
     <p class="ask-sub">${esc(C.sub)}</p>
     <p>${solo() ? C.scopeSolo(n, who) : C.scopePair(n, who, pairs)}</p>
-    <p class="wl-head">${esc(C.head)}</p>
-    <ul class="wl">${C.items.map(([b, rest]) => `<li><b>${b}</b> ${esc(rest)}</li>`).join("")}</ul>
-    <p class="wl-foot">${esc(C.foot)}</p>
-    <p class="ask-hint" id="askHint" aria-hidden="true"></p></div>`;
+    <div class="wsugs" role="group" aria-label="${esc(C.head)}">${SUGGEST().slice(0, 4).map(s => `<button type="button">${esc(s)}</button>`).join("")}</div>
+    <p class="wl-foot">${esc(C.foot)}</p></div>`;
 }
 
-// The assistant's mark. Shared by the tab and the panel so the two read as the same thing.
-const SPARK = `<svg class="spark geo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.8h11a2.6 2.6 0 0 1 2.6 2.6v7.1a2.6 2.6 0 0 1-2.6 2.6h-6.3l-4.7 3.9v-3.9h0a2.6 2.6 0 0 1-2.6-2.6V6.4a2.6 2.6 0 0 1 2.6-2.6z"/><circle cx="8.6" cy="10" r="1.25"/><circle cx="12" cy="10" r="1.25"/><circle cx="15.4" cy="10" r="1.25"/></svg>`;
 const TOOL_NOTE = { get_overview: "Reading the summary", search_projects: "Searching projects", get_project: "Reading a project", list_overlaps: "Ranking overlaps", get_overlap: "Reading a pair",
   get_plan_changes: "Comparing plan versions", optimize_schedule: "Running the schedule optimizer", get_data_checks: "Reading the data checks", show_on_map: "Showing it on the map",
   open_brief: "Writing the coordination brief", open_schedule_brief: "Writing the schedule proposal",
@@ -2042,10 +2018,22 @@ addEventListener("keydown", e => {
   else if (!$("#m3d").hidden) close3d();
   else if (!$("#import").hidden) closeModal("import");
   else if (!$("#assume").hidden) closeModal("assume");
+  else if (!$("#about").hidden) closeModal("about");
   else if (state.sel) select(null);
 });
 $("#openImport").onclick = () => openModal("import");
 $("#openAssume").onclick = () => openModal("assume");
+// About, terms and privacy: one dialog, three panes
+function openAbout(pane) {
+  document.querySelectorAll("#about .ab-tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pane === pane));
+  document.querySelectorAll("#about .ab-pane").forEach(d => { d.hidden = d.dataset.pane !== pane; });
+  openModal("about");
+}
+$("#aboutBtn").onclick = () => openAbout("about");
+document.querySelectorAll("#about .ab-tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#about .ab-tabs button").forEach(o => o.setAttribute("aria-pressed", o === b));
+  document.querySelectorAll("#about .ab-pane").forEach(d => { d.hidden = d.dataset.pane !== b.dataset.pane; });
+});
 $("#asmReset").onclick = () => saveAssume({});
 $("#tpl").textContent = Ingest.TEMPLATE;
 $("#copyTpl").onclick = () => navigator.clipboard.writeText(Ingest.TEMPLATE).then(() => { $("#impReport").innerHTML = `<p class="ok">Template copied.</p>`; }, () => { getSelection().selectAllChildren($("#tpl")); });
