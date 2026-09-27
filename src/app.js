@@ -28,7 +28,7 @@ try {
     }
   }
 } catch (err) { /* storage blocked: nothing to carry over */ }
-const MARK = `<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="7.5" fill="#132130" stroke="#fff" stroke-opacity=".1"/><circle cx="16" cy="16" r="10.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width=".9" stroke-dasharray="1.6 1.6"/><path d="M7.2 7.2 24.8 24.8" stroke="#F0883E" stroke-width="2.8" stroke-linecap="round"/><path d="M7.2 24.8 24.8 7.2" stroke="#4C9BE0" stroke-width="2.8" stroke-linecap="round"/><g stroke="#132130" stroke-width="1.2"><rect x="4.6" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="22.2" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="4.6" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/><rect x="22.2" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/></g><circle cx="16" cy="16" r="3.9" fill="#132130" stroke="#fff" stroke-width="1.9"/><circle cx="16" cy="16" r="1.3" fill="#fff"/></svg>`;
+const MARK = `<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="5" fill="#1C2126" stroke="#fff" stroke-opacity=".12"/><path d="M16 4 9.5 28M16 4 22.5 28" stroke="#FAFAF8" stroke-width="2" fill="none" stroke-linejoin="miter"/><path d="M6 10h20" stroke="#FAFAF8" stroke-width="2"/><path d="M12.5 17h7" stroke="#FAFAF8" stroke-width="1.4"/><path d="M12.5 17 21.7 25" stroke="#4C9BE0" stroke-width="1.9"/><path d="M19.5 17 10.3 25" stroke="#F0883E" stroke-width="1.9"/><circle cx="7" cy="12.4" r="1.5" fill="#4C9BE0"/><circle cx="25" cy="12.4" r="1.5" fill="#F0883E"/></svg>`;
 const store = {
   get: (k, d) => { try { const v = localStorage.getItem("nexxo." + k); return v == null ? d : JSON.parse(v); } catch (err) { return d; } },
   set: (k, v) => { try { localStorage.setItem("nexxo." + k, JSON.stringify(v)); } catch (err) { /* storage blocked: keep it for this visit */ } },
@@ -1873,6 +1873,7 @@ function applyPendingView() {
   return false;
 }
 function writeHash() {
+  if (document.body.classList.contains("intro-open")) return; // the address stays bare until the visitor enters
   if (!mapReady) return; // until the map is up, the link being opened is still being applied
   clearTimeout(hashTimer);
   hashTimer = setTimeout(() => {
@@ -2018,6 +2019,14 @@ addEventListener("keydown", e => {
 });
 $("#openImport").onclick = () => openModal("import");
 $("#openAssume").onclick = () => openModal("assume");
+// The intro: "Open the map" removes it; the app has been loading behind it the whole time.
+document.querySelectorAll("#intro [data-enter]").forEach(b => b.onclick = () => {
+  const el = $("#intro"); if (!el) return;
+  el.remove(); document.body.classList.remove("intro-open");
+  if (SeamMap.resize) SeamMap.resize();
+  writeHash();
+  const t = document.querySelector(".rail [aria-selected=true]"); if (t) t.focus();
+});
 // About, terms and privacy: one dialog, three panes
 function openAbout(pane) {
   document.querySelectorAll("#about .ab-tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pane === pane));

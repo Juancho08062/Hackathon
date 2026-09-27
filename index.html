@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nexxo</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='.5' y='.5' width='31' height='31' rx='7.5' fill='%23132130' stroke='%23fff' stroke-opacity='.1'/%3E%3Ccircle cx='16' cy='16' r='10.2' fill='none' stroke='%23fff' stroke-opacity='.16' stroke-width='.9' stroke-dasharray='1.6 1.6'/%3E%3Cpath d='M7.2 7.2 24.8 24.8' stroke='%23F0883E' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M7.2 24.8 24.8 7.2' stroke='%234C9BE0' stroke-width='2.8' stroke-linecap='round'/%3E%3Cg stroke='%23132130' stroke-width='1.2'%3E%3Crect x='4.6' y='4.6' width='5.2' height='5.2' rx='1.2' fill='%23F0883E'/%3E%3Crect x='22.2' y='22.2' width='5.2' height='5.2' rx='1.2' fill='%23F0883E'/%3E%3Crect x='4.6' y='22.2' width='5.2' height='5.2' rx='1.2' fill='%234C9BE0'/%3E%3Crect x='22.2' y='4.6' width='5.2' height='5.2' rx='1.2' fill='%234C9BE0'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='3.9' fill='%23132130' stroke='%23fff' stroke-width='1.9'/%3E%3Ccircle cx='16' cy='16' r='1.3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='.5' y='.5' width='31' height='31' rx='5' fill='%231C2126' stroke='%23fff' stroke-opacity='.12'/%3E%3Cpath d='M16 4 9.5 28M16 4 22.5 28' stroke='%23FAFAF8' stroke-width='2' fill='none' stroke-linejoin='miter'/%3E%3Cpath d='M6 10h20' stroke='%23FAFAF8' stroke-width='2'/%3E%3Cpath d='M12.5 17h7' stroke='%23FAFAF8' stroke-width='1.4'/%3E%3Cpath d='M12.5 17 21.7 25' stroke='%234C9BE0' stroke-width='1.9'/%3E%3Cpath d='M19.5 17 10.3 25' stroke='%23F0883E' stroke-width='1.9'/%3E%3Ccircle cx='7' cy='12.4' r='1.5' fill='%234C9BE0'/%3E%3Ccircle cx='25' cy='12.4' r='1.5' fill='%23F0883E'/%3E%3C/svg%3E">
 <meta name="description" content="Compare neighboring utilities' planned transmission work, flag projects close enough to share crews, land and outages, and weigh each by the chance it really happens.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -569,11 +569,97 @@ body.modal-open .app{visibility:hidden}
 /* the brief's own toolbar keeps its original look */
 .brief-bar .btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 
+/* ---------- wordmark: one x per utility ---------- */
+.wm .wx.a{color:var(--u0)} .wm .wx.b{color:var(--u1);margin-left:-.06em}
+
+/* ---------- intro (landing) ---------- */
+body.intro-open .app{visibility:hidden}
+.intro{position:fixed;inset:0;z-index:50;overflow-y:auto;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55;scroll-behavior:smooth}
+.in-bar{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:24px;height:60px;padding:0 max(max(24px,5vw),calc((100vw - 1440px) / 2 + 5vw));background:var(--panel);border-bottom:1px solid var(--line)}
+.in-logo{display:flex;align-items:center;gap:10px;flex:1;font-weight:600;font-size:18px}
+.in-logo .mark{width:28px;height:28px}
+.in-link{font-size:14px;color:var(--ink2);text-decoration:none}
+.in-link:hover{color:var(--ink)}
+.btn.big{height:46px;padding:0 22px;font-size:15px;font-weight:600}
+.in-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:center;padding:64px max(24px,5vw) 48px;max-width:1440px;margin:0 auto}
+.in-copy{display:grid;gap:22px}
+.in-copy h1{margin:0;font-size:clamp(30px,3.6vw,50px);line-height:1.08;font-weight:600;letter-spacing:-.01em}
+.in-copy p{margin:0;font-size:17px;color:var(--ink2);max-width:60ch}
+.in-cta{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.in-shot{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;object-position:left top;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2)}
+.in-shot.r{object-position:right center}
+.in-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:1440px;margin:0 auto;padding:0 max(24px,5vw)}
+.in-facts>div{display:grid;gap:4px;padding:18px 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:1px solid var(--grid)}
+.in-facts>div:first-child{border-left:0;padding-left:0}
+.in-facts b{font-size:17px;font-weight:600}
+.in-facts span{font-size:13px;color:var(--ink2)}
+.in-how{max-width:1440px;margin:0 auto;padding:56px max(24px,5vw)}
+.in-kicker{margin:0 0 20px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+.in-step{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,520px);gap:32px;align-items:start;padding:28px 0;border-top:1px solid var(--line)}
+.in-step:last-child{border-bottom:1px solid var(--line)}
+.in-step i{font:normal 26px var(--mono);color:var(--ink3)}
+.in-step h3{margin:0 0 8px;font-size:24px;font-weight:600}
+.in-step p{margin:0;color:var(--ink2)}
+.in-end{display:flex;align-items:center;gap:32px;margin:0 max(max(24px,5vw),calc((100vw - 1440px) / 2 + 5vw)) 48px;padding:36px 44px;background:#1C2126;color:#E6EDF3;border-radius:var(--r)}
+.in-end>div{flex:1;display:grid;gap:6px}
+.in-end b{font-size:24px;font-weight:600}
+.in-end span{color:#A7B3BC}
+.btn.light{background:#FAFAF8;border-color:#FAFAF8;color:#1C2126}
+.btn.light:hover{background:#fff}
+.in-foot{padding:18px max(max(24px,5vw),calc((100vw - 1440px) / 2 + 5vw));border-top:1px solid var(--line);font-size:12px;color:var(--ink3)}
+@media (max-width:900px){
+  .in-hero{grid-template-columns:1fr;padding-top:40px}
+  .in-facts{grid-template-columns:1fr 1fr}
+  .in-facts>div:nth-child(3){border-left:0;padding-left:0}
+  .in-step{grid-template-columns:40px minmax(0,1fr)}
+  .in-step img{grid-column:2}
+  .in-end{flex-direction:column;align-items:flex-start}
+  .in-link{display:none}
+}
+
 </style>
+
+<div class="intro" id="intro" role="region" aria-label="About Nexxo">
+  <header class="in-bar">
+    <span class="in-logo"><svg class="mark in-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="5" fill="#1C2126" stroke="#fff" stroke-opacity=".12"/><path d="M16 4 9.5 28M16 4 22.5 28" stroke="#FAFAF8" stroke-width="2" fill="none" stroke-linejoin="miter"/><path d="M6 10h20" stroke="#FAFAF8" stroke-width="2"/><path d="M12.5 17h7" stroke="#FAFAF8" stroke-width="1.4"/><path d="M12.5 17 21.7 25" stroke="#4C9BE0" stroke-width="1.9"/><path d="M19.5 17 10.3 25" stroke="#F0883E" stroke-width="1.9"/><circle cx="7" cy="12.4" r="1.5" fill="#4C9BE0"/><circle cx="25" cy="12.4" r="1.5" fill="#F0883E"/></svg><span class="wm">Ne<span class="wx a">x</span><span class="wx b">x</span>o</span></span>
+    <a href="#in-how" class="in-link">How it works</a>
+    <button type="button" class="btn primary in-go" data-enter>Open the map</button>
+  </header>
+  <section class="in-hero">
+    <div class="in-copy">
+      <h1>Where two utilities' planned work meets, and which meetings will really happen.</h1>
+      <p>Neighboring utilities plan their transmission work years ahead, each on its own. Nexxo reads both plans, finds the projects close enough to share crews, yards and land, weighs how likely they are to be built at the same time, and says which few date changes would help most.</p>
+      <div class="in-cta"><button type="button" class="btn primary in-go big" data-enter>Open the map</button><span class="muted">Works offline · no sign-in</span></div>
+    </div>
+    <img src="docs/screenshots/overview.jpg" alt="Nexxo: overlaps ranked next to the map" class="in-shot">
+  </section>
+  <div class="in-facts">
+    <div><b>Any two utilities</b><span>Built-in example: Dominion Energy SC and Georgia along the Savannah River</span></div>
+    <div><b>Any plan file</b><span>Excel, CSV, KML/KMZ, shapefile, GeoJSON or GPX</span></div>
+    <div><b>Traceable</b><span>Every figure links back to its source page and its math</span></div>
+    <div><b>Works offline</b><span>The map, the rankings and the common questions need no internet or key</span></div>
+  </div>
+  <section class="in-how" id="in-how">
+    <h2 class="in-kicker">How it works</h2>
+    <div class="in-step"><i>01</i><div><h3>It reads the plans</h3><p>Project lists come straight from the published filings or any file a utility shares. Each project is placed on real substations, and validation checks flag what needs a human.</p></div><img src="docs/screenshots/overview.jpg" alt="" class="in-shot r"></div>
+    <div class="in-step"><i>02</i><div><h3>It knows plans move</h3><p>Distance is measured between the closest points, in four tiers from touching to 40 km. Comparing editions of each plan shows how dates slip, and turns that into the chance both crews are really in the field together.</p></div><img src="docs/screenshots/pair.jpg" alt="" class="in-shot"></div>
+    <div class="in-step"><i>03</i><div><h3>It says what to do</h3><p>Every opportunity is priced item by item: shared right-of-way, one laydown yard instead of two, combined deliveries and crews. A schedule optimizer finds the few date moves that add the most, and prints a proposal for both teams.</p></div><img src="docs/screenshots/optimize.jpg" alt="" class="in-shot"></div>
+    <div class="in-step"><i>04</i><div><h3>It shows the real place</h3><p>Satellite imagery over real terrain, today's grid underneath, and a 3D site you can walk. Geo, the built-in assistant, answers questions in English or Spanish.</p></div><img src="docs/screenshots/illustration.jpg" alt="" class="in-shot"></div>
+  </section>
+  <section class="in-end">
+    <div><b>See the overlaps on the map.</b><span>Start with the built-in example, or import your own plans.</span></div>
+    <button type="button" class="btn in-go big light" data-enter>Open the map</button>
+  </section>
+  <footer class="in-foot">ShellHacks 2026 · Sperry Tech GridLock challenge · Map data © OpenStreetMap contributors</footer>
+</div>
+<script>
+  // The intro opens the page; a shared link (anything after #) goes straight to the app.
+  if (location.hash.length > 1) document.getElementById("intro").remove(); else document.body.classList.add("intro-open");
+</script>
 
 <div class="app">
   <header class="appbar">
-    <h1 class="logo"><a href="#"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="7.5" fill="#132130" stroke="#fff" stroke-opacity=".1"/><circle cx="16" cy="16" r="10.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width=".9" stroke-dasharray="1.6 1.6"/><path d="M7.2 7.2 24.8 24.8" stroke="#F0883E" stroke-width="2.8" stroke-linecap="round"/><path d="M7.2 24.8 24.8 7.2" stroke="#4C9BE0" stroke-width="2.8" stroke-linecap="round"/><g stroke="#132130" stroke-width="1.2"><rect x="4.6" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="22.2" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="4.6" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/><rect x="22.2" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/></g><circle cx="16" cy="16" r="3.9" fill="#132130" stroke="#fff" stroke-width="1.9"/><circle cx="16" cy="16" r="1.3" fill="#fff"/></svg><span class="wm">Nexxo</span></a></h1>
+    <h1 class="logo"><a href="#"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="5" fill="#1C2126" stroke="#fff" stroke-opacity=".12"/><path d="M16 4 9.5 28M16 4 22.5 28" stroke="#FAFAF8" stroke-width="2" fill="none" stroke-linejoin="miter"/><path d="M6 10h20" stroke="#FAFAF8" stroke-width="2"/><path d="M12.5 17h7" stroke="#FAFAF8" stroke-width="1.4"/><path d="M12.5 17 21.7 25" stroke="#4C9BE0" stroke-width="1.9"/><path d="M19.5 17 10.3 25" stroke="#F0883E" stroke-width="1.9"/><circle cx="7" cy="12.4" r="1.5" fill="#4C9BE0"/><circle cx="25" cy="12.4" r="1.5" fill="#F0883E"/></svg><span class="wm">Ne<span class="wx a">x</span><span class="wx b">x</span>o</span></a></h1>
     <p class="tagline">Where two utilities' planned work is close enough, and soon enough, to share a crew</p>
     <div class="compare" role="group" aria-label="Utilities to compare">
       <span class="sw a" aria-hidden="true"></span><select id="utilA" aria-label="First utility"></select>
@@ -4751,7 +4837,7 @@ try {
     }
   }
 } catch (err) { /* storage blocked: nothing to carry over */ }
-const MARK = `<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="7.5" fill="#132130" stroke="#fff" stroke-opacity=".1"/><circle cx="16" cy="16" r="10.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width=".9" stroke-dasharray="1.6 1.6"/><path d="M7.2 7.2 24.8 24.8" stroke="#F0883E" stroke-width="2.8" stroke-linecap="round"/><path d="M7.2 24.8 24.8 7.2" stroke="#4C9BE0" stroke-width="2.8" stroke-linecap="round"/><g stroke="#132130" stroke-width="1.2"><rect x="4.6" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="22.2" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#F0883E"/><rect x="4.6" y="22.2" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/><rect x="22.2" y="4.6" width="5.2" height="5.2" rx="1.2" fill="#4C9BE0"/></g><circle cx="16" cy="16" r="3.9" fill="#132130" stroke="#fff" stroke-width="1.9"/><circle cx="16" cy="16" r="1.3" fill="#fff"/></svg>`;
+const MARK = `<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="5" fill="#1C2126" stroke="#fff" stroke-opacity=".12"/><path d="M16 4 9.5 28M16 4 22.5 28" stroke="#FAFAF8" stroke-width="2" fill="none" stroke-linejoin="miter"/><path d="M6 10h20" stroke="#FAFAF8" stroke-width="2"/><path d="M12.5 17h7" stroke="#FAFAF8" stroke-width="1.4"/><path d="M12.5 17 21.7 25" stroke="#4C9BE0" stroke-width="1.9"/><path d="M19.5 17 10.3 25" stroke="#F0883E" stroke-width="1.9"/><circle cx="7" cy="12.4" r="1.5" fill="#4C9BE0"/><circle cx="25" cy="12.4" r="1.5" fill="#F0883E"/></svg>`;
 const store = {
   get: (k, d) => { try { const v = localStorage.getItem("nexxo." + k); return v == null ? d : JSON.parse(v); } catch (err) { return d; } },
   set: (k, v) => { try { localStorage.setItem("nexxo." + k, JSON.stringify(v)); } catch (err) { /* storage blocked: keep it for this visit */ } },
@@ -6596,6 +6682,7 @@ function applyPendingView() {
   return false;
 }
 function writeHash() {
+  if (document.body.classList.contains("intro-open")) return; // the address stays bare until the visitor enters
   if (!mapReady) return; // until the map is up, the link being opened is still being applied
   clearTimeout(hashTimer);
   hashTimer = setTimeout(() => {
@@ -6741,6 +6828,14 @@ addEventListener("keydown", e => {
 });
 $("#openImport").onclick = () => openModal("import");
 $("#openAssume").onclick = () => openModal("assume");
+// The intro: "Open the map" removes it; the app has been loading behind it the whole time.
+document.querySelectorAll("#intro [data-enter]").forEach(b => b.onclick = () => {
+  const el = $("#intro"); if (!el) return;
+  el.remove(); document.body.classList.remove("intro-open");
+  if (SeamMap.resize) SeamMap.resize();
+  writeHash();
+  const t = document.querySelector(".rail [aria-selected=true]"); if (t) t.focus();
+});
 // About, terms and privacy: one dialog, three panes
 function openAbout(pane) {
   document.querySelectorAll("#about .ab-tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pane === pane));
