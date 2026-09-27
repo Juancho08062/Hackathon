@@ -1,12 +1,12 @@
 # Nexxo: 3-minute demo
 
-Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Set **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Geo** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
+Before you start: serve the app (`npm start`, then http://localhost:8000, or the GitHub Pages link; the existing-grid layer needs it served, not opened from disk). Open http://localhost:8000 with nothing after it, so the page starts on the intro (a link with `#…` skips it). Inside the app: **Overlaps** in the left rail, basemap **Relief**, **Grid** on, 3D off, no pair selected. An Anthropic API key in **Geo** is optional: the suggested questions are answered without one. Keep the internet on (imagery, terrain, open-ended questions). Practise the walker drag once so you know where the orange figure is (right edge of the map, just above the locate and ruler buttons).
 
 ## 0:00 – The problem (20 s)
 
 > Utilities plan years ahead, each on its own. DESC and Georgia build right across the Savannah River from each other, and nobody lines up their crews, yards or outages. FERC Order 1920 exists because of this. Nexxo finds where their plans meet, and more importantly, which of those meetings will actually happen.
 
-*On screen: the map. The thin grey lines underneath are today's grid, 10,092 real lines from OpenStreetMap; the bold ones are the plans.*
+*On screen: the intro page (open the bare address, without a `#`). Say the problem over it, then click **Open the map**. The thin grey lines underneath are today's grid, 10,092 real lines from OpenStreetMap; the bold ones are the plans.*
 
 ## 0:20 – It reads the real plans (25 s)
 
