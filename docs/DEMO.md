@@ -32,17 +32,17 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 
 ## 1:25 – Walk the site (35 s)
 
-*With the pair still open, drag the orange figure from the right edge of the map and drop it on the blue Jasper–Okatie line. (Keep the pair open: from the full-region view the lines are too thin to hit and the figure lands on whatever is nearest.)*
+*Click **← Overlaps**, set **Sort** to **Chance of a shared window**, and open the top row (Urquhart – Aiken PSA 46 kV × Callaway Road – Thomson Primary 500 kV, 76%). The map flies to it. Drag the orange figure from the right edge of the map and drop it on the orange Callaway Road – Thomson line. (Use this pair, not Jasper–Okatie: the Jasper line runs through the Savannah River marsh, so the walker lands on water and the ground reads almost white. Keep the pair open: from the full-region view the lines are too thin to hit.)*
 
 > Like Street View: drop the walker on any project and you're standing on the site.
 
-*In the 3D view click once, hold **W** to walk toward the towers and move the mouse to look at the plant and the shared yard (Esc frees the mouse).*
+*In the 3D view click once, move the mouse to look up at the 500 kV tower and across to the crew staging yard with its crane and crew, and hold **W** to walk (Esc frees the mouse).*
 
-> Towers, the other utility's work, the shared yard where one crew could stage both jobs. Distances on the ground are to scale.
+> A 500 kV tower, the crew, and the staging yard both utilities could share for crews, cranes and contractors. Distances on the ground are to scale.
 
 *Close the 3D view. Click **Satellite**, then **3D** on the map.*
 
-> And this is the real place: satellite imagery over real terrain, the new line's towers, Plant McIntosh 4.3 km away across the river.
+> And this is the real place: satellite imagery over real terrain, with a tower along the new 500 kV line.
 
 ## 2:00 – What to do about it (25 s)
 
@@ -69,5 +69,5 @@ Before you start: serve the app (`npm start`, then http://localhost:8000, or the
 - No imagery, terrain or grid: switch to **Plain**. Everything else works offline.
 - Walker lands in the wrong place: press **Walk** to switch to the orbit view, or close and drop it again.
 - Assistant errors: it falls back to answering without the model on its own; stick to the suggested questions. If even that fails, skip Geo and spend the time on Plan.
-- Walker lands on the wrong pair: close the 3D view, open pair #4 from Overlaps first, then drop the figure on the blue line.
+- Walker lands on the wrong pair: close the 3D view, open the Urquhart × Callaway Road – Thomson pair first (Sort: Chance, top row), then drop the figure on the orange line.
 - Numbers to remember: 262 official records · 10,304 pairs · 169 overlaps · 6 of 6 reference overlaps · 23 of 30 DESC projects slipped · +9 / −3 windows · 68% (Jasper–Okatie × McIntosh 12) · $13.6M → $16.1M with 8 moves · 10,092 existing lines.
